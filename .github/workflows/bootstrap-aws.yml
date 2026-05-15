@@ -67,6 +67,56 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # ----------------------------------------------------------
+      # Trim whitespace on every input — protects against accidental
+      # leading/trailing spaces when the user pastes values into the
+      # workflow_dispatch UI (e.g. "Error: load balancer name ' cloudops-alb' ...").
+      # ----------------------------------------------------------
+      - name: Normalise inputs
+        id: in
+        run: |
+          trim() { local s="$1"; s="${s#"${s%%[![:space:]]*}"}"; s="${s%"${s##*[![:space:]]}"}"; printf '%s' "$s"; }
+          strip_spaces() { printf '%s' "$1" | tr -d '[:space:]'; }
+
+          VPC_ID="$(trim '${{ inputs.vpc_id }}')"
+          # subnet_ids may legitimately contain commas, but never spaces inside an ID,
+          # so we strip *all* whitespace from this one.
+          SUBNETS="$(strip_spaces '${{ inputs.subnet_ids }}')"
+          ALB_NAME="$(trim '${{ inputs.alb_name }}')"
+          ALB_SG_ID="$(trim '${{ inputs.alb_security_group_id }}')"
+          FE_PORT="$(trim '${{ inputs.frontend_listener_port }}')"
+          BE_PORT="$(trim '${{ inputs.backend_listener_port }}')"
+          PUB_IP="$(trim '${{ inputs.assign_public_ip }}')"
+
+          # Validate so we fail fast with a clear message instead of leaking the
+          # garbled value to the AWS API.
+          [[ "$VPC_ID"    =~ ^vpc-[0-9a-f]+$ ]]        || { echo "::error::vpc_id must match vpc-...    got '$VPC_ID'";   exit 1; }
+          [[ "$ALB_SG_ID" =~ ^sg-[0-9a-f]+$ ]]         || { echo "::error::alb_security_group_id must match sg-... got '$ALB_SG_ID'"; exit 1; }
+          [[ "$ALB_NAME"  =~ ^[A-Za-z0-9-]+$ ]]        || { echo "::error::alb_name must be alphanumeric+hyphens, got '$ALB_NAME'"; exit 1; }
+          [[ "$FE_PORT"   =~ ^[0-9]+$ ]]               || { echo "::error::frontend_listener_port must be numeric, got '$FE_PORT'"; exit 1; }
+          [[ "$BE_PORT"   =~ ^[0-9]+$ ]]               || { echo "::error::backend_listener_port must be numeric, got '$BE_PORT'";  exit 1; }
+          for s in ${SUBNETS//,/ }; do
+            [[ "$s" =~ ^subnet-[0-9a-f]+$ ]] || { echo "::error::subnet '$s' invalid"; exit 1; }
+          done
+
+          {
+            echo "vpc_id=$VPC_ID"
+            echo "subnet_ids=$SUBNETS"
+            echo "alb_name=$ALB_NAME"
+            echo "alb_sg_id=$ALB_SG_ID"
+            echo "fe_port=$FE_PORT"
+            echo "be_port=$BE_PORT"
+            echo "public_ip=$PUB_IP"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "Inputs validated:"
+          echo "  vpc_id=$VPC_ID"
+          echo "  subnet_ids=$SUBNETS"
+          echo "  alb_name=$ALB_NAME"
+          echo "  alb_sg_id=$ALB_SG_ID"
+          echo "  ports: frontend=$FE_PORT backend=$BE_PORT"
+          echo "  assign_public_ip=$PUB_IP"
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -141,8 +191,8 @@ jobs:
       - name: Ensure task security group exists
         id: task_sg
         run: |
-          VPC_ID="${{ inputs.vpc_id }}"
-          ALB_SG="${{ inputs.alb_security_group_id }}"
+          VPC_ID="${{ steps.in.outputs.vpc_id }}"
+          ALB_SG="${{ steps.in.outputs.alb_sg_id }}"
 
           SG_ID=$(aws ec2 describe-security-groups \
             --filters "Name=group-name,Values=$TASK_SG_NAME" "Name=vpc-id,Values=$VPC_ID" \
@@ -180,15 +230,15 @@ jobs:
         id: alb
         run: |
           ALB_ARN=$(aws elbv2 describe-load-balancers \
-            --names "${{ inputs.alb_name }}" \
+            --names "${{ steps.in.outputs.alb_name }}" \
             --region "$AWS_REGION" \
             --query 'LoadBalancers[0].LoadBalancerArn' --output text)
           ALB_DNS=$(aws elbv2 describe-load-balancers \
-            --names "${{ inputs.alb_name }}" \
+            --names "${{ steps.in.outputs.alb_name }}" \
             --region "$AWS_REGION" \
             --query 'LoadBalancers[0].DNSName' --output text)
           if [[ -z "$ALB_ARN" || "$ALB_ARN" == "None" ]]; then
-            echo "::error::ALB '${{ inputs.alb_name }}' not found in region $AWS_REGION"; exit 1
+            echo "::error::ALB '${{ steps.in.outputs.alb_name }}' not found in region $AWS_REGION"; exit 1
           fi
           echo "alb_arn=$ALB_ARN" >> "$GITHUB_OUTPUT"
           echo "alb_dns=$ALB_DNS" >> "$GITHUB_OUTPUT"
@@ -201,7 +251,7 @@ jobs:
       - name: Ensure target groups exist
         id: tgs
         run: |
-          VPC_ID="${{ inputs.vpc_id }}"
+          VPC_ID="${{ steps.in.outputs.vpc_id }}"
 
           create_tg () {
             local name="$1"; local port="$2"; local health="$3"; local code="$4"
@@ -266,12 +316,12 @@ jobs:
             fi
           }
 
-          ensure_listener "${{ inputs.frontend_listener_port }}" "$FE_TG_ARN" "frontend"
-          ensure_listener "${{ inputs.backend_listener_port }}"  "$BE_TG_ARN" "backend"
+          ensure_listener "${{ steps.in.outputs.fe_port }}" "$FE_TG_ARN" "frontend"
+          ensure_listener "${{ steps.in.outputs.be_port }}"  "$BE_TG_ARN" "backend"
 
           echo ""
-          echo "::notice::Frontend will be reachable at:  http://${{ steps.alb.outputs.alb_dns }}:${{ inputs.frontend_listener_port }}"
-          echo "::notice::Backend  will be reachable at:  http://${{ steps.alb.outputs.alb_dns }}:${{ inputs.backend_listener_port }}"
+          echo "::notice::Frontend will be reachable at:  http://${{ steps.alb.outputs.alb_dns }}:${{ steps.in.outputs.fe_port }}"
+          echo "::notice::Backend  will be reachable at:  http://${{ steps.alb.outputs.alb_dns }}:${{ steps.in.outputs.be_port }}"
 
       # ----------------------------------------------------------
       # 8) Build & push INITIAL images so the services have something to run
@@ -355,8 +405,8 @@ jobs:
           BE_TG_ARN:     ${{ steps.tgs.outputs.backend_tg_arn }}
           FE_TG_ARN:     ${{ steps.tgs.outputs.frontend_tg_arn }}
         run: |
-          SUBNETS="${{ inputs.subnet_ids }}"
-          PUBLIC_IP="${{ inputs.assign_public_ip }}"
+          SUBNETS="${{ steps.in.outputs.subnet_ids }}"
+          PUBLIC_IP="${{ steps.in.outputs.public_ip }}"
 
           ensure_service () {
             local name="$1"; local task_def="$2"; local container="$3"; local port="$4"; local tg_arn="$5"
@@ -398,7 +448,7 @@ jobs:
           echo "| Task security group | \`${{ steps.task_sg.outputs.task_sg_id }}\` |"              >> $GITHUB_STEP_SUMMARY
           echo "| Backend target group | \`${{ steps.tgs.outputs.backend_tg_arn }}\` |"             >> $GITHUB_STEP_SUMMARY
           echo "| Frontend target group | \`${{ steps.tgs.outputs.frontend_tg_arn }}\` |"           >> $GITHUB_STEP_SUMMARY
-          echo "| Frontend URL | http://${{ steps.alb.outputs.alb_dns }}:${{ inputs.frontend_listener_port }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Backend URL  | http://${{ steps.alb.outputs.alb_dns }}:${{ inputs.backend_listener_port }} |"  >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend URL | http://${{ steps.alb.outputs.alb_dns }}:${{ steps.in.outputs.fe_port }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend URL  | http://${{ steps.alb.outputs.alb_dns }}:${{ steps.in.outputs.be_port }} |"  >> $GITHUB_STEP_SUMMARY
           echo ""                                                                                   >> $GITHUB_STEP_SUMMARY
           echo "Next: any push to \`main\` that touches \`backend/**\` or \`frontend/**\` will roll out a new image via the regular deploy workflows." >> $GITHUB_STEP_SUMMARY
