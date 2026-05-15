@@ -1,0 +1,92 @@
+name: Diagnose ALB rules (read-only)
+
+# Read-only. Lists EVERY rule on every listener of the given ALB,
+# in priority order, so we can see exactly which rule is intercepting
+# /api/* before our ontract rule gets a chance to match.
+
+on:
+  workflow_dispatch:
+    inputs:
+      alb_name:
+        description: "ALB name"
+        required: true
+        default: "cloudops-alb"
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      - name: Dump all rules
+        env:
+          ALB_NAME: ${{ inputs.alb_name }}
+        run: |
+          set -euo pipefail
+          ALB_ARN=$(aws elbv2 describe-load-balancers --names "$ALB_NAME" \
+                      --region "$AWS_REGION" \
+                      --query 'LoadBalancers[0].LoadBalancerArn' --output text)
+          [[ -n "$ALB_ARN" && "$ALB_ARN" != "None" ]] || { echo "::error::ALB $ALB_NAME not found"; exit 1; }
+          echo "ALB: $ALB_ARN"
+          echo
+
+          # For each listener, print its rules in priority order.
+          LISTENERS=$(aws elbv2 describe-listeners --load-balancer-arn "$ALB_ARN" \
+                       --region "$AWS_REGION" \
+                       --query 'Listeners[].{Arn:ListenerArn,Port:Port,Proto:Protocol}' --output json)
+
+          echo "$LISTENERS" | jq -c '.[]' | while read -r L; do
+            ARN=$(echo "$L" | jq -r '.Arn')
+            PORT=$(echo "$L" | jq -r '.Port')
+            PROTO=$(echo "$L" | jq -r '.Proto')
+            echo "================================================================"
+            echo " Listener: $PROTO :$PORT"
+            echo " ARN: $ARN"
+            echo "================================================================"
+
+            # Default action
+            DEF=$(aws elbv2 describe-listeners --listener-arns "$ARN" --region "$AWS_REGION" \
+                   --query 'Listeners[0].DefaultActions[0]' --output json)
+            DEF_TG=$(echo "$DEF" | jq -r '.TargetGroupArn // .RedirectConfig // .Type')
+            echo " DEFAULT ACTION → $DEF_TG"
+            echo
+
+            # Pretty-print rules sorted by integer priority
+            aws elbv2 describe-rules --listener-arn "$ARN" --region "$AWS_REGION" --output json \
+              | jq -r '
+                  .Rules
+                  | map(select(.IsDefault | not))
+                  | sort_by(.Priority | tonumber)
+                  | .[]
+                  | {
+                      prio: .Priority,
+                      tg:   (.Actions[0].TargetGroupArn // .Actions[0].Type),
+                      hosts: ([.Conditions[]? | select(.Field=="host-header") | .HostHeaderConfig.Values[]?] | join(",")),
+                      paths: ([.Conditions[]? | select(.Field=="path-pattern") | .PathPatternConfig.Values[]?] | join(",")),
+                      other: ([.Conditions[]? | select(.Field|test("host-header|path-pattern")|not) | .Field] | join(","))
+                    }
+                  | "  prio=\(.prio)  →  TG=\(.tg | split("/") | .[-2:] | join("/"))\n     host=\"\(.hosts)\"  path=\"\(.paths)\"  other=\"\(.other)\""
+                '
+            echo
+          done
+
+      - name: Hint
+        if: always()
+        run: |
+          {
+            echo "## Look at the dump above"
+            echo ""
+            echo "For each :443 rule, check:"
+            echo "* Which rule has the **lowest priority number** that matches \`path=/api/*\` (whether or not it has a host condition)? That's the one stealing your traffic."
+            echo "* Find your two ontract rules. Are their priorities **lower** than that intercepting rule? If not — that's the bug."
+            echo ""
+            echo "Send me the entire dump and I'll tell you the exact \`set-rule-priorities\` command to make ontract win."
+          } >> "$GITHUB_STEP_SUMMARY"

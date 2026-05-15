@@ -1,0 +1,134 @@
+
+name: Diagnose backend (read-only)
+
+# Read-only diagnostic. Run it when the backend is being stopped /
+# restarted by ECS and you need to know WHY. It will:
+#   1) Dump the current target-group health-check config
+#   2) Show the current target health (which IPs, why unhealthy)
+#   3) Print the LATEST task definition's command, ports, env vars
+#      (secrets are masked but you can confirm names are set)
+#   4) List the last 5 stopped tasks and their `stoppedReason`
+#   5) Tail the most recent CloudWatch log stream for the backend
+#
+# Does NOT change any AWS state.
+
+on:
+  workflow_dispatch:
+    inputs:
+      log_lines:
+        description: "How many recent log lines to print"
+        required: true
+        default: "200"
+
+env:
+  AWS_REGION:        ${{ vars.AWS_REGION }}
+  ECS_CLUSTER:       ${{ vars.ECS_CLUSTER }}
+  BACKEND_SERVICE:   ontract-backend-svc
+  BACKEND_TG:        tg-ontract-backend
+  BACKEND_LOG_GROUP: /ecs/ontract-backend
+  TASK_FAMILY:       ontract-backend
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      # ----------------------------------------------------------
+      - name: 1) Target-group health-check config
+        run: |
+          echo "::group::Target group config"
+          aws elbv2 describe-target-groups \
+            --names "$BACKEND_TG" --region "$AWS_REGION" \
+            --query 'TargetGroups[0].{Port:Port,Proto:Protocol,Path:HealthCheckPath,Matcher:Matcher.HttpCode,Interval:HealthCheckIntervalSeconds,Timeout:HealthCheckTimeoutSeconds,Healthy:HealthyThresholdCount,Unhealthy:UnhealthyThresholdCount}' \
+            --output table
+          echo "::endgroup::"
+
+      # ----------------------------------------------------------
+      - name: 2) Target health (per-IP)
+        run: |
+          echo "::group::Target health"
+          TG_ARN=$(aws elbv2 describe-target-groups --names "$BACKEND_TG" --region "$AWS_REGION" \
+                    --query 'TargetGroups[0].TargetGroupArn' --output text)
+          aws elbv2 describe-target-health --target-group-arn "$TG_ARN" --region "$AWS_REGION" \
+            --query 'TargetHealthDescriptions[].{IP:Target.Id,Port:Target.Port,State:TargetHealth.State,Reason:TargetHealth.Reason,Desc:TargetHealth.Description}' \
+            --output table
+          echo "::endgroup::"
+
+      # ----------------------------------------------------------
+      - name: 3) Active task definition — env-var keys & image
+        run: |
+          echo "::group::Task definition"
+          TD_ARN=$(aws ecs describe-services --cluster "$ECS_CLUSTER" --services "$BACKEND_SERVICE" \
+                    --region "$AWS_REGION" --query 'services[0].taskDefinition' --output text)
+          echo "Active task definition: $TD_ARN"
+          echo ""
+          aws ecs describe-task-definition --task-definition "$TD_ARN" --region "$AWS_REGION" \
+            --query 'taskDefinition.containerDefinitions[0].{Image:image,Cmd:command,Entry:entryPoint,Port:portMappings[0].containerPort}' \
+            --output table
+          echo ""
+          echo "Environment variable NAMES (values masked here, you'll see real values in CloudWatch if echoed by the app):"
+          aws ecs describe-task-definition --task-definition "$TD_ARN" --region "$AWS_REGION" \
+            --query 'taskDefinition.containerDefinitions[0].environment[].name' \
+            --output table
+          echo "::endgroup::"
+
+      # ----------------------------------------------------------
+      - name: 4) Last 5 stopped tasks — stoppedReason
+        run: |
+          echo "::group::Recent STOPPED tasks"
+          TASKS=$(aws ecs list-tasks --cluster "$ECS_CLUSTER" --service-name "$BACKEND_SERVICE" \
+                   --desired-status STOPPED --region "$AWS_REGION" \
+                   --query 'taskArns[:5]' --output text)
+          if [[ -z "$TASKS" || "$TASKS" == "None" ]]; then
+            echo "(no stopped tasks recorded for this service)"
+          else
+            aws ecs describe-tasks --cluster "$ECS_CLUSTER" --tasks $TASKS --region "$AWS_REGION" \
+              --query 'tasks[].{TaskArn:taskArn,LastStatus:lastStatus,StoppedReason:stoppedReason,StoppedAt:stoppedAt,ExitCode:containers[0].exitCode,ContainerReason:containers[0].reason}' \
+              --output table
+          fi
+          echo "::endgroup::"
+
+      # ----------------------------------------------------------
+      - name: 5) Tail recent backend container logs
+        run: |
+          echo "::group::Recent CloudWatch logs ($BACKEND_LOG_GROUP)"
+          # newest stream first
+          STREAM=$(aws logs describe-log-streams --log-group-name "$BACKEND_LOG_GROUP" \
+                    --order-by LastEventTime --descending --max-items 1 \
+                    --region "$AWS_REGION" --query 'logStreams[0].logStreamName' --output text 2>/dev/null || true)
+          if [[ -z "$STREAM" || "$STREAM" == "None" ]]; then
+            echo "::warning::No log streams under $BACKEND_LOG_GROUP — gunicorn never wrote a line. Container likely crashed before listening."
+            exit 0
+          fi
+          echo "Newest stream: $STREAM"
+          echo ""
+          aws logs get-log-events --log-group-name "$BACKEND_LOG_GROUP" --log-stream-name "$STREAM" \
+            --limit "${{ inputs.log_lines }}" --region "$AWS_REGION" \
+            --query 'events[].[timestamp,message]' --output text \
+            | sed 's/^[0-9]*\t//'
+          echo "::endgroup::"
+
+      # ----------------------------------------------------------
+      - name: 6) Summary checklist
+        if: always()
+        run: |
+          {
+            echo "## Diagnostic checklist"
+            echo ""
+            echo "Look at the steps above and tick off:"
+            echo ""
+            echo "- [ ] **Step 1**: \`Path\` is \`/api/health\`, \`Matcher\` is \`200\`. If it still says \`/api/testdb/ping\` or matcher \`200-399\` → re-run **Bootstrap AWS** (it now updates existing TGs idempotently)."
+            echo "- [ ] **Step 2**: targets are in state \`healthy\`. If \`unhealthy\` with reason \`Target.Timeout\` → container isn't listening on :5000. With reason \`Target.ResponseCodeMismatch\` → endpoint exists but returned non-200."
+            echo "- [ ] **Step 3**: \`Image\` ends in a recent ECR digest (not \`:bootstrap\`). \`Environment\` lists \`DATABASE_URL\`, \`SECRET_KEY\`, \`ENCRYPTION_KEY\`, \`FIREBASE_SERVICE_ACCOUNT_JSON\` etc. — if any are missing → the deploy workflow didn't substitute them (Secret not set in GitHub)."
+            echo "- [ ] **Step 4**: \`StoppedReason\` tells you why. Common ones:"
+            echo "    - \`Task failed ELB health checks\` → look at step 5 for the real error."
+            echo "    - \`Essential container exited\` with \`ExitCode\` ≠ 0 → app crashed on boot — see step 5."
+            echo "    - \`OutOfMemoryError\` → bump memory in the task def."
+            echo "- [ ] **Step 5**: the logs are gold. Look for: \`ModuleNotFoundError\`, \`psycopg2.OperationalError\`, \`Firebase\`, \`KeyError\`, or any traceback. Paste the traceback into chat for a fix."
+          } >> "$GITHUB_STEP_SUMMARY"

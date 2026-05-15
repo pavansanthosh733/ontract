@@ -171,24 +171,55 @@ jobs:
             # Args: listener_arn, host, "path1,path2" (or ""), conditions_json, tg_arn, label
             local listener_arn="$1"; local host="$2"; local paths="$3"
             local conditions_json="$4"; local tg_arn="$5"; local label="$6"
-            local existing
+
+            local existing rule_arn
             existing=$(find_rule_arn "$listener_arn" "$host" "$paths")
             if [[ -n "$existing" ]]; then
-              echo "  ✓ Rule '$label' already exists — refreshing action ($existing)"
+              echo "  ✓ Rule '$label' already exists ($existing) — refreshing action"
               aws elbv2 modify-rule --rule-arn "$existing" \
                 --actions "Type=forward,TargetGroupArn=$tg_arn" \
                 --region "$AWS_REGION" >/dev/null
+              rule_arn="$existing"
             else
               local prio; prio=$(next_priority "$listener_arn" "$PRIO_START")
               echo "  → Creating rule '$label' at priority $prio"
-              aws elbv2 create-rule --listener-arn "$listener_arn" \
+              rule_arn=$(aws elbv2 create-rule --listener-arn "$listener_arn" \
                 --priority "$prio" \
                 --conditions "$conditions_json" \
                 --actions "Type=forward,TargetGroupArn=$tg_arn" \
-                --region "$AWS_REGION" >/dev/null
-              # Bump PRIO_START so the next rule on this listener takes the next slot
+                --region "$AWS_REGION" \
+                --query 'Rules[0].RuleArn' --output text)
               PRIO_START=$((prio + 1))
               export PRIO_START
+            fi
+
+            # ALWAYS assert the priority, whether the rule was just created
+            # or already existed. This is the bit that was missing — modify-rule
+            # never changes priority, so a re-run without deleting did nothing.
+            # We find the lowest currently-unused priority >= PRIO_START and force
+            # this rule there.
+            local desired
+            # If $rule_arn already has the priority we want, set-rule-priorities is a no-op.
+            desired=$(next_priority "$listener_arn" "$PRIO_START")
+            # next_priority skips priorities already in use INCLUDING ours, so if our
+            # rule's priority is already the next free slot it gets bumped one — undesirable.
+            # Get our current priority and compare.
+            local cur
+            cur=$(aws elbv2 describe-rules --rule-arns "$rule_arn" --region "$AWS_REGION" \
+                   --query 'Rules[0].Priority' --output text)
+            if [[ "$cur" == "$desired" ]]; then
+              echo "    ✓ priority already $cur"
+            else
+              # If our current priority is < PRIO_START, leave it alone (it's already winning).
+              if [[ "$cur" -lt "$PRIO_START" ]]; then
+                echo "    ✓ priority $cur is already lower than start ($PRIO_START) — keeping"
+              else
+                echo "    → forcing priority $cur → $desired"
+                aws elbv2 set-rule-priorities --region "$AWS_REGION" \
+                  --rule-priorities "RuleArn=$rule_arn,Priority=$desired" >/dev/null
+                PRIO_START=$((desired + 1))
+                export PRIO_START
+              fi
             fi
           }
 
