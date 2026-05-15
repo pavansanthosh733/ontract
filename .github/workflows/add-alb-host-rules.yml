@@ -35,6 +35,10 @@ on:
         description: "Frontend target group name"
         required: true
         default: "tg-ontract-frontend"
+      priority_start:
+        description: "ALB rule priority to start from. Lower number = higher precedence. Default 1 makes Ontract rules outrank any existing path-only rules (e.g. cloudops /api/*)."
+        required: true
+        default: "1"
 
 env:
   AWS_REGION: ${{ vars.AWS_REGION }}
@@ -148,14 +152,20 @@ jobs:
           }
 
           # ----------------------------------------------------------------
-          # Helper: pick a free priority on a listener (between 1 and 50000).
+          # Helper: pick a free priority on a listener, starting from $1.
+          # Walks upward, skipping any already-used slot.
           # ----------------------------------------------------------------
           next_priority () {
-            local listener_arn="$1"
+            local listener_arn="$1"; local start="${2:-1}"
             aws elbv2 describe-rules --listener-arn "$listener_arn" --region "$AWS_REGION" \
               --query "Rules[?Priority!='default'].Priority" --output text \
-              | tr '\t' '\n' | sort -n | awk 'BEGIN{p=10} $1==p{p++} END{print p}'
+              | tr '\t' '\n' | sort -n | awk -v p="$start" '$1==p{p++} END{print p}'
           }
+
+          # Allow caller to override the starting priority. Defaults handled in `with:`.
+          PRIO_START="${{ inputs.priority_start }}"
+          [[ "$PRIO_START" =~ ^[0-9]+$ ]] || PRIO_START=1
+          export PRIO_START
 
           create_or_update_rule () {
             # Args: listener_arn, host, "path1,path2" (or ""), conditions_json, tg_arn, label
@@ -169,13 +179,16 @@ jobs:
                 --actions "Type=forward,TargetGroupArn=$tg_arn" \
                 --region "$AWS_REGION" >/dev/null
             else
-              local prio; prio=$(next_priority "$listener_arn")
+              local prio; prio=$(next_priority "$listener_arn" "$PRIO_START")
               echo "  → Creating rule '$label' at priority $prio"
               aws elbv2 create-rule --listener-arn "$listener_arn" \
                 --priority "$prio" \
                 --conditions "$conditions_json" \
                 --actions "Type=forward,TargetGroupArn=$tg_arn" \
                 --region "$AWS_REGION" >/dev/null
+              # Bump PRIO_START so the next rule on this listener takes the next slot
+              PRIO_START=$((prio + 1))
+              export PRIO_START
             fi
           }
 
