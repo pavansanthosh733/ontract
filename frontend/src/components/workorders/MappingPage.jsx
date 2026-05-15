@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from "react";
 import "./css/mapping.css";
 
+// Backend base URL — injected at build time from VITE_BACKEND_URL.
+// Empty string means same-origin (relative URLs) which is what we want
+// when the ALB host-header rules route `/api/*` to the backend.
+const BASE = import.meta.env.VITE_BACKEND_URL ?? "";
+
 const MappingPage = () => {
   const [parents, setParents] = useState([]);
   const [selectedParent, setSelectedParent] = useState("");
@@ -8,7 +13,7 @@ const MappingPage = () => {
   const [selectedChilds, setSelectedChilds] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/mapping/parents")
+    fetch(`${BASE}/api/mapping/parents`)
       .then((res) => res.json())
       .then((data) => setParents(data))
       .catch((err) => console.error("Error fetching parents:", err));
@@ -17,7 +22,7 @@ const MappingPage = () => {
   const fetchChilds = async (parent) => {
     setSelectedParent(parent);
     try {
-      const res = await fetch(`http://localhost:5000/api/mapping/childs/${parent}`);
+      const res = await fetch(`${BASE}/api/mapping/childs/${parent}`);
       const data = await res.json();
       setChilds(data);
     } catch (error) {
@@ -43,7 +48,7 @@ const MappingPage = () => {
     };
 
     try {
-      const res = await fetch("http://localhost:5000/api/mapping/map", {
+      const res = await fetch(`${BASE}/api/mapping/map`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

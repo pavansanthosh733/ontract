@@ -2,6 +2,10 @@ import React, { useState, useEffect } from "react";
 import Select from "react-select";
 import "./css/createworkorder.css";
 
+// Backend base URL — injected at build time from VITE_BACKEND_URL.
+// Empty string = same-origin (ALB host-header rules proxy /api/*).
+const BASE = import.meta.env.VITE_BACKEND_URL ?? "";
+
 const ChildWorkOrder = () => {
   const [workorderTypes, setWorkorderTypes] = useState([]);
   const [selectedTypes, setSelectedTypes] = useState([]);
@@ -28,9 +32,9 @@ const ChildWorkOrder = () => {
     const fetchAll = async () => {
       try {
         const [typesRes, areasRes, clientsRes] = await Promise.all([
-          fetch("http://localhost:5000/api/workorder-type"),
-          fetch("http://localhost:5000/api/workorder-areas"),
-          fetch("http://localhost:5000/api/workorders/standard-rates"),
+          fetch(`${BASE}/api/workorder-type`),
+          fetch(`${BASE}/api/workorder-areas`),
+          fetch(`${BASE}/api/workorders/standard-rates`),
         ]);
 
         const [typesData, areasData, clientsData] = await Promise.all([
@@ -123,7 +127,7 @@ const ChildWorkOrder = () => {
 
     try {
       const genRes = await fetch(
-        `http://localhost:5000/api/workorders/generates?workorder_type=${selectedTypes[0].value}`
+        `${BASE}/api/workorders/generates?workorder_type=${selectedTypes[0].value}`
       );
       const { workorder } = await genRes.json();
 
@@ -156,7 +160,7 @@ const ChildWorkOrder = () => {
         });
       });
 
-      const res = await fetch("http://localhost:5000/api/workorders/", {
+      const res = await fetch(`${BASE}/api/workorders/`, {
         method: "POST",
         body: formDataToSend,
       });
