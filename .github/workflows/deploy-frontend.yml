@@ -1,0 +1,82 @@
+name: Deploy Frontend (DEMO)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/deploy-frontend.yml"
+      - "aws/task-definitions/frontend-task-def.json"
+  workflow_dispatch:
+
+env:
+  AWS_REGION:     ${{ vars.AWS_REGION }}
+  ECR_REPOSITORY: ontract-frontend
+  ECS_CLUSTER:    ${{ vars.ECS_CLUSTER }}
+  ECS_SERVICE:    ontract-frontend-svc
+  CONTAINER_NAME: frontend
+  TASK_DEF_FILE:  aws/task-definitions/frontend-task-def.json
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & push image
+        id: build
+        env:
+          REGISTRY:  ${{ steps.ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          IMAGE=$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker build \
+            --build-arg VITE_BACKEND_URL="${{ vars.VITE_BACKEND_URL }}" \
+            --build-arg VITE_API_BASE_URL="${{ vars.VITE_API_BASE_URL }}" \
+            --build-arg VITE_FIREBASE_API_KEY="${{ secrets.VITE_FIREBASE_API_KEY }}" \
+            --build-arg VITE_FIREBASE_AUTH_DOMAIN="${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}" \
+            --build-arg VITE_FIREBASE_PROJECT_ID="${{ secrets.VITE_FIREBASE_PROJECT_ID }}" \
+            --build-arg VITE_FIREBASE_STORAGE_BUCKET="${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}" \
+            --build-arg VITE_FIREBASE_MESSAGING_SENDER_ID="${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}" \
+            --build-arg VITE_FIREBASE_APP_ID="${{ secrets.VITE_FIREBASE_APP_ID }}" \
+            --build-arg VITE_FIREBASE_MEASUREMENT_ID="${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}" \
+            --build-arg VITE_FIREBASE_VAPID_KEY="${{ secrets.VITE_FIREBASE_VAPID_KEY }}" \
+            -t $IMAGE -t $REGISTRY/$ECR_REPOSITORY:latest ./frontend
+          docker push $IMAGE
+          docker push $REGISTRY/$ECR_REPOSITORY:latest
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+
+      - name: Substitute placeholders in task def
+        env:
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+        run: |
+          sed -e "s|__AWS_ACCOUNT_ID__|$AWS_ACCOUNT_ID|g" \
+              -e "s|__AWS_REGION__|$AWS_REGION|g" \
+              "$TASK_DEF_FILE" > rendered-frontend.json
+
+      - name: Render image into task def
+        id: render
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: rendered-frontend.json
+          container-name:  ${{ env.CONTAINER_NAME }}
+          image:           ${{ steps.build.outputs.image }}
+
+      - name: Deploy to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render.outputs.task-definition }}
+          service:         ${{ env.ECS_SERVICE }}
+          cluster:         ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true

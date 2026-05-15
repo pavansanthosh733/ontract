@@ -1,18 +1,15 @@
 import { initializeApp } from "firebase/app";
 import { getMessaging } from "firebase/messaging";
 
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyDDV2m02VlrOc9cpP_2KgbKuVpHDtzoqbo",
-  authDomain: "ontract-notifications.firebaseapp.com",
-  projectId: "ontract-notifications",
-  storageBucket: "ontract-notifications.firebasestorage.app",
-  messagingSenderId: "869129101946",
-  appId: "1:869129101946:web:2a8f0fab01d7c7020511c3",
-  measurementId: "G-33T82RYLD7"
+  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId:             import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId:     import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 const app = initializeApp(firebaseConfig);
-
 export const messaging = getMessaging(app);
