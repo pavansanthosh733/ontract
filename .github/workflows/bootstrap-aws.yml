@@ -1,0 +1,404 @@
+name: Bootstrap AWS (one-time)
+
+# Creates everything the Ontract demo needs on your EXISTING cluster + ALB:
+#   - ECR repositories (backend, frontend)
+#   - CloudWatch log groups
+#   - ecsTaskExecutionRole (if missing)
+#   - A task security group + ALB-SG → task-SG ingress rules
+#   - Two target groups (frontend :80, backend :5000)
+#   - Two listeners on the shared ALB (default ports 8080, 8000)
+#   - Builds & pushes initial images
+#   - Registers task definitions
+#   - Creates ECS services attached to the target groups
+#
+# It's idempotent — safe to re-run. Each step checks if the resource
+# already exists before creating it, and updates in place when it does.
+#
+# Run this from: Actions → "Bootstrap AWS (one-time)" → Run workflow.
+
+on:
+  workflow_dispatch:
+    inputs:
+      vpc_id:
+        description: "VPC ID where the ALB and Fargate tasks live (e.g. vpc-0abc...)"
+        required: true
+      subnet_ids:
+        description: "Comma-separated subnet IDs for the Fargate tasks (public subnets for demo)"
+        required: true
+      alb_name:
+        description: "ALB name (not ARN). Default: cloudops-alb"
+        required: true
+        default: "cloudops-alb"
+      alb_security_group_id:
+        description: "Security group ID currently attached to the ALB (sg-...)"
+        required: true
+      frontend_listener_port:
+        description: "Public port on the ALB that will serve the frontend"
+        required: true
+        default: "8080"
+      backend_listener_port:
+        description: "Public port on the ALB that will serve the backend API"
+        required: true
+        default: "8000"
+      assign_public_ip:
+        description: "ENABLED for public subnets (demo) / DISABLED for private subnets"
+        required: true
+        default: "ENABLED"
+        type: choice
+        options: [ENABLED, DISABLED]
+
+env:
+  AWS_REGION:           ${{ vars.AWS_REGION }}
+  ECS_CLUSTER:          ${{ vars.ECS_CLUSTER }}
+  BACKEND_REPO:         ontract-backend
+  FRONTEND_REPO:        ontract-frontend
+  BACKEND_TG:           tg-ontract-backend
+  FRONTEND_TG:          tg-ontract-frontend
+  TASK_SG_NAME:         ontract-tasks-sg
+  EXEC_ROLE_NAME:       ecsTaskExecutionRole
+  BACKEND_LOG_GROUP:    /ecs/ontract-backend
+  FRONTEND_LOG_GROUP:   /ecs/ontract-frontend
+  BACKEND_SERVICE:      ontract-backend-svc
+  FRONTEND_SERVICE:     ontract-frontend-svc
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      # ----------------------------------------------------------
+      # 1) ECR repositories
+      # ----------------------------------------------------------
+      - name: Ensure ECR repositories exist
+        run: |
+          for repo in $BACKEND_REPO $FRONTEND_REPO; do
+            if aws ecr describe-repositories --repository-names "$repo" --region "$AWS_REGION" >/dev/null 2>&1; then
+              echo "✓ ECR repo $repo already exists"
+            else
+              echo "→ Creating ECR repo $repo"
+              aws ecr create-repository --repository-name "$repo" \
+                --image-scanning-configuration scanOnPush=true \
+                --region "$AWS_REGION"
+            fi
+          done
+
+      # ----------------------------------------------------------
+      # 2) CloudWatch log groups
+      # ----------------------------------------------------------
+      - name: Ensure CloudWatch log groups exist
+        run: |
+          for lg in $BACKEND_LOG_GROUP $FRONTEND_LOG_GROUP; do
+            if aws logs describe-log-groups --log-group-name-prefix "$lg" --region "$AWS_REGION" \
+                 --query "logGroups[?logGroupName=='$lg'] | length(@)" --output text | grep -q '^1$'; then
+              echo "✓ Log group $lg already exists"
+            else
+              echo "→ Creating log group $lg"
+              aws logs create-log-group --log-group-name "$lg" --region "$AWS_REGION"
+              aws logs put-retention-policy --log-group-name "$lg" --retention-in-days 14 --region "$AWS_REGION"
+            fi
+          done
+
+      # ----------------------------------------------------------
+      # 3) ecsTaskExecutionRole
+      # ----------------------------------------------------------
+      - name: Ensure ecsTaskExecutionRole exists
+        id: exec_role
+        run: |
+          if aws iam get-role --role-name "$EXEC_ROLE_NAME" >/dev/null 2>&1; then
+            echo "✓ IAM role $EXEC_ROLE_NAME already exists"
+          else
+            echo "→ Creating IAM role $EXEC_ROLE_NAME"
+            cat > /tmp/trust.json <<'EOF'
+          {
+            "Version": "2012-10-17",
+            "Statement": [{
+              "Effect": "Allow",
+              "Principal": {"Service": "ecs-tasks.amazonaws.com"},
+              "Action": "sts:AssumeRole"
+            }]
+          }
+          EOF
+            aws iam create-role --role-name "$EXEC_ROLE_NAME" \
+              --assume-role-policy-document file:///tmp/trust.json
+            aws iam attach-role-policy --role-name "$EXEC_ROLE_NAME" \
+              --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+          fi
+          ROLE_ARN=$(aws iam get-role --role-name "$EXEC_ROLE_NAME" --query 'Role.Arn' --output text)
+          echo "role_arn=$ROLE_ARN" >> "$GITHUB_OUTPUT"
+          echo "Role ARN: $ROLE_ARN"
+
+      # ----------------------------------------------------------
+      # 4) Task security group + ALB → task ingress
+      # ----------------------------------------------------------
+      - name: Ensure task security group exists
+        id: task_sg
+        run: |
+          VPC_ID="${{ inputs.vpc_id }}"
+          ALB_SG="${{ inputs.alb_security_group_id }}"
+
+          SG_ID=$(aws ec2 describe-security-groups \
+            --filters "Name=group-name,Values=$TASK_SG_NAME" "Name=vpc-id,Values=$VPC_ID" \
+            --region "$AWS_REGION" --query 'SecurityGroups[0].GroupId' --output text 2>/dev/null || true)
+
+          if [[ -z "$SG_ID" || "$SG_ID" == "None" ]]; then
+            echo "→ Creating SG $TASK_SG_NAME in $VPC_ID"
+            SG_ID=$(aws ec2 create-security-group \
+              --group-name "$TASK_SG_NAME" \
+              --description "Ontract Fargate tasks" \
+              --vpc-id "$VPC_ID" \
+              --region "$AWS_REGION" \
+              --query 'GroupId' --output text)
+          else
+            echo "✓ SG $TASK_SG_NAME already exists ($SG_ID)"
+          fi
+
+          # Allow ALB SG → task SG on container ports 80 (frontend) and 5000 (backend).
+          # `authorize-security-group-ingress` errors if the rule already exists, so we tolerate that.
+          for port in 80 5000; do
+            aws ec2 authorize-security-group-ingress \
+              --group-id "$SG_ID" \
+              --protocol tcp --port "$port" --source-group "$ALB_SG" \
+              --region "$AWS_REGION" 2>/dev/null \
+              && echo "→ Added ingress from $ALB_SG to $SG_ID on $port" \
+              || echo "✓ Ingress from $ALB_SG on $port already present"
+          done
+
+          echo "task_sg_id=$SG_ID" >> "$GITHUB_OUTPUT"
+
+      # ----------------------------------------------------------
+      # 5) Resolve ALB ARN
+      # ----------------------------------------------------------
+      - name: Resolve ALB ARN
+        id: alb
+        run: |
+          ALB_ARN=$(aws elbv2 describe-load-balancers \
+            --names "${{ inputs.alb_name }}" \
+            --region "$AWS_REGION" \
+            --query 'LoadBalancers[0].LoadBalancerArn' --output text)
+          ALB_DNS=$(aws elbv2 describe-load-balancers \
+            --names "${{ inputs.alb_name }}" \
+            --region "$AWS_REGION" \
+            --query 'LoadBalancers[0].DNSName' --output text)
+          if [[ -z "$ALB_ARN" || "$ALB_ARN" == "None" ]]; then
+            echo "::error::ALB '${{ inputs.alb_name }}' not found in region $AWS_REGION"; exit 1
+          fi
+          echo "alb_arn=$ALB_ARN" >> "$GITHUB_OUTPUT"
+          echo "alb_dns=$ALB_DNS" >> "$GITHUB_OUTPUT"
+          echo "ALB ARN: $ALB_ARN"
+          echo "ALB DNS: $ALB_DNS"
+
+      # ----------------------------------------------------------
+      # 6) Target groups
+      # ----------------------------------------------------------
+      - name: Ensure target groups exist
+        id: tgs
+        run: |
+          VPC_ID="${{ inputs.vpc_id }}"
+
+          create_tg () {
+            local name="$1"; local port="$2"; local health="$3"; local code="$4"
+            local arn
+            arn=$(aws elbv2 describe-target-groups --names "$name" --region "$AWS_REGION" \
+                   --query 'TargetGroups[0].TargetGroupArn' --output text 2>/dev/null || true)
+            if [[ -z "$arn" || "$arn" == "None" ]]; then
+              echo "→ Creating target group $name (port $port)"
+              arn=$(aws elbv2 create-target-group \
+                --name "$name" \
+                --protocol HTTP --port "$port" \
+                --vpc-id "$VPC_ID" \
+                --target-type ip \
+                --health-check-protocol HTTP \
+                --health-check-path "$health" \
+                --health-check-interval-seconds 30 \
+                --health-check-timeout-seconds 5 \
+                --healthy-threshold-count 2 --unhealthy-threshold-count 3 \
+                --matcher "HttpCode=$code" \
+                --region "$AWS_REGION" \
+                --query 'TargetGroups[0].TargetGroupArn' --output text)
+            else
+              echo "✓ Target group $name already exists"
+            fi
+            echo "$arn"
+          }
+
+          BE_TG_ARN=$(create_tg "$BACKEND_TG"  5000 "/api/testdb/ping" "200-399")
+          FE_TG_ARN=$(create_tg "$FRONTEND_TG" 80   "/healthz"         "200")
+
+          echo "backend_tg_arn=$BE_TG_ARN"  >> "$GITHUB_OUTPUT"
+          echo "frontend_tg_arn=$FE_TG_ARN" >> "$GITHUB_OUTPUT"
+          echo "Backend  TG ARN: $BE_TG_ARN"
+          echo "Frontend TG ARN: $FE_TG_ARN"
+
+      # ----------------------------------------------------------
+      # 7) ALB listeners on chosen ports → forward to target groups
+      # ----------------------------------------------------------
+      - name: Ensure ALB listeners exist
+        run: |
+          ALB_ARN="${{ steps.alb.outputs.alb_arn }}"
+          BE_TG_ARN="${{ steps.tgs.outputs.backend_tg_arn }}"
+          FE_TG_ARN="${{ steps.tgs.outputs.frontend_tg_arn }}"
+
+          ensure_listener () {
+            local port="$1"; local tg_arn="$2"; local label="$3"
+            local existing
+            existing=$(aws elbv2 describe-listeners --load-balancer-arn "$ALB_ARN" \
+                        --region "$AWS_REGION" \
+                        --query "Listeners[?Port==\`$port\`].ListenerArn | [0]" --output text)
+            if [[ -n "$existing" && "$existing" != "None" ]]; then
+              echo "✓ Listener on port $port already exists ($label) — updating default action to point at $tg_arn"
+              aws elbv2 modify-listener --listener-arn "$existing" \
+                --default-actions "Type=forward,TargetGroupArn=$tg_arn" \
+                --region "$AWS_REGION" >/dev/null
+            else
+              echo "→ Creating listener on port $port for $label"
+              aws elbv2 create-listener --load-balancer-arn "$ALB_ARN" \
+                --protocol HTTP --port "$port" \
+                --default-actions "Type=forward,TargetGroupArn=$tg_arn" \
+                --region "$AWS_REGION" >/dev/null
+            fi
+          }
+
+          ensure_listener "${{ inputs.frontend_listener_port }}" "$FE_TG_ARN" "frontend"
+          ensure_listener "${{ inputs.backend_listener_port }}"  "$BE_TG_ARN" "backend"
+
+          echo ""
+          echo "::notice::Frontend will be reachable at:  http://${{ steps.alb.outputs.alb_dns }}:${{ inputs.frontend_listener_port }}"
+          echo "::notice::Backend  will be reachable at:  http://${{ steps.alb.outputs.alb_dns }}:${{ inputs.backend_listener_port }}"
+
+      # ----------------------------------------------------------
+      # 8) Build & push INITIAL images so the services have something to run
+      # ----------------------------------------------------------
+      - name: Login to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Write Firebase service-account JSON (for backend image)
+        run: |
+          printf '%s' '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}' > backend/serviceAccountKey.json
+          python3 -c "import json; json.load(open('backend/serviceAccountKey.json'))"
+
+      - name: Build & push backend image
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+        run: |
+          docker build -t $REGISTRY/$BACKEND_REPO:bootstrap -t $REGISTRY/$BACKEND_REPO:latest ./backend
+          docker push $REGISTRY/$BACKEND_REPO:bootstrap
+          docker push $REGISTRY/$BACKEND_REPO:latest
+
+      - name: Build & push frontend image
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+        run: |
+          docker build \
+            --build-arg VITE_BACKEND_URL="${{ vars.VITE_BACKEND_URL }}" \
+            --build-arg VITE_API_BASE_URL="${{ vars.VITE_API_BASE_URL }}" \
+            --build-arg VITE_FIREBASE_API_KEY="${{ secrets.VITE_FIREBASE_API_KEY }}" \
+            --build-arg VITE_FIREBASE_AUTH_DOMAIN="${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}" \
+            --build-arg VITE_FIREBASE_PROJECT_ID="${{ secrets.VITE_FIREBASE_PROJECT_ID }}" \
+            --build-arg VITE_FIREBASE_STORAGE_BUCKET="${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}" \
+            --build-arg VITE_FIREBASE_MESSAGING_SENDER_ID="${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}" \
+            --build-arg VITE_FIREBASE_APP_ID="${{ secrets.VITE_FIREBASE_APP_ID }}" \
+            --build-arg VITE_FIREBASE_MEASUREMENT_ID="${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}" \
+            --build-arg VITE_FIREBASE_VAPID_KEY="${{ secrets.VITE_FIREBASE_VAPID_KEY }}" \
+            -t $REGISTRY/$FRONTEND_REPO:bootstrap -t $REGISTRY/$FRONTEND_REPO:latest ./frontend
+          docker push $REGISTRY/$FRONTEND_REPO:bootstrap
+          docker push $REGISTRY/$FRONTEND_REPO:latest
+
+      # ----------------------------------------------------------
+      # 9) Register task definitions
+      # ----------------------------------------------------------
+      - name: Render & register backend task definition
+        env:
+          AWS_ACCOUNT_ID:   ${{ secrets.AWS_ACCOUNT_ID }}
+          DATABASE_URL:     ${{ secrets.DATABASE_URL }}
+          SECRET_KEY:       ${{ secrets.SECRET_KEY }}
+          ENCRYPTION_KEY:   ${{ secrets.ENCRYPTION_KEY }}
+          SMTP_HOST:        ${{ secrets.SMTP_HOST }}
+          SMTP_PORT:        ${{ secrets.SMTP_PORT }}
+          SMTP_USER:        ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD:    ${{ secrets.SMTP_PASSWORD }}
+          FROM_EMAIL:       ${{ secrets.FROM_EMAIL }}
+          ALLOWED_ORIGINS:  ${{ vars.ALLOWED_ORIGINS }}
+          PUBLIC_BASE_URL:  ${{ vars.PUBLIC_BASE_URL }}
+          FRONTEND_URL:     ${{ vars.FRONTEND_URL }}
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          chmod +x scripts/render-task-def.sh
+          ./scripts/render-task-def.sh aws/task-definitions/backend-task-def.json rendered-backend.json
+          aws ecs register-task-definition --cli-input-json file://rendered-backend.json --region "$AWS_REGION" >/dev/null
+          echo "✓ Registered ontract-backend task definition"
+
+      - name: Render & register frontend task definition
+        env:
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+        run: |
+          sed -e "s|__AWS_ACCOUNT_ID__|$AWS_ACCOUNT_ID|g" \
+              -e "s|__AWS_REGION__|$AWS_REGION|g" \
+              aws/task-definitions/frontend-task-def.json > rendered-frontend.json
+          aws ecs register-task-definition --cli-input-json file://rendered-frontend.json --region "$AWS_REGION" >/dev/null
+          echo "✓ Registered ontract-frontend task definition"
+
+      # ----------------------------------------------------------
+      # 10) ECS services — create if missing, otherwise leave alone
+      # ----------------------------------------------------------
+      - name: Ensure ECS services exist
+        env:
+          TASK_SG_ID:    ${{ steps.task_sg.outputs.task_sg_id }}
+          BE_TG_ARN:     ${{ steps.tgs.outputs.backend_tg_arn }}
+          FE_TG_ARN:     ${{ steps.tgs.outputs.frontend_tg_arn }}
+        run: |
+          SUBNETS="${{ inputs.subnet_ids }}"
+          PUBLIC_IP="${{ inputs.assign_public_ip }}"
+
+          ensure_service () {
+            local name="$1"; local task_def="$2"; local container="$3"; local port="$4"; local tg_arn="$5"
+            local status
+            status=$(aws ecs describe-services --cluster "$ECS_CLUSTER" --services "$name" \
+                     --region "$AWS_REGION" --query 'services[0].status' --output text 2>/dev/null || echo "MISSING")
+            if [[ "$status" == "ACTIVE" ]]; then
+              echo "✓ ECS service $name already exists — skipping create (use deploy workflow to update image)"
+              return 0
+            fi
+            echo "→ Creating ECS service $name"
+            aws ecs create-service \
+              --cluster "$ECS_CLUSTER" \
+              --service-name "$name" \
+              --task-definition "$task_def" \
+              --desired-count 1 \
+              --launch-type FARGATE \
+              --network-configuration "awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$TASK_SG_ID],assignPublicIp=$PUBLIC_IP}" \
+              --load-balancers "targetGroupArn=$tg_arn,containerName=$container,containerPort=$port" \
+              --health-check-grace-period-seconds 60 \
+              --region "$AWS_REGION" >/dev/null
+            echo "✓ Created $name"
+          }
+
+          ensure_service "$BACKEND_SERVICE"  ontract-backend  backend  5000 "$BE_TG_ARN"
+          ensure_service "$FRONTEND_SERVICE" ontract-frontend frontend 80   "$FE_TG_ARN"
+
+      # ----------------------------------------------------------
+      # 11) Final summary
+      # ----------------------------------------------------------
+      - name: Summary
+        run: |
+          echo "## Bootstrap complete 🎉"                                                           >> $GITHUB_STEP_SUMMARY
+          echo ""                                                                                   >> $GITHUB_STEP_SUMMARY
+          echo "| Resource | Value |"                                                               >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|"                                                                          >> $GITHUB_STEP_SUMMARY
+          echo "| ECS Cluster | \`$ECS_CLUSTER\` |"                                                 >> $GITHUB_STEP_SUMMARY
+          echo "| ALB DNS | \`${{ steps.alb.outputs.alb_dns }}\` |"                                 >> $GITHUB_STEP_SUMMARY
+          echo "| Task security group | \`${{ steps.task_sg.outputs.task_sg_id }}\` |"              >> $GITHUB_STEP_SUMMARY
+          echo "| Backend target group | \`${{ steps.tgs.outputs.backend_tg_arn }}\` |"             >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend target group | \`${{ steps.tgs.outputs.frontend_tg_arn }}\` |"           >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend URL | http://${{ steps.alb.outputs.alb_dns }}:${{ inputs.frontend_listener_port }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend URL  | http://${{ steps.alb.outputs.alb_dns }}:${{ inputs.backend_listener_port }} |"  >> $GITHUB_STEP_SUMMARY
+          echo ""                                                                                   >> $GITHUB_STEP_SUMMARY
+          echo "Next: any push to \`main\` that touches \`backend/**\` or \`frontend/**\` will roll out a new image via the regular deploy workflows." >> $GITHUB_STEP_SUMMARY
