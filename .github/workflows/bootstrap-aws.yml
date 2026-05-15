@@ -259,7 +259,7 @@ jobs:
             arn=$(aws elbv2 describe-target-groups --names "$name" --region "$AWS_REGION" \
                    --query 'TargetGroups[0].TargetGroupArn' --output text 2>/dev/null || true)
             if [[ -z "$arn" || "$arn" == "None" ]]; then
-              echo "→ Creating target group $name (port $port)"
+              echo "→ Creating target group $name (port $port)" >&2
               arn=$(aws elbv2 create-target-group \
                 --name "$name" \
                 --protocol HTTP --port "$port" \
@@ -274,13 +274,18 @@ jobs:
                 --region "$AWS_REGION" \
                 --query 'TargetGroups[0].TargetGroupArn' --output text)
             else
-              echo "✓ Target group $name already exists"
+              echo "✓ Target group $name already exists" >&2
             fi
-            echo "$arn"
+            # ONLY the ARN goes to stdout so that $(create_tg ...) captures it cleanly.
+            printf '%s' "$arn"
           }
 
           BE_TG_ARN=$(create_tg "$BACKEND_TG"  5000 "/api/testdb/ping" "200-399")
           FE_TG_ARN=$(create_tg "$FRONTEND_TG" 80   "/healthz"         "200")
+
+          # Guard against multi-line / empty ARNs sneaking into GITHUB_OUTPUT.
+          [[ "$BE_TG_ARN" =~ ^arn:aws:elasticloadbalancing: ]] || { echo "::error::Backend TG ARN looks malformed: '$BE_TG_ARN'"; exit 1; }
+          [[ "$FE_TG_ARN" =~ ^arn:aws:elasticloadbalancing: ]] || { echo "::error::Frontend TG ARN looks malformed: '$FE_TG_ARN'"; exit 1; }
 
           echo "backend_tg_arn=$BE_TG_ARN"  >> "$GITHUB_OUTPUT"
           echo "frontend_tg_arn=$FE_TG_ARN" >> "$GITHUB_OUTPUT"
