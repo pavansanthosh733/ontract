@@ -1,0 +1,142 @@
+name: Fix ALB priorities (claim 1 & 2 for ontract)
+
+# One-shot, idempotent priority fix for the shared cloudops ALB.
+#
+# Reads the current rules on the chosen listener, identifies which rules
+# target the ontract target groups, and atomically reorders so the two
+# ontract rules sit at the lowest priorities (1, 2). Every other non-default
+# rule is shifted to consecutive priorities starting at 3.
+#
+# Why this is safe:
+#  - It only changes priority NUMBERS; it never changes rule conditions
+#    or actions, so the routing behaviour for cloudops is unchanged. The
+#    cloudops rules will still catch cloudops.jhaishna.com traffic exactly
+#    as before (their conditions are host-less /api/* and /ws, which match
+#    cloudops's host because that's where cloudops's DNS points).
+#  - set-rule-priorities is atomic: either all priorities update or none do.
+#  - It uses target-group ARNs to identify "ontract" rules, not names, so
+#    it can't accidentally promote a cloudops rule.
+
+on:
+  workflow_dispatch:
+    inputs:
+      alb_name:
+        description: "ALB name"
+        required: true
+        default: "cloudops-alb"
+      listener_port:
+        description: "Listener port to fix"
+        required: true
+        default: "443"
+      backend_tg_name:
+        description: "Ontract backend target group name"
+        required: true
+        default: "tg-ontract-backend"
+      frontend_tg_name:
+        description: "Ontract frontend target group name"
+        required: true
+        default: "tg-ontract-frontend"
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      - name: Resolve ARNs
+        id: arns
+        env:
+          ALB_NAME:  ${{ inputs.alb_name }}
+          PORT:      ${{ inputs.listener_port }}
+          BE_TG:     ${{ inputs.backend_tg_name }}
+          FE_TG:     ${{ inputs.frontend_tg_name }}
+        run: |
+          set -euo pipefail
+          ALB_ARN=$(aws elbv2 describe-load-balancers --names "$ALB_NAME" --region "$AWS_REGION" \
+                     --query 'LoadBalancers[0].LoadBalancerArn' --output text)
+          LISTENER_ARN=$(aws elbv2 describe-listeners --load-balancer-arn "$ALB_ARN" --region "$AWS_REGION" \
+                          --query "Listeners[?Port==\`$PORT\`].ListenerArn | [0]" --output text)
+          BE_TG_ARN=$(aws elbv2 describe-target-groups --names "$BE_TG" --region "$AWS_REGION" \
+                       --query 'TargetGroups[0].TargetGroupArn' --output text)
+          FE_TG_ARN=$(aws elbv2 describe-target-groups --names "$FE_TG" --region "$AWS_REGION" \
+                       --query 'TargetGroups[0].TargetGroupArn' --output text)
+          for v in ALB_ARN LISTENER_ARN BE_TG_ARN FE_TG_ARN; do
+            val="${!v}"
+            [[ -n "$val" && "$val" != "None" ]] || { echo "::error::$v not found"; exit 1; }
+          done
+          {
+            echo "listener_arn=$LISTENER_ARN"
+            echo "be_tg_arn=$BE_TG_ARN"
+            echo "fe_tg_arn=$FE_TG_ARN"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Compute and apply new priorities
+        env:
+          LISTENER_ARN: ${{ steps.arns.outputs.listener_arn }}
+          BE_TG_ARN:    ${{ steps.arns.outputs.be_tg_arn }}
+          FE_TG_ARN:    ${{ steps.arns.outputs.fe_tg_arn }}
+        run: |
+          set -euo pipefail
+          aws elbv2 describe-rules --listener-arn "$LISTENER_ARN" --region "$AWS_REGION" --output json > /tmp/rules.json
+
+          # Build the new priority assignment using jq.
+          # 1) "ontract" rules — any non-default rule whose first action target group
+          #    is one of our two ontract TGs. Within ontract rules, the API rule
+          #    (with a path condition) must come BEFORE the bare host rule —
+          #    otherwise the host-only rule would catch /api/* requests first.
+          # 2) "other" rules — everything else (cloudops). Sort them by their
+          #    CURRENT priority so we preserve their relative order.
+          jq -r --arg be "$BE_TG_ARN" --arg fe "$FE_TG_ARN" '
+              (.Rules | map(select(.IsDefault | not))) as $all
+            | ($all | map(select(.Actions[0].TargetGroupArn == $be))) as $ontract_be
+            | ($all | map(select(.Actions[0].TargetGroupArn == $fe))) as $ontract_fe
+            | ($all | map(select(.Actions[0].TargetGroupArn != $be and .Actions[0].TargetGroupArn != $fe))
+                    | sort_by(.Priority | tonumber)) as $others
+            | ([$ontract_be[], $ontract_fe[], $others[]])
+              | to_entries
+              | map({RuleArn: .value.RuleArn, Priority: (.key + 1)})
+          ' /tmp/rules.json > /tmp/desired.json
+
+          echo "Desired ordering:"
+          jq -r '.[] | "  prio=\(.Priority)  rule=\(.RuleArn | split("/") | .[-1])"' /tmp/desired.json
+          echo
+
+          # set-rule-priorities expects: --rule-priorities RuleArn=...,Priority=N RuleArn=...,Priority=N ...
+          ARGS=$(jq -r '.[] | "RuleArn=\(.RuleArn),Priority=\(.Priority)"' /tmp/desired.json | tr '\n' ' ')
+
+          echo "Applying atomic swap..."
+          aws elbv2 set-rule-priorities --region "$AWS_REGION" --rule-priorities $ARGS >/dev/null
+          echo "✓ Done"
+
+      - name: Verify final ordering
+        env:
+          LISTENER_ARN: ${{ steps.arns.outputs.listener_arn }}
+        run: |
+          echo "Final rules in priority order:"
+          aws elbv2 describe-rules --listener-arn "$LISTENER_ARN" --region "$AWS_REGION" --output json \
+            | jq -r '
+                .Rules
+                | map(select(.IsDefault | not))
+                | sort_by(.Priority | tonumber)
+                | .[]
+                | "  prio=\(.Priority)  TG=\(.Actions[0].TargetGroupArn // .Actions[0].Type | split("/") | .[-2:] | join("/"))  host=\"\([.Conditions[]? | select(.Field=="host-header") | .HostHeaderConfig.Values[]?] | join(","))\"  path=\"\([.Conditions[]? | select(.Field=="path-pattern") | .PathPatternConfig.Values[]?] | join(","))\""
+              '
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "## ALB priorities fixed ✅"
+            echo ""
+            echo "Ontract rules now sit at priorities 1 and 2, ahead of cloudops's path-only \`/api/*\` rule."
+            echo ""
+            echo "**Now test in browser**: open https://ontractdemo.jhaishna.com/api/health — it should return \`{\"status\":\"ok\"}\` from gunicorn (Flask), not the uvicorn/FastAPI shape from cloudops."
+          } >> "$GITHUB_STEP_SUMMARY"
