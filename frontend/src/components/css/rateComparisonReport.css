@@ -1,0 +1,77 @@
+.rate-report-container {
+  padding: 20px;
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.filters-card {
+  background: #fff;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.filters-top {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filters-bottom {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+.btn {
+  padding: 8px 14px;
+  border: none;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.primary {
+  background: #007bff;
+  color: #fff;
+}
+
+.success {
+  background: #28a745;
+  color: #fff;
+}
+
+.table-card {
+  overflow-x: auto;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.report-table th,
+.report-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  font-size: 13px;
+}
+
+.price {
+  text-align: right;
+}
+
+.total-row {
+  font-weight: bold;
+  background: #f5f5f5;
+}
+
+.positive {
+  color: green;
+}
+
+.negative {
+  color: red;
+}

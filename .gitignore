@@ -1,0 +1,121 @@
+####################################
+# ROOT LEVEL (common for all)
+####################################
+# .env
+# .env.*
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.tmp
+
+node_modules/
+ontractapp/
+workorder_mobile/
+# Secrets / credentials
+backend/serviceAccountKey.json
+backend/*firebase*.json
+backend/*adminsdk*.json
+
+
+####################################
+# BACKEND (Node / Python / Flask)
+####################################
+
+# Node backend
+backend/node_modules/
+backend/npm-debug.log*
+backend/yarn-error.log*
+
+# Python backend
+backend/venv/
+# backend/app/config.py
+backend/.venv/
+# backend/.env/
+backend/logs/
+backend/__pycache__/
+backend/**/*.pyc
+backend/**/*.pyo
+backend/**/*.pyd
+
+# Backend environment & secrets
+# backend/.env
+backend/config/secrets.json
+# Backend static generated files
+backend/app/static/invoices/
+
+
+# Backend uploads / generated files
+backend/uploads/
+backend/media/
+backend/logs/
+
+
+####################################
+# FRONTEND (React / Vite / CRA)
+####################################
+
+# Node modules
+frontend/node_modules/
+
+# Build outputs
+frontend/dist/
+# frontend/vercel.json
+# frontend/.env.local
+frontend/build/
+frontend/.vite/
+# frontend/.vercel
+# frontend/src/api.js
+
+
+# Frontend environment files
+# frontend/.env
+# frontend/.env.local
+# frontend/.env.development
+# frontend/.env.production
+
+# Frontend logs
+frontend/npm-debug.log*
+frontend/yarn-error.log*
+
+
+####################################
+# TEST / COVERAGE
+####################################
+coverage/
+*.lcov
+
+
+####################################
+# OPTIONAL (comment out if needed)
+####################################
+# Ignore all PDF certificates
+# backend/**/*.pdf
+
+# Ignore all images (uploads)
+# backend/uploads/**/*
+
+.vercel
+# .env*.local
+
+
+# Flutter
+build/
+**/build/
+
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Android
+.gradle/
+
+# iOS
+Pods/
+.symlinks/
+
+# Env
+# .env
+# .env*

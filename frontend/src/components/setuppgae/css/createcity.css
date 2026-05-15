@@ -1,0 +1,229 @@
+/* ==============================================
+   CITY PAGE WRAPPER
+============================================== */
+.city-page {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  background: #f9fafb;
+  padding: 20px;
+}
+
+.city-container {
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+/* ==============================================
+   BOX STYLES
+============================================== */
+.city-box {
+  background: #ffffff;
+  border: 2px solid #2C78C9;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.city-box h2 {
+  background: #2C78C9;
+  color: #fff;
+  padding: 12px;
+  text-align: center;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* ==============================================
+   FORM STYLES
+============================================== */
+.city-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px;
+}
+
+.city-header-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  background: #2C78C9;
+  color: #fff;
+  padding: 0px 4px;
+  font-weight: 600;
+  border-radius: 6px 6px 0 0;
+}
+
+.city-header-cell {
+  font-size: 13px;
+}
+
+.city-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.city-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.city-input-wrapper input,
+.city-input-wrapper select {
+  width: 100%;
+  height: 42px;
+  padding: 10px 48px 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+/* Star */
+.city-star {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 42px;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffb300;
+  border-radius: 0 6px 6px 0;
+  font-size: 18px;
+  pointer-events: none;
+}
+
+/* Dropdown arrow */
+.city-input-wrapper select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='14' width='14' xmlns='http://www.w3.org/2000/svg'><polygon points='0,0 14,0 7,8'/></svg>");
+  background-repeat: no-repeat;
+  background-position: calc(100% - 60px) center;
+  background-size: 12px;
+}
+
+/* ==============================================
+   ACTION BUTTONS
+============================================== */
+.city-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.city-btn-primary,
+.city-btn-reset {
+  flex: 1;
+  padding: 6px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.city-btn-primary {
+  background: #2C78C9;
+  color: white;
+}
+
+.city-btn-primary:hover {
+  background: #1e5a9e;
+}
+
+.city-btn-reset {
+  background: #6b7280;
+  color: white;
+}
+
+.city-btn-reset:hover {
+  background: #4b5563;
+}
+
+/* ==============================================
+   TABLE STYLES
+============================================== */
+.city-table-wrapper {
+  padding: 20px;
+}
+
+.city-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.city-table thead th {
+  background: #e2e8f0;
+  padding: 10px;
+  font-weight: 600;
+  text-align: center;
+  border-bottom: 2px solid #cbd5e1;
+}
+
+.city-table td {
+  padding: 10px;
+  text-align: center;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* Buttons */
+.city-btn-edit,
+.city-btn-delete,
+.city-btn-save,
+.city-btn-cancel {
+  padding: 6px 12px;
+  border-radius: 5px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  margin: 0 3px;
+}
+
+.city-btn-edit { background: #0284c7; color: white; }
+.city-btn-delete { background: #dc2626; color: white; }
+.city-btn-save { background: #16a34a; color: white; }
+.city-btn-cancel { background: #6b7280; color: white; }
+
+/* ==============================================
+   FIXED TABLE (scrolling)
+============================================== */
+.city-page .fixed-table {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 2px solid #cbd5e1;
+  border-radius: 8px;
+  background: white;
+  max-height: 300px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .city-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ✅ Filter Input Boxes */
+.city-filter-input {
+  width: 90%;
+  padding: 6px;
+  font-size: 13px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  outline: none;
+}
+
+.city-filter-input:focus {
+  border-color: #007bff;
+}
+

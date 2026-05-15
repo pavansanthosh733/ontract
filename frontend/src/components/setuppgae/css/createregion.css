@@ -1,0 +1,246 @@
+/* ======================================================
+   REGION PAGE — PAGE WRAPPER
+====================================================== */
+.region-page {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  background: #f9fafb;
+  padding: 20px;
+}
+
+.region-container {
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+/* ======================================================
+   BOX STYLE
+====================================================== */
+.region-box {
+  background: white;
+  border: 2px solid #2C78C9;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.region-box h2 {
+  background: #2C78C9;
+  color: #fff;
+  padding: 12px;
+  text-align: center;
+  font-size: 18px;
+  margin: 0;
+}
+
+/* ======================================================
+   FORM STRUCTURE
+====================================================== */
+
+.region-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 20px;
+}
+
+.region-header-row {
+  width: 100%;
+  display: flex;
+  background: #2C78C9;
+}
+
+.region-header-cell {
+  flex: 1;
+  padding: 0px 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+}
+
+/* ======================================================
+   INPUT WRAPPERS
+====================================================== */
+
+.region-form-group {
+  flex: 1 1 45%;
+}
+
+.region-input-wrapper {
+  position: relative;
+}
+
+.region-input-wrapper input,
+.region-input-wrapper select {
+  width: 100%;
+  height: 42px;
+  padding: 10px 48px 10px 12px;
+  background: white;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+/* STAR */
+.region-star {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 42px;
+  height: 42px;
+  background: rgba(0,0,0,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffb300;
+  border-radius: 0 6px 6px 0;
+  pointer-events: none;
+}
+
+/* Dropdown Arrow */
+.region-input-wrapper select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='14' width='14' xmlns='http://www.w3.org/2000/svg'><polygon points='0,0 14,0 7,8'/></svg>");
+  background-repeat: no-repeat;
+  background-position: calc(100% - 60px) center;
+  background-size: 12px;
+}
+
+/* ======================================================
+   BUTTONS
+====================================================== */
+
+.region-actions {
+  width: 100%;
+  display: flex;
+  gap: 15px;
+}
+
+.region-btn-primary,
+.region-btn-reset {
+  flex: 1;
+  padding: 6px;
+  border-radius: 6px;
+  border: none;
+
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.region-btn-primary {
+  background: #2C78C9;
+  color: white;
+}
+
+.region-btn-primary:hover {
+  background: #1c5da0;
+}
+
+.region-btn-reset {
+  background: #6b7280;
+  color: white;
+}
+
+.region-btn-reset:hover {
+  background: #4b5563;
+}
+
+/* ======================================================
+   TABLE SECTION
+====================================================== */
+
+.region-table-wrapper {
+  padding: 20px;
+}
+
+.fixed-table {
+  flex: 1;
+  overflow-y: auto;
+  background: white;
+  border: 2px solid #cbd5e1;
+  border-radius: 8px;
+  max-height: 300px;
+}
+
+.region-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.region-table th {
+  background: #e2e8f0;
+  padding: 10px;
+  font-weight: 600;
+  border-bottom: 2px solid #cbd5e1;
+}
+
+.region-table td {
+  padding: 10px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* Buttons */
+.region-btn-edit,
+.region-btn-delete,
+.region-btn-save,
+.region-btn-cancel {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.region-btn-edit { background: #0284c7; color: #fff; }
+.region-btn-delete { background: #dc2626; color: #fff; }
+.region-btn-save { background: #16a34a; color: #fff; }
+.region-btn-cancel { background: #6b7280; color: #fff; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .region-form {
+    flex-direction: column;
+  }
+}
+
+/* ===== FIX COLUMN WIDTHS FOR PERFECT ALIGNMENT ===== */
+
+.region-table th:nth-child(1),
+.region-table td:nth-child(1) {
+  width: 40%;         /* Region Name */
+  text-align: left;
+  padding-left: 20px;
+}
+
+.region-table th:nth-child(2),
+.region-table td:nth-child(2) {
+  width: 20%;         /* Status */
+  text-align: center;
+}
+
+.region-table th:nth-child(3),
+.region-table td:nth-child(3) {
+  width: 40%;         /* Actions */
+  text-align: center;
+}
+
+/* ✅ Filter Input Boxes */
+.region-filter-input {
+  width: 90%;
+  padding: 6px;
+  font-size: 13px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  outline: none;
+}
+
+.region-filter-input:focus {
+  border-color: #007bff;
+}
+

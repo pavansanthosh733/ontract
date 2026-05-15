@@ -1,0 +1,66 @@
+/* activate.css */
+
+.activate-container {
+  max-width: 400px;
+  margin: 5rem auto;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  background-color: #ffffff;
+  text-align: center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.activate-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #1d4ed8; /* Blue */
+  margin-bottom: 1rem;
+}
+
+.activate-text {
+  font-size: 1rem;
+  color: #4b5563; /* Gray */
+  margin-bottom: 1.5rem;
+}
+
+.activate-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.activate-yes,
+.activate-no {
+  padding: 0.6rem 1.5rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.activate-yes {
+  background-color: #10b981; /* Green */
+  color: white;
+}
+
+.activate-yes:hover {
+  background-color: #059669;
+}
+
+.activate-no {
+  background-color: #ef4444; /* Red */
+  color: white;
+}
+
+.activate-no:hover {
+  background-color: #b91c1c;
+}
+
+.activate-success {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #10b981; /* Green */
+  margin-top: 1rem;
+}

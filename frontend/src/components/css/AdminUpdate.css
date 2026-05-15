@@ -1,0 +1,257 @@
+/* =========================================================
+   ADMIN UPDATE PAGE FINAL PROFESSIONAL CSS
+========================================================= */
+
+.update-user-container {
+  max-width: 1200px;
+  margin: 30px auto;
+  padding: 30px;
+  background: #ffffff;
+  border: 2px solid #0b7db7;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.update-user-container h2 {
+  font-size: 30px;
+  color: #0b2a4a;
+  margin-bottom: 25px;
+  font-weight: 700;
+}
+
+/* =========================================================
+   SEARCH + DETAILS SECTION
+========================================================= */
+
+.search-section,
+.details-section {
+  border: 1px solid #d5dde5;
+  border-radius: 10px;
+  padding: 25px;
+  margin-bottom: 25px;
+  background: #f9fbfd;
+}
+
+.section-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0b2a4a;
+  white-space: nowrap;
+  min-width: 150px;
+}
+
+/* =========================================================
+   SEARCH HEADER
+========================================================= */
+
+.search-header-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.search-bar input {
+  flex: 1;
+  padding: 14px;
+  border: 1px solid #c5d0db;
+  border-radius: 6px;
+  font-size: 16px;
+  height: 50px;
+}
+
+.search-bar input:focus {
+  outline: none;
+  border-color: #0b7db7;
+  box-shadow: 0 0 5px rgba(11, 125, 183, 0.25);
+}
+
+/* Buttons */
+.search-bar button,
+.reset-btn {
+  height: 50px;
+  min-width: 100px;
+  padding: 0 24px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.search-bar button {
+  background-color: #0b7db7;
+  color: white;
+}
+
+.search-bar button:hover {
+  background-color: #095d89;
+}
+
+.reset-btn {
+  background-color: #6c757d;
+  color: white;
+}
+
+.reset-btn:hover {
+  background-color: #545b62;
+}
+
+/* =========================================================
+   FORM
+========================================================= */
+
+.update-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.form-label {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #0b2a4a;
+}
+
+.update-form-row input,
+.full-width input {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid #c5d0db;
+  border-radius: 6px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.update-form-row input:focus,
+.full-width input:focus {
+  outline: none;
+  border-color: #0b7db7;
+  box-shadow: 0 0 5px rgba(11, 125, 183, 0.25);
+}
+
+/* Email */
+.full-width {
+  margin-bottom: 25px;
+}
+
+.readonly-input {
+  background-color: #f4f6f9;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   MODULES SECTION FIX
+========================================================= */
+
+.modules-section {
+  margin-top: 25px;
+}
+
+.modules-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: #0b2a4a;
+}
+
+/* Proper aligned grid */
+.modules-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  gap: 20px;
+  margin-top: 15px;
+  margin-bottom: 30px;
+}
+
+/* Checkbox row */
+.modules-grid label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 17px;
+  color: #333;
+  cursor: pointer;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+/* Proper checkbox size */
+.modules-grid input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #0b7db7;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+/* =========================================================
+   UPDATE BUTTON
+========================================================= */
+
+.update-btn {
+  padding: 14px 30px;
+  background-color: #0b7db7;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.update-btn:hover {
+  background-color: #095d89;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 992px) {
+  .search-header-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .update-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .modules-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .search-bar {
+    flex-direction: column;
+  }
+
+  .search-bar input,
+  .search-bar button,
+  .reset-btn {
+    width: 100%;
+  }
+
+  .modules-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .update-user-container {
+    padding: 20px;
+  }
+
+  .update-user-container h2 {
+    font-size: 24px;
+  }
+}

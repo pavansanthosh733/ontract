@@ -1,0 +1,274 @@
+/* ===================== PAGE WRAPPER ===================== */
+.type-page {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  background: #f9fafb;
+  padding: 20px;
+}
+
+.type-container {
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+/* ===================== BOX SECTION ===================== */
+.type-box {
+  background: white;
+  border: 2px solid #2C78C9;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.type-box h2 {
+  background: #2C78C9;
+  color: #fff;
+  padding: 12px;
+  text-align: center;
+  font-size: 18px;
+  margin: 0;
+}
+
+/* ===================== FORM ===================== */
+.type-form {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Header Row (Labels) */
+.type-header-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  background: #2C78C9;
+  color: white;
+  padding: 0px 4px;
+  font-weight: bold;
+  font-size: 13px;
+}
+
+/* 4-column header for 2nd row */
+.type-header-row-4 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  background: #2C78C9;
+  color: white;
+  padding: 6px 10px;
+  font-weight: bold;
+  font-size: 13px;
+}
+
+/* ===================== INPUT ROW ===================== */
+.type-input-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+/* 4-column input row */
+.type-input-row-4 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+/* ===================== INPUT STYLE ===================== */
+.type-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.type-input-wrapper input,
+.type-input-wrapper select {
+  width: 100%;
+  height: 42px;
+  padding: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  box-sizing: border-box;
+}
+
+/* ===================== BUTTONS ===================== */
+.type-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.type-btn-primary,
+.type-btn-reset {
+  flex: 1;
+  padding: 6px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.type-btn-primary {
+  background: #0077cc;
+  color: white;
+}
+
+.type-btn-reset {
+  background: #6b7280;
+  color: white;
+}
+
+/* ===================== TABLE ===================== */
+.type-table-wrapper {
+  padding: 15px 20px;
+}
+
+.type-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.type-table th {
+  background: #e2e8f0;
+  padding: 10px;
+  border-bottom: 2px solid #cbd5e1;
+  font-weight: bold;
+  font-size: 14px;
+  text-align: left;
+}
+
+.type-table td {
+  padding: 10px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.type-table td:last-child,
+.type-table th:last-child {
+  text-align: center;
+}
+
+/* ===================== TABLE BUTTONS ===================== */
+.type-btn-edit,
+.type-btn-delete,
+.type-btn-save,
+.type-btn-cancel {
+  padding: 6px 12px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  margin: 2px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.type-btn-edit { background: #0284c7; color: white; }
+.type-btn-delete { background: #dc2626; color: white; }
+.type-btn-save { background: #16a34a; color: white; }
+.type-btn-cancel { background: #6b7280; color: white; }
+/* ⭐ Star Wrapper */
+.type-page .star-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.type-page .star-wrapper input,
+.type-page .star-wrapper select {
+  width: 100%;
+  padding-right: 50px !important;  /* space for star box */
+  height: 42px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+/* ⭐ The star box */
+.type-page .star {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 42px;
+  height: 100%;
+  background: rgba(0,0,0,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffb300;
+  font-size: 18px;
+  border-radius: 0 6px 6px 0;
+  pointer-events: none;
+}
+/* 🔽 Fix dropdown arrow alignment */
+.type-page .star-wrapper select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='14' width='14' xmlns='http://www.w3.org/2000/svg'><polygon points='0,0 14,0 7,7'/></svg>");
+  background-repeat: no-repeat;
+  background-position: calc(100% - 75px) center; /* ⬅ move arrow left */
+  background-size: 14px;
+}
+
+/* Add spacing between action buttons */
+.region-table td:last-child button {
+  margin-right: 10px;
+}
+
+.region-table td:last-child button:last-child {
+  margin-right: 0;
+}
+
+/* Add spacing between action buttons */
+.state-table td:last-child button {
+  margin-right: 10px;
+}
+
+.state-table td:last-child button:last-child {
+  margin-right: 0;
+}
+
+/* 🔒 Make table header fixed while scrolling */
+.type-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+/* ✅ Filter Input Boxes */
+.type-filter-input {
+  width: 90%;
+  padding: 6px;
+  font-size: 13px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  outline: none;
+}
+
+.type-filter-input:focus {
+  border-color: #007bff;
+}
+
+.custom-tooltip {
+  position: relative;
+  width: 100%;
+}
+
+.type-btn-delete {
+    background: #dc2626;
+    color: white;
+    cursor: pointer;
+}
+
+/* ✅ Disabled but keep SAME color */
+.type-btn-delete:disabled {
+    background: #dc2626;   /* keep same red */
+    color: white;          /* keep text same */
+    opacity: 0.7;          /* slight fade (optional) */
+    cursor: not-allowed !important;  /* 🔥 important */
+}
+
+

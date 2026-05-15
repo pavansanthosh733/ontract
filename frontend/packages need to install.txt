@@ -1,0 +1,33 @@
+frontend:
+npm install
+npm install react-router-dom
+npm install bootstrap
+npm install lucide-react
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init -p 
+npm install react-google-recaptcha
+
+npm install axios xlsx
+npm install recharts
+npm install react-icons
+npm install react-bootstrap-icons
+
+npm install react-select
+npm install sweetalert2
+
+
+backend:
+pip install flask flask-cors mysql-connector-python bcrypt
+pip install PyJWT
+pip install fpdf
+pip install cryptography
+pip install python-magic-bin
+pip install openpyxl
+pip install requests
+pip install pandas
+pip install python-dotenv
+
+
+
+database connec:
+pip install psycopg2-binary

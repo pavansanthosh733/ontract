@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Respond to Work Order</title>
+</head>
+<body style="font-family:Arial;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;">
+  <div style="background:#fff;padding:40px;border-radius:10px;box-shadow:0 10px 25px rgba(0,0,0,.2);max-width:600px;width:100%;">
+    <h3>Respond to Work Order</h3>
+    <div style="background:#f8f9fa;padding:15px;border-radius:5px;margin:20px 0;border-left:4px solid #667eea;">
+      <strong>WO ID:</strong> {{ workorder["workorder"] }}
+    </div>
+    <form method="POST">
+      <label style="font-weight:bold;">Remark (optional):</label>
+      <textarea name="remark" rows="4" placeholder="Any comments..." style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-family:Arial;font-size:14px;"></textarea>
+      <div style="display:flex;gap:15px;margin-top:20px;">
+        <button type="submit" name="action" value="accept" style="flex:1;padding:14px 30px;border:none;border-radius:6px;background:#28a745;color:#fff;font-weight:600;cursor:pointer;">Accept</button>
+        <button type="submit" name="action" value="reject" style="flex:1;padding:14px 30px;border:none;border-radius:6px;background:#dc3545;color:#fff;font-weight:600;cursor:pointer;">Reject</button>
+      </div>
+    </form>
+  </div>
+</body>
+</html>

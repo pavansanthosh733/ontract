@@ -1,0 +1,180 @@
+myapp/
+├── node_modules/
+├── public/
+│   ├── vite.svg
+├── src/
+│   ├── assets/
+│   │   ├── images/
+│   │   │   ├── home_cleaning.jpeg
+│   │   │   ├── home_salon.jpeg
+│   │   │   ├── ac_repair.jpeg
+│   │   │   ├── electrician.jpeg
+│   │   │   ├── plumbing.jpeg
+│   │   │   ├── pest_control.jpeg
+│   ├── components/
+│   │   ├── css/
+│   │   │   ├── Home.css
+│   │   ├── Header.jsx
+│   │   ├── Home.jsx
+│   │   ├── Login.jsx
+│   │   ├── Signup.jsx
+│   │   ├── OTPVerification.jsx
+│   │   ├── ActivateAccount.jsx
+│   ├── App.jsx
+│   ├── main.jsx
+├── .gitignore
+├── .eslintrc.config.js
+├── index.html
+├── package-lock.json
+├── package.json
+├── README.md
+├── vite.config.js
+├── backend/
+│   ├── app.py
+│   ├── config.py
+│   ├── requirements.txt
+
+
+CREATE DATABASE auth_app;
+USE auth_app;
+
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    phone_number VARCHAR(15) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE otp_codes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) NOT NULL,
+    otp_code VARCHAR(6) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (email) REFERENCES users(email)
+);
+
+SBIN0TEST01
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init -p 
+npm install lucide-react
+pip install PyJWT
+http://localhost:5173/admin/login
+http://localhost:5173/admin/dashboard
+
+
+
+
+--------------15-10-2025-------------------
+Add the form validations for login,signup,forgotpassword
+after signup display a meesage check the mail for activation link
+provider profile add the styles and validations for the personal details and bank details
+add the loading.. in the profile forms submit buttons
+put the provider_id in the pdf 
+store the profile_pic and certificate in the DATABASE
+displaing the profile pic and certificate in the frontend
+no need to run the query for approval in database now directly approved by calling the admin api
+
+-------------16-10-2025-----------------
+for signup page:
+    increase the width of input field and for the toggle remove the background color
+for login page:
+    add the password toggle 
+add the local storage in the providerhome,app.jsx,OTPVerification,ActivateAccount,app.py lo /api/activate
+add the admin page
+
+-----------17-10-2025--------------
+Add the password togle in the login page
+add the local storage in the providerhome,app.jsx,OTPVerification,ActivateAccount,app.py lo /api/activate
+add the local storage for admin AdminLogin.jsx,AdminDashboard.jsx
+
+
+-----------22-10-2025-----------
+resolve the issue related to admin resend otp
+send the certificate after admin approval only
+add the date of birth field in the providers form and store in the database
+add the styles for the login,signup, OTPVerification pages
+
+--------------24-10-2025-----------
+Add the date of birth in the certificate
+modify the service per location rate
+
+----------------25-20-2025-----------
+Change the unique_ids of providers, providers_bank_details, providers_services, otp_codes
+Modify the certificate align in clean format
+Display the distinct locations in the admin dashboard
+
+
+------------29-10-2025---------------
+migrate the mysql database to postgresql and retify the issues.
+
+
+-----------------------------------------
+Add the contractor/company forms page in the ontract project
+add the modifications in the ontract project
+add the required input lables in the all forms
+
+-----------04-11-2025------------------
+Change the provider Home page
+change the admin home page
+Add the standard rate page in the admin with backend and database
+add the mailing and billing address in the contractor page
+
+-----------05-11-2025--------------
+Add the mobile view for the adminApp, adminHome, standardRate, management
+Retify the issue realted to the contractor Signup
+Add the client filed in the standardRate with the frontend, backend and database
+prevent the pasting the password in the individual signup and contractor signup
+Add the refresh captcha funtionality in the individual login and contractor login
+send the certificate after contractor approval.
+
+----------06-11-2025--------
+Add the notification page for the individual change the database, app.py and admin.py also
+Add the id types and related validations, also add the validations for profile,certificate
+add the styles provider profile details page
+Add the sending loading style in the admin management
+
+---------07-11-2025---------------
+send the certificate with correct details for the company
+retify the issue related to the malaysia region,state fetching
+rename the companyDashboard to companyApp and delete the companyHome.jsx and related css,update app.jsx
+Add the validations for the company profile, bank, certifiates
+Add the validation for the BRN number in the company Signup
+
+
+Change the generation of unique id in all tables:
+Change the all backend codes and check the all functionalities in entire application.
+
+---------08-11-2025--------------
+Add the dynamic notification count in the profile notification page
+Add the notification page in the company profile.
+
+--------10-11-2025------------
+Display the correct notification count in the company page.
+
+---------18-11-2025-----------
+retify the issue related to upload folder
+
+-----------19-11-2025------------
+create the separate folders for the file uploads
+add the workorder styles in the admin page retify that style issue related to this workorder styles
+add the contractor.css file in the workorder folder
+Adjust the humberger related to the workorder sidebar in the mobile view
+check the functionality of the provider because we merge the different routes, controllers, models into 
+single route, controller, model
+
+
+
+---------------------
+add the standardRate module with new excel sheet
+change the frontend, backend and database
+
+--------22-11-2025,24-11-2025--------
+move the common fields in the providers and contractor tables into users tables
+modify the provider,contractor,admin -routes, controllers, models fields
+merge the provider, contractor services into services tables
+modify the backend codes also
+also retify the issues related to this modifications
+add the loading effect in the resend otp in the contractor login 
+
+----25-11-2025---------
+update the standardRate code

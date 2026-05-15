@@ -1,0 +1,1028 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from "react-router-dom";
+import { useContractor } from "../../context/ContractorContext";
+
+import './css/CompanyProfile.css';
+
+import { BASE_URL, BASE_URLS, apiGet, apiPost, apiPut, apiDelete } from "../../api";
+
+
+// function UpdateCompanyProfile({ contractor }) {
+function UpdateCompanyProfile() {
+
+  const { contractor } = useContractor(); 
+
+  const [profile, setProfile] = useState(null);
+  const [formData, setFormData] = useState({
+    company_name: '',
+    brn_number: '',
+    tin_number: '',
+    bumiputera: '', 
+    mailing_address: '',
+    billing_address: '',
+    contact_number: '',
+    alternate_contact: '',
+    contact_person: '',
+    email_id: '',
+  });
+  const [locationServiceList, setLocationServiceList] = useState([]);
+  const [companyLogo, setCompanyLogo] = useState(null);
+  const [certificates, setCertificates] = useState([]);
+
+  const [bankDetails, setBankDetails] = useState({
+    swift: '',
+    bankName: '',
+    holderName: '',
+    accountNumber: ''
+  });
+  const [bankStatement, setBankStatement] = useState(null);
+
+  const [showBankForm, setShowBankForm] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  // Postal Code States
+const [mailingPostalCode, setMailingPostalCode] = useState('');
+const [billingPostalCode, setBillingPostalCode] = useState('');
+
+const [regions, setRegions] = useState({});
+const [states, setStates] = useState([]);
+const navigate = useNavigate();
+
+
+  
+    const malaysianBanks = [
+    'Maybank', 'CIMB Bank', 'Public Bank', 'RHB Bank', 'Hong Leong Bank',
+    'AmBank', 'Standard Chartered Bank Malaysia', 'HSBC Bank Malaysia',
+    'UOB Malaysia', 'OCBC Bank Malaysia'
+  ];
+
+ 
+   const [servicesList, setServicesList] = useState([]);
+     // example usage
+  useEffect(() => {
+    if (!contractor) {
+      console.log("No contractor found in context");
+      return;
+    }
+
+    console.log("Contractor from context:", contractor);
+  }, [contractor]);
+  
+  useEffect(() => {
+    apiGet("/api/category")
+      .then(data => {
+        if (Array.isArray(data)) setServicesList(data);
+        else setServicesList([]);
+      })
+      .catch(() => setServicesList([]));
+  }, []);
+
+  useEffect(() => {
+    if (contractor) fetchProfile();
+    // eslint-disable-next-line
+  }, [contractor]);
+
+  const fetchProfile = async () => {
+    try {
+      const res = await fetch(`${BASE_URLS.user}/api/contractor/company_profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: contractor.email_id })
+      });
+      const data = await res.json();
+      console.log("email",contractor.email_id);
+      console.log("after bank submit",data);
+      if (res.ok) {
+        setProfile(data);
+        setSuccessMessage('');
+
+        // Show bank form after approval if bank details missing
+        if (data.status === 'approved' && !data.bank_details) {
+          setShowBankForm(true);
+        } else {
+          setShowBankForm(false);
+        }
+
+        setFormData({
+          brn_number: data.brn_number || '',
+          company_name:data.company_name || '',
+          contact_number: data.contact_number || '',
+          email_id: data.email_id || '',
+          tin_number: data.tin_number || '',
+          bumiputera: data.bumiputera === 1 ? 'yes' : 'no',
+          contact_person:data.name || '',
+          mailing_address: data.mailing_address || '',
+          billing_address: data.billing_address || '',
+        });
+
+
+        // data.services may be array (service_name, service_rate, service_location)
+        if (Array.isArray(data.services) && data.services.length > 0) {
+          const arr = data.services.map(s => ({
+            region: '', // unknown in company_services table; keep blank for now
+            location: s.service_location || '',
+            service: s.service_name || '',
+            price: s.service_rate || ''
+          }));
+          setLocationServiceList(arr);
+        } else {
+          setLocationServiceList([]);
+        }
+      } else {
+        setErrors({ general: data.error || 'Failed to load profile' });
+      }
+    } catch (err) {
+      setErrors({ general: 'Error fetching profile.' });
+    }
+  };
+
+ // Fetch Malaysia Regions
+// Fetch Regions → store full objects
+useEffect(() => {
+  apiGet("/api/region/")
+    .then((data) => {
+      console.log("Regions fetched:", data);
+      setRegions(Array.isArray(data) ? data : []);
+    })
+    .catch(() => setRegions([]));
+}, []);
+
+
+const fetchStates = (regionName, index, regionIdOverride = null) => {
+  if (!regionName) {
+    setLocationServiceList(prev => {
+      const updated = [...prev];
+      updated[index].states = [];
+      return updated;
+    });
+    return;
+  }
+
+  const regionObj = regions.find(r => r.region_name === regionName);
+  const regionId = regionIdOverride || regionObj?.region_id;
+
+  if (!regionId) return;
+
+  apiGet(`/api/state/by-region/${regionId}`)
+    .then(data => {
+      setLocationServiceList(prev => {
+        const updated = [...prev];
+        updated[index].states = data.map(s => s.state_name);
+        return updated;
+      });
+    })
+    .catch(() => {
+      setLocationServiceList(prev => {
+        const updated = [...prev];
+        updated[index].states = [];
+        return updated;
+      });
+    });
+};
+
+  const enterEditMode = () => setEditMode(true);
+
+  // FORM change handlers
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+const handleServiceChange = (index, field, value) => {
+  const list = [...locationServiceList];
+  const updated = { ...list[index], [field]: value };
+
+  // If the user changes region, clear states and re-fetch them
+  if (field === "region") {
+    updated.region = value;
+    const regObj = regions.find(r => r.region_name === value);
+    updated.region_id = regObj?.region_id || null;
+    updated.state = "";
+    updated.state_id = null;
+    fetchStates(value, index);
+  }
+
+
+  // --- 🧩 Prevent duplicates (Region + State + Service combination) ---
+  const isDuplicate = list.some((item, i) =>
+    i !== index &&
+    item.region === updated.region &&
+    item.state === updated.state &&
+    item.service === updated.service
+  );
+
+  if (isDuplicate) {
+    alert('This Region + State + Service combination already exists.');
+    return;
+  }
+
+  // --- ✅ Update the row ---
+  list[index] = updated;
+  setLocationServiceList(list);
+
+  console.log("Updated services list:", list);
+};
+
+
+  const addServiceRow = () => {
+    if (locationServiceList.some(r => !r.region || !r.state || !r.service || !r.price)) {
+      alert('Please fill existing rows before adding a new one.');
+      return;
+    }
+
+    setLocationServiceList(prev => [
+      ...prev,
+      {region: "",region_id: null,state: "",state_id: null,service: "",price: "",states: [] }
+    ]);
+  };
+
+
+  const removeServiceRow = (idx) => {
+    const list = [...locationServiceList];
+    list.splice(idx, 1);
+    setLocationServiceList(list);
+  };
+
+  const fetchAndAppend = async (type, postalCode) => {
+  if (postalCode.length !== 5) return;
+  try {
+    const res = await fetch(`${BASE_URLS.user}/api/malaysia_postcode?postcode=${postalCode}`);
+    if (res.ok) {
+      const data = await res.json();
+      const city = data.city || '';
+      const state = data.state || '';
+      const fullAppend = `${city}, ${state} ${postalCode}`.trim();
+
+      if (type === 'mailing') {
+        setFormData(prev => {
+          const current = prev.mailing_address?.trim() || '';
+          // Prevent duplicate appending
+          if (current.includes(fullAppend)) return prev;
+          const updated = current ? `${current}, ${fullAppend}` : fullAppend;
+          return { ...prev, mailing_address: updated };
+        });
+      } else {
+        setFormData(prev => {
+          const current = prev.billing_address?.trim() || '';
+          // Prevent duplicate appending
+          if (current.includes(fullAppend)) return prev;
+          const updated = current ? `${current}, ${fullAppend}` : fullAppend;
+          return { ...prev, billing_address: updated };
+        });
+      }
+    }
+  } catch (err) {
+    console.error('Error fetching postal code data:', err);
+  }
+};
+
+// ==========================
+// FILE VALIDATION HANDLERS
+// ==========================
+
+// 🏢 Company Logo (Image only, < 5MB)
+const handleCompanyLogoChange = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+  const maxSize = 5 * 1024 * 1024; // 5 MB
+
+  if (!allowedTypes.includes(file.type)) {
+    setErrors((prev) => ({
+      ...prev,
+      companyLogo: 'Only JPEG, PNG, or GIF files are allowed.',
+    }));
+    e.target.value = '';
+    setCompanyLogo(null);
+    return;
+  }
+
+  if (file.size > maxSize) {
+    setErrors((prev) => ({
+      ...prev,
+      companyLogo: 'File size must be less than 5 MB.',
+    }));
+    e.target.value = '';
+    setCompanyLogo(null);
+    return;
+  }
+
+  // 🚫 Prevent same file as certificate
+  if (certificate && file.name === certificate.name && file.size === certificate.size) {
+    setErrors((prev) => ({
+      ...prev,
+      companyLogo: 'Company logo and certificate cannot be the same file.'
+    }));
+    e.target.value = '';
+    setCompanyLogo(null);
+    return;
+  }
+
+  setErrors((prev) => ({ ...prev, companyLogo: null }));
+  setCompanyLogo(file);
+};
+
+
+
+const handleCertificateChange = (e) => {
+  const files = Array.from(e.target.files || []);
+  if (!files.length) return;
+
+  const allowedTypes = [
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'application/pdf'
+  ];
+  const maxSize = 10 * 1024 * 1024; // 10 MB each
+
+  const validFiles = [];
+
+  for (const file of files) {
+    if (!allowedTypes.includes(file.type)) {
+      setErrors((prev) => ({
+        ...prev,
+        certificate: 'Only JPEG, PNG, GIF, or PDF files are allowed.',
+      }));
+      e.target.value = '';
+      setCertificates([]);
+      return;
+    }
+
+    if (file.size > maxSize) {
+      setErrors((prev) => ({
+        ...prev,
+        certificate: 'Each file must be less than 10 MB.',
+      }));
+      e.target.value = '';
+      setCertificates([]);
+      return;
+    }
+
+    validFiles.push(file);
+  }
+
+  setErrors((prev) => ({ ...prev, certificate: null }));
+  setCertificates(validFiles);
+};
+
+// 🏦 Bank Statement (PDF or Image, < 10MB)
+const handleBankStatementChange = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+  const maxSize = 10 * 1024 * 1024; // 10 MB
+
+  if (!allowedTypes.includes(file.type)) {
+    setErrors((prev) => ({
+      ...prev,
+      bankStatement: 'Only PDF, JPEG, or PNG files are allowed.',
+    }));
+    e.target.value = '';
+    setBankStatement(null);
+    return;
+  }
+
+  if (file.size > maxSize) {
+    setErrors((prev) => ({
+      ...prev,
+      bankStatement: 'File size must be less than 10 MB.',
+    }));
+    e.target.value = '';
+    setBankStatement(null);
+    return;
+  }
+
+  setErrors((prev) => ({ ...prev, bankStatement: null }));
+  setBankStatement(file);
+};
+
+
+  // VALIDATIONS
+  const validateProfile = () => {
+    const newErrors = {};
+    const mobileRegex = /^[0-9]{10}$/;
+    const brnRegex = /^BR[0-9]{6,8}$/; // BR + 6–8 digits
+    // const tinRegex = /^IG[0-9]{5,6}$/; // IG + 5–6 digits
+    const addressRegex = /^[A-Za-z0-9\s,./#'’()-]{10,200}$/; // ✅ allows normal address chars
+    // Malaysia TIN Validation (2023 Format)
+
+// Individual:
+// IG + 9 to 11 digits
+const individualTINRegex = /^IG\d{9,11}$/;
+
+// Company:
+// Single letter + 10 to 11 digits
+// Example: C1234567890
+const companyTINRegex = /^[A-Z]\d{10,11}$/;
+
+
+    if (!formData.company_name) newErrors.company_name = 'Company name required.';
+    if (!formData.bumiputera)
+  newErrors.bumiputera = 'Please select Bumiputera status.';
+      // BRN Validation
+      if (!formData.brn_number) {
+        newErrors.brn_number = 'BRN number is required.';
+      } else if (!brnRegex.test(formData.brn_number.toUpperCase())) {
+        newErrors.brn_number = 'BRN must start with "BR" followed by 6–8 digits (e.g., BR123456).';
+      }
+
+
+// TIN Validation
+if (!formData.tin_number) {
+  newErrors.tin_number = 'TIN number is required.';
+} else {
+  const formattedTIN = formData.tin_number.trim().toUpperCase();
+
+  const isValidTIN =
+    individualTINRegex.test(formattedTIN) ||
+    companyTINRegex.test(formattedTIN);
+
+  if (!isValidTIN) {
+    newErrors.tin_number =
+      'Invalid Malaysia TIN format. Example: IG1150020000 or C1234567890';
+  }
+}
+
+
+
+    if (!mailingPostalCode) newErrors.mailingPostalCode = 'Postal code required.';
+    if (!/^\d{5}$/.test(mailingPostalCode)) newErrors.mailingPostalCode = 'Postal code must be 5 digits.';
+    if (!billingPostalCode) newErrors.billingPostalCode = 'Postal code required.';
+    if (!/^\d{5}$/.test(billingPostalCode)) newErrors.billingPostalCode = 'Postal code must be 5 digits.';
+    // if (!formData.mailing_address?.trim()) newErrors.mailing_address = 'Mailing address is required.';
+    // if (!formData.billing_address?.trim()) newErrors.billing_address = 'Billing address is required.';
+         // ✅ Mailing Address validation
+
+  if (!formData.mailing_address?.trim()) newErrors.mailing_address = 'Mailing address is required.';
+  else if (formData.mailing_address.trim().length < 10)
+    newErrors.mailing_address = 'Mailing address must be at least 10 characters long.';
+  else if (!addressRegex.test(formData.mailing_address))
+    newErrors.mailing_address = 'Mailing address contains invalid characters.';
+
+  // ✅ Billing Address validation
+  if (!formData.billing_address?.trim()) newErrors.billing_address = 'Billing address is required.';
+  else if (formData.billing_address.trim().length < 10)
+    newErrors.billing_address = 'Billing address must be at least 10 characters long.';
+  else if (!addressRegex.test(formData.billing_address))
+    newErrors.billing_address = 'Billing address contains invalid characters.';
+
+    if (!mobileRegex.test(String(formData.contact_number || ''))) newErrors.contact_number = 'Contact number must be 10 digits.';
+    // if (formData.alternate_contact && !mobileRegex.test(String(formData.alternate_contact))) newErrors.alternate_contact = 'Alternate contact invalid.';
+      if (
+    formData.alternate_contact &&
+    !mobileRegex.test(String(formData.alternate_contact))
+  )
+    newErrors.alternate_contact = 'Alternate contact must be 10 digits.';
+    if (formData.alternate_contact && formData.alternate_contact === formData.contact_number)
+    newErrors.alternate_contact = 'Alternate contact must be different from main contact.';
+
+    if (locationServiceList.length === 0) newErrors.services = 'Add at least one service.';
+    locationServiceList.forEach((it, idx) => {
+      // if (!it.location) newErrors[`location-${idx}`] = 'Select location.';
+      if (!it.region) newErrors[`region-${idx}`] = 'Select region.';
+      if (!it.state) newErrors[`state-${idx}`] = 'Select state.';
+      if (!it.service) newErrors[`service-${idx}`] = 'Select service.';
+      if (!it.price || Number(it.price) <= 0) newErrors[`price-${idx}`] = 'Enter a valid price.';
+    });
+      // Contact person
+  if (!formData.contact_person?.trim())
+    newErrors.contact_person = 'Contact person is required.';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // PROFILE submit
+  const handleProfileSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateProfile()) return;
+
+    setLoading(true);
+   let finalMailing = formData.mailing_address.trim();
+if (!finalMailing.endsWith(mailingPostalCode)) {
+  finalMailing += finalMailing ? `, ${mailingPostalCode}` : mailingPostalCode;
+}
+let finalBilling = formData.billing_address.trim();
+if (!finalBilling.endsWith(billingPostalCode)) {
+  finalBilling += finalBilling ? `, ${billingPostalCode}` : billingPostalCode;
+}
+
+    // services -> array of objects expected by backend
+    const servicesArray = locationServiceList.map(item => ({
+      service_name: item.service,
+      service_region: item.region,
+      service_location: item.state,
+      service_rate: Number(item.price)
+    }));
+
+    const fd = new FormData();
+    fd.append('email', contractor.email_id);
+    fd.append('company_name', formData.company_name);
+    fd.append('brn_number', formData.brn_number);
+    fd.append('tin_number', formData.tin_number);
+    fd.append(
+  'bumiputera',
+    formData.bumiputera === 'yes' ? 1 : 0
+    );
+    // fd.append('billing_address', formData.billing_address);
+    // fd.append('mailing_address', formData.mailing_address);
+    fd.append('billing_address', finalBilling);
+    fd.append('mailing_address', finalMailing);
+    fd.append('contact_number', formData.contact_number);
+    fd.append('alternate_contact', formData.alternate_contact);
+    fd.append('contact_person', formData.contact_person);
+    fd.append('services', JSON.stringify(servicesArray));
+    if (companyLogo) fd.append('company_logo', companyLogo);
+  certificates.forEach((file) => {
+  fd.append('certificate', file);
+});
+
+    try {
+      const res = await fetch(`${BASE_URLS.user}/api/contractor/update_company_profile`, {
+        method: 'POST',
+        body: fd
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccessMessage('Profile submitted. Pending admin approval.');
+        setEditMode(false);
+        await fetchProfile(); // refresh profile view
+      } else {
+        setErrors({ general: data.error || 'Failed to update profile' });
+      }
+    } catch (err) {
+      setErrors({ general: 'Error updating profile.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // bank VALIDATION (client-side)
+  const validateBank = () => {
+    const newErrors = {};
+    // SWIFT format (4 letters bank + 2 letters country + 2 alnum branch optional)
+    const swiftRegex = /^[A-Z]{4}MY[A-Z0-9]{2}([A-Z0-9]{3})?$/;
+    const accountRegex = /^[0-9]{6,20}$/; // flexible digits
+
+    if (!bankDetails.bankName) newErrors.bankName = 'Bank name required.';
+    if (!bankDetails.holderName || bankDetails.holderName.trim().length < 2) newErrors.holderName = 'Account holder required.';
+    if (!accountRegex.test(String(bankDetails.accountNumber || ''))) newErrors.accountNumber = 'Invalid account number (6-20 digits).';
+    if (!swiftRegex.test(String(bankDetails.swift || '').toUpperCase())) newErrors.swift = 'Invalid SWIFT code.';
+    if (!bankStatement) newErrors.bankStatement = 'Bank statement file required.';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // BANK submit
+  const handleBankSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateBank()) return;
+    setLoading(true);
+
+    const fd = new FormData();
+    fd.append('email', contractor.email_id);
+    fd.append('swift', bankDetails.swift.toUpperCase());
+    fd.append('bank_name', bankDetails.bankName);
+    fd.append('holder_name', bankDetails.holderName);
+    fd.append('account_number', bankDetails.accountNumber);
+    if (bankStatement) fd.append('bank_statement', bankStatement);
+
+    try {
+      const res = await fetch(`${BASE_URLS.user}/api/contractor/update_company_bank`, {
+        method: 'POST',
+        body: fd
+      });
+      const data = await res.json();
+      console.log("after ",data);
+      if (res.ok) {
+        setSuccessMessage('Bank details submitted successfully.');
+        setShowBankForm(false);
+        await fetchProfile();
+      } else {
+        setErrors({ general: data.error || 'Failed to submit bank details' });
+      }
+    } catch (err) {
+      setErrors({ general: 'Error submitting bank details.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Determine if profile has services (for "view" mode)
+  const isProfileFilled = profile && (Array.isArray(profile.services) ? profile.services.length > 0 : (profile.services && Object.keys(profile.services).length > 0));
+
+  // RENDER
+  if (!contractor) return <div className="text-center text-danger">Please login to view your dashboard.</div>;
+  if (!profile) return <div className="text-center">Loading...</div>;
+
+
+    const isPending = profile.status === 'pending';
+  const isRejected = profile.status === 'rejected';
+  const isApproved = profile.status === 'approved';
+  const isFilled = profile.full_name && profile.services?.length > 0;
+  // console.log(showBankForm);
+  return (
+    <div className="company-container container">
+      {(!isProfileFilled || editMode) ? (
+        <form onSubmit={handleProfileSubmit} className="row g-3">
+          <div className="col-12"><h3>Company Details</h3></div>
+
+          <div className="col-md-6">
+            <label className="form-label">Company Name <span className="required-asterisk">*</span> </label>
+            <input name="company_name" className={`form-control ${errors.company_name ? 'is-invalid' : ''}`} value={formData.company_name} onChange={handleFormChange} />
+            {errors.company_name && <div className="invalid-feedback">{errors.company_name}</div>}
+          </div>
+
+          <div className="col-md-6">
+            <label className="form-label">BRN Number<span className="required-asterisk">*</span></label>
+            <input name="brn_number" className={`form-control ${errors.brn_number ? 'is-invalid' : ''}`} value={formData.brn_number} onChange={handleFormChange} />
+            {errors.brn_number && <div className="invalid-feedback">{errors.brn_number}</div>}
+          </div>
+
+          <div className="col-md-6">
+            <label className="form-label">TIN Number<span className="required-asterisk">*</span></label>
+            <input name="tin_number" className={`form-control ${errors.tin_number ? 'is-invalid' : ''}`} value={formData.tin_number} onChange={handleFormChange} />
+            {errors.tin_number && <div className="invalid-feedback">{errors.tin_number}</div>}
+          </div>
+          <div className="col-md-6">
+  <label className="form-label">
+    Bumiputera <span className="required-asterisk">*</span>
+  </label>
+
+  <select
+    name="bumiputera"
+    className={`form-select ${errors.bumiputera ? 'is-invalid' : ''}`}
+    value={formData.bumiputera}
+    onChange={handleFormChange}
+  >
+    <option value="">Select</option>
+    <option value="yes">Yes</option>
+    <option value="no">No</option>
+  </select>
+
+  {errors.bumiputera && (
+    <div className="invalid-feedback">{errors.bumiputera}</div>
+  )}
+</div>
+
+
+          {/* <div className="col-12">
+            <label className="form-label">mailingAddress<span className="required-asterisk">*</span></label>
+            <textarea name="mailing_address" className={`form-control ${errors.mailingAddress? 'is-invalid' : ''}`} value={formData.mailing_address} onChange={handleFormChange} rows="2" />
+            {errors.mailingAddress && <div className="invalid-feedback">{errors.mailingAddress}</div>}
+         
+          </div>
+           <div className="col-12">
+            <label className="form-label">billingAddress<span className="required-asterisk">*</span></label>
+            <textarea name="billing_address" className={`form-control ${errors.billingAddress ? 'is-invalid' : ''}`} value={formData.billing_address} onChange={handleFormChange} rows="2" />
+            {errors.billingAddress && <div className="invalid-feedback">{errors.billingAddress}</div>}
+          </div> */}
+          {/* Mailing Postal Code + Address */}
+            <div className="col-md-12">
+              <label className="form-label">Mailing Postal Code <span className="required-asterisk">*</span></label>
+              <input
+                type="text"
+                className={`form-control ${errors.mailingPostalCode ? 'is-invalid' : ''}`}
+                value={mailingPostalCode}
+                onChange={(e) => setMailingPostalCode(e.target.value.replace(/\D/g, ''))}
+                onBlur={() => fetchAndAppend('mailing', mailingPostalCode)}
+                placeholder="e.g., 50450"
+                maxLength={5}
+              />
+              {errors.mailingPostalCode && <div className="invalid-feedback d-block">{errors.mailingPostalCode}</div>}
+            </div>
+
+            <div className="col-md-12">
+              <label className="form-label">Mailing Address <span className="required-asterisk">*</span></label>
+              <textarea
+                name="mailing_address"
+                className={`form-control ${errors.mailing_address ? 'is-invalid' : ''}`}
+                rows="2"
+                value={formData.mailing_address}
+                onChange={handleFormChange}
+                placeholder="Enter street address; city/state auto-appends after postal code."
+              />
+              {errors.mailing_address && <div className="invalid-feedback d-block">{errors.mailing_address}</div>}
+            </div>
+
+            {/* Billing Postal Code + Address */}
+            <div className="col-md-12">
+              <label className="form-label">Billing Postal Code <span className="required-asterisk">*</span></label>
+              <input
+                type="text"
+                className={`form-control ${errors.billingPostalCode ? 'is-invalid' : ''}`}
+                value={billingPostalCode}
+                onChange={(e) => setBillingPostalCode(e.target.value.replace(/\D/g, ''))}
+                onBlur={() => fetchAndAppend('billing', billingPostalCode)}
+                placeholder="e.g., 50450"
+                maxLength={5}
+              />
+              {errors.billingPostalCode && <div className="invalid-feedback d-block">{errors.billingPostalCode}</div>}
+            </div>
+
+            <div className="col-md-12">
+              <label className="form-label">Billing Address <span className="required-asterisk">*</span></label>
+              <textarea
+                name="billing_address"
+                className={`form-control ${errors.billing_address ? 'is-invalid' : ''}`}
+                rows="2"
+                value={formData.billing_address}
+                onChange={handleFormChange}
+                placeholder="Enter street address; city/state auto-appends after postal code."
+              />
+              {errors.billing_address && <div className="invalid-feedback d-block">{errors.billing_address}</div>}
+            </div>
+
+
+           <div className="col-md-6">
+            <label className="form-label">Contact Number<span className="required-asterisk">*</span></label>
+            <input name="contact_number" className={`form-control ${errors.contact_number ? 'is-invalid' : ''}`} value={formData.contact_number} onChange={handleFormChange} />
+            {errors.contact_number && <div className="invalid-feedback">{errors.contact_number}</div>}
+          </div>
+
+          <div className="col-md-6">
+            <label className="form-label">Alternate Contact</label>
+            <input name="alternate_contact" className={`form-control ${errors.alternate_contact ? 'is-invalid' : ''}`} value={formData.alternate_contact} onChange={handleFormChange} />
+            {errors.alternate_contact && <div className="invalid-feedback">{errors.alternate_contact}</div>}
+          </div>
+
+          <div className="col-md-6">
+            <label className="form-label">Contact Person<span className="required-asterisk">*</span></label>
+            <input name="contact_person" className={`form-control ${errors.contact_person ? 'is-invalid' : ''}`} value={formData.contact_person} onChange={handleFormChange} />
+            {errors.contact_person && <div className="invalid-feedback">{errors.contact_person}</div>}
+          </div>
+
+          <div className="col-md-6">
+            <label className="form-label">Email (read-only)</label>
+            <input name="email_id" className="form-control" value={formData.email_id} onChange={handleFormChange} disabled />
+          </div>
+
+          <div className="col-12">
+            <h5>Locations & Services<span className="required-asterisk">*</span></h5>
+            {locationServiceList.map((it, idx) => (
+              <div key={idx} className="row mb-2 align-items-end">
+     
+                <div className="col-md-3">
+                  <select
+                    className={`form-select ${errors[`region-${idx}`] ? 'is-invalid' : ''}`}
+                    value={it.region || ''}
+                    onChange={(e) => {
+                      handleServiceChange(idx, "region", e.target.value); // store region_name
+                      fetchStates(e.target.value, idx);
+                    }}
+                  >
+                    <option value="">Select Region</option>
+                    {regions.map((r) => (
+                      <option key={r.region_id} value={r.region_name}>
+                        {r.region_name}
+                      </option>
+                    ))}
+                  </select>
+
+                  {errors[`region-${idx}`] && (
+                    <div className="invalid-feedback d-block">
+                      {errors[`region-${idx}`]}
+                    </div>
+                  )}
+                </div>
+
+                <div className="col-md-3">
+                  <label className="form-label small">State</label>
+                  <select
+                    className={`form-select ${errors[`state-${idx}`] ? "is-invalid" : ""}`}
+                    value={it.state || ""}
+                    onChange={(e) => handleServiceChange(idx, "state", e.target.value)}
+                    disabled={!it.region}
+                  >
+                    <option value="">Select State</option>
+
+                    {it.states?.map((state, i) => (
+                      <option key={i} value={state}>
+                        {state}
+                      </option>
+                    ))}
+                  </select>
+
+
+                  {errors[`state-${idx}`] && (
+                    <div className="invalid-feedback d-block">{errors[`state-${idx}`]}</div>
+                  )}
+                </div>
+
+                <div className="col-md-3">
+                  <label className="form-label small">Service</label>
+                  <select className={`form-select ${errors[`service-${idx}`] ? 'is-invalid' : ''}`} value={it.service} onChange={e => handleServiceChange(idx, 'service', e.target.value)}>
+                    <option value="">Service</option>
+                    {servicesList.map(s => (
+                      <option key={s.category_id} value={s.category_name}>
+                        {s.category_name}
+                      </option>
+                    ))}
+
+                  </select>
+                </div>
+                <div className="col-md-2">
+                  <label className="form-label small">Price</label>
+                  <input type="number" min="0" className={`form-control ${errors[`price-${idx}`] ? 'is-invalid' : ''}`} value={it.price || ''} onChange={(e) => handleServiceChange(idx, 'price', e.target.value)} />
+                </div>
+                <div className="col-md-1">
+                  <button type="button" className="btn btn-danger" onClick={() => removeServiceRow(idx)}>×</button>
+                </div>
+              </div>
+            ))}
+            {errors.services && <div className="text-danger">{errors.services}</div>}
+            <button type="button" className="btn btn-secondary mt-2" onClick={addServiceRow}>+ Add Service</button>
+          </div>
+
+          <div className="col-md-6">
+            <label className="form-label">Company Logo <span className="required-asterisk">*</span></label>
+            <input
+              type="file"
+              className={`form-control ${errors.companyLogo ? 'is-invalid' : ''}`}
+              accept="image/*"
+              onChange={handleCompanyLogoChange}
+              required
+            />
+            {errors.companyLogo && (
+              <div className="invalid-feedback d-block">{errors.companyLogo}</div>
+            )}
+          </div>
+          <div className="col-md-6">
+            <label className="form-label">Certificate <span className="required-asterisk">*</span></label>
+<input
+  type="file"
+  multiple
+  className={`form-control ${errors.certificate ? 'is-invalid' : ''}`}
+  accept="image/*,application/pdf"
+  onChange={handleCertificateChange}
+  required
+/>
+            {errors.certificate && (
+              <div className="invalid-feedback d-block">{errors.certificate}</div>
+            )}
+          </div>
+
+
+          <div className="col-12">
+            <button className="btn btn-primary w-100" type="submit" disabled={loading}>{loading ? 'Saving...' : 'Submit Details'}</button>
+            {editMode && <button type="button" className="btn btn-secondary w-100 mt-2" onClick={() => setEditMode(false)}>Cancel</button>}
+            {errors.general && <div className="text-danger text-center mt-2">{errors.general}</div>}
+          </div>
+        </form>
+      ) : isPending ? (
+        <div className="text-center">
+          <p className="text-muted mb-3">Your profile is pending admin approval.</p>
+        </div>
+      ) : isRejected ? (
+        <p className="text-center text-danger">Profile rejected. Contact admin.</p>
+      ) : showBankForm ? (
+        <form onSubmit={handleBankSubmit} className="row g-3">
+          <div className="col-12"><h3>Company Bank Details</h3></div>
+
+          <div className="col-md-6">
+            <label className="form-label">Bank Name<span className="required-asterisk">*</span></label>
+            <select className={`form-select ${errors.bankName ? 'is-invalid' : ''}`} value={bankDetails.bankName} onChange={e => setBankDetails({ ...bankDetails, bankName: e.target.value })}>
+              <option value="">Select</option>
+              {malaysianBanks.map(b => <option key={b} value={b}>{b}</option>)}
+            </select>
+            {errors.bankName && <div className="invalid-feedback">{errors.bankName}</div>}
+          </div>
+
+          <div className="col-md-6">
+            <label className="form-label">SWIFT Code<span className="required-asterisk">*</span></label>
+            <input className={`form-control ${errors.swift ? 'is-invalid' : ''}`} value={bankDetails.swift} onChange={e => setBankDetails({ ...bankDetails, swift: e.target.value.toUpperCase() })} />
+            {errors.swift && <div className="invalid-feedback">{errors.swift}</div>}
+          </div>
+
+          <div className="col-md-6">
+            <label className="form-label">Account Holder Name<span className="required-asterisk">*</span></label>
+            <input className={`form-control ${errors.holderName ? 'is-invalid' : ''}`} value={bankDetails.holderName} onChange={e => setBankDetails({ ...bankDetails, holderName: e.target.value })} />
+            {errors.holderName && <div className="invalid-feedback">{errors.holderName}</div>}
+          </div>
+
+          <div className="col-md-6">
+            <label className="form-label">Account Number<span className="required-asterisk">*</span></label>
+            <input className={`form-control ${errors.accountNumber ? 'is-invalid' : ''}`} value={bankDetails.accountNumber} onChange={e => setBankDetails({ ...bankDetails, accountNumber: e.target.value })} />
+            {errors.accountNumber && <div className="invalid-feedback">{errors.accountNumber}</div>}
+          </div>
+
+          {/* <div className="col-12">
+            <label className="form-label">Bank Statement (PDF or image)<span className="required-asterisk">*</span></label>
+            <input type="file" accept="application/pdf,image/*" className={`form-control ${errors.bankStatement ? 'is-invalid' : ''}`} onChange={e => setBankStatement(e.target.files[0])} />
+            {errors.bankStatement && <div className="invalid-feedback d-block">{errors.bankStatement}</div>}
+          </div> */}
+          <div className="col-12">
+            <label className="form-label">Bank Statement <span className="required-asterisk">*</span></label>
+            <input
+              type="file"
+              className={`form-control ${errors.bankStatement ? 'is-invalid' : ''}`}
+              accept="application/pdf,image/*"
+              onChange={handleBankStatementChange}
+              required
+            />
+            {errors.bankStatement && (
+              <div className="invalid-feedback d-block">{errors.bankStatement}</div>
+            )}
+          </div>
+
+
+          <div className="col-12">
+            <button className="btn btn-primary w-100" type="submit" disabled={loading}>{loading ? 'Submitting...' : 'Submit Bank Details'}</button>
+            {errors.general && <div className="text-danger text-center mt-2">{errors.general}</div>}
+          </div>
+        </form>
+      ) : (
+               <div className="company-view mt-4">
+          <div className="company-header mb-4 p-4 shadow-sm rounded bg-white">
+            <div className="d-flex flex-column flex-md-row align-items-center justify-content-between">
+              <div className="d-flex align-items-center mb-3 mb-md-0">
+                <img
+                  src={`${BASE_URLS.user}/api/get_image/${contractor.email_id}/contractor_logo`}
+                  alt="Company Logo"
+                  className="rounded-circle shadow-sm me-3"
+                  width="100"
+                  height="100"
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                />
+                <div>
+                  <h3 className="fw-bold text-primary mb-1">{profile.company_name}</h3>
+                  <p className="text-muted mb-0">{profile.head_name}</p>
+                </div>
+              </div>
+              <div>
+                <button className="btn btn-outline-primary btn-sm me-2" onClick={() => navigate("/contractor/dashboard/contractor-personal-details")}>
+                  Edit Profile
+                </button>
+                <button className="btn btn-outline-secondary btn-sm" onClick={() => navigate("/contractor/dashboard/contractorbankdetails")}>
+                  Update Bank
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* COMPANY INFO GRID */}
+          <div className="info-grid shadow-sm p-4 rounded bg-white mb-4">
+            <h5 className="fw-semibold text-secondary mb-3">Company Information</h5>
+            <div className="row gy-3">
+              <div className="col-md-6"><label className="fw-bold text-dark d-block">BRN Number</label><span className="text-muted">{profile.brn_number}</span></div>
+              <div className="col-md-6"><label className="fw-bold text-dark d-block">TIN Number</label><span className="text-muted">{profile.tin_number || 'N/A'}</span></div>
+              <div className="col-md-6"><label className="fw-bold text-dark d-block">Contact Number</label><span className="text-muted">{profile.contact_number}</span></div>
+              <div className="col-md-6"><label className="fw-bold text-dark d-block">Contact Person</label><span className="text-muted">{profile.name}</span></div>
+              <div className="col-md-6"><label className="fw-bold text-dark d-block">Mailing Address</label><span className="text-muted">{profile.mailing_address}</span></div>
+              <div className="col-md-6"><label className="fw-bold text-dark d-block">Billing Address</label><span className="text-muted">{profile.billing_address}</span></div>
+            </div>
+          </div>
+
+          {/* SERVICES SECTION */}
+          <div className="services-section shadow-sm p-4 rounded bg-white mb-4">
+            <h5 className="fw-semibold text-secondary mb-3">Services & Locations</h5>
+            {Array.isArray(profile.services) && profile.services.length > 0 ? (
+              Object.entries(
+                profile.services.reduce((acc, svc) => {
+                  acc[svc.service_location] = acc[svc.service_location] || [];
+                  acc[svc.service_location].push(svc);
+                  return acc;
+                }, {})
+              ).map(([location, svcs], idx) => (
+                <div key={idx} className="mb-3 border-start border-primary ps-3">
+                  {/* <h6 className="text-dark fw-semibold mb-2">{location}</h6> */}
+                  <ul className="list-unstyled ms-3 mb-0">
+                    {svcs.map((s, i) => (
+                      <li key={i} className="text-muted">
+                       {s.region}, {s.state}, {s.service_name} — <span className="fw-bold">MYR {s.service_rate}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))
+            ) : (
+              <p className="text-muted">No services available</p>
+            )}
+          </div>
+
+          {/* CERTIFICATE */}
+          <div className="certificate-section shadow-sm p-4 rounded bg-white">
+            <h5 className="fw-semibold text-secondary mb-3">Documents</h5>
+            <a
+              href={`${BASE_URLS.user}/api/get_image/${contractor.email_id}/contractor_certificate`}
+              target="_blank"
+              rel="noreferrer"
+              className="btn btn-outline-primary btn-sm"
+            >
+              View Certificate
+            </a>
+          </div>
+
+          {successMessage && <div className="alert alert-success mt-3">{successMessage}</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default UpdateCompanyProfile;

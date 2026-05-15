@@ -1,0 +1,5 @@
+# .env
+# app/config.py
+logs/
+uploads/
+venv/

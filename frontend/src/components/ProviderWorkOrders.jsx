@@ -1,0 +1,726 @@
+import React, { useState, useEffect } from "react";
+import { apiPost } from "../api";
+import "./css/WorkOrderPage.css";
+import { Link, Outlet, useNavigate } from "react-router-dom";
+import { useUser } from "../context/UserContext";
+import { BASE_URL } from "../api";
+
+function ProviderWorkOrders() {
+  const navigate = useNavigate();
+  const { user, authReady } = useUser();
+  const [data, setData] = useState([]);
+  const [details, setDetails] = useState(null);
+  const [contractorRemarks, setContractorRemarks] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [selectedWorkorder, setSelectedWorkorder] = useState(null);
+  const [selectedExpiryTime, setSelectedExpiryTime] = useState(null);
+  const [activeTab, setActiveTab] = useState("ASSIGNED");
+  const [openRemarks, setOpenRemarks] = useState("");
+  const [openImages, setOpenImages] = useState([]);
+  const [openSubmitting, setOpenSubmitting] = useState(false);
+  const [previewMedia, setPreviewMedia] = useState(null);
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+const handleImageChange = (e) => {
+  const newFiles = Array.from(e.target.files);
+  setOpenImages((prev) => [...prev, ...newFiles]);
+  e.target.value = null;
+};
+const handleRemoveMedia = (index) => {
+  setOpenImages((prev) => prev.filter((_, i) => i !== index));
+};
+
+useEffect(() => {
+  console.group("🔐 Provider Auth Check");
+  console.log("authReady:", authReady);
+  console.log("User from context_workorder:", user);
+
+  if (!authReady) {
+    console.log("⏳ Waiting for auth to be ready...");
+    console.groupEnd();
+    return;
+  }
+
+  if (!user) {
+    console.warn("🚫 No user → redirecting to login");
+    console.groupEnd();
+    navigate("/login", { replace: true });
+    return;
+  }
+
+  if (user.role !== "INDIVIDUAL") {
+    console.groupEnd();
+    navigate("/login", { replace: true });
+    return;
+  }
+
+  console.log("✅ Provider authenticated");
+  console.groupEnd();
+}, [authReady, user, navigate]);
+
+
+
+  useEffect(() => {
+    if (!user?.user_uid) return;
+    fetchWorkorders(activeTab);
+  }, [user, activeTab]);
+
+  const fetchWorkorders = async (tab) => {
+    try {
+      let url = "/api/workorders/provider/workorders/pending";
+
+      if (tab === "OPEN") {
+        url = "/api/workorders/provider/workorders/open";
+      }
+
+      if (tab === "COMPLETED") {
+        url = "/api/workorders/provider/workorders/completed";
+      }
+
+      if (tab === "REOPEN") {
+        url = "/api/workorders/provider/workorders/reopen";
+      }
+
+      if (tab === "CLOSED") {
+        url = "/api/workorders/provider/workorders/closed";
+      }
+
+      const res = await apiPost(
+        url,
+        { provider_id: user.user_uid },
+        "form"
+      );
+
+      setData(Array.isArray(res) ? res : []);
+    } catch (err) {
+      console.error("Failed to fetch workorders:", err);
+      setData([]);
+    }
+  };
+
+  const handleOpenSubmit = async () => {
+    if (!openRemarks.trim()) {
+      alert("Contractor remarks are required");
+      return;
+    }
+    if (openImages.length === 0) {
+      alert("Closing proof images are required");
+      return;
+    }
+    const MAX_SIZE_MB = 100;
+
+      for (let file of openImages) {
+        const sizeInMB = file.size / 1024 / 1024;
+
+        if (sizeInMB > MAX_SIZE_MB) {
+          alert(`Each file must be under ${MAX_SIZE_MB}MB`);
+          return;
+        }
+      }
+
+    try {
+      setOpenSubmitting(true);
+
+      const formData = new FormData();
+      formData.append("workorder", selectedWorkorder);
+      formData.append("message", openRemarks);
+      formData.append("provider_id", user.user_uid);
+
+      openImages.forEach((img, index) => {
+        formData.append("images[]", img);
+      });
+
+      const res = await apiPost(
+        "/api/workorders/admin-notification-close",
+        formData,
+        "form"
+      );
+
+      if (res?.success) {
+        alert("Your request has been captured and team will cross check and close the workorder");
+        closeModal();
+        fetchWorkorders(activeTab);
+      } else {
+        alert(res?.message || "Submission failed");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong");
+    } finally {
+      setOpenSubmitting(false);
+    }
+  };
+
+  const handleWorkorderClick = async (row) => {
+    setShowModal(true);
+    setSelectedWorkorder(
+      row.WORKORDER_ID || row.workorder_id || row.workorder
+    );
+    setSelectedExpiryTime(row.expiry_time || null);
+    setContractorRemarks("");
+
+    if (activeTab === "OPEN" ||
+      activeTab === "COMPLETED" ||
+      activeTab === "REOPEN" ||
+      activeTab === "CLOSED") {
+      setDetails(row);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await apiPost(
+        "/api/workorders/provider/workorders/assigned",
+        { workorder_id: row.WORKORDER_ID }
+      );
+      setDetails(res?.[0] || null);
+    } catch (err) {
+      console.error("Failed to load workorder details:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setDetails(null);
+    setSelectedWorkorder(null);
+    setSelectedExpiryTime(null);
+    setContractorRemarks("");
+    setOpenImages([]);
+  };
+
+  const handleAction = async (status) => {
+    if (status === "REJECTED" && !contractorRemarks.trim()) {
+      alert("Contractor remarks are required");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      const timestamp = selectedExpiryTime
+        ? Math.floor(new Date(selectedExpiryTime).getTime() / 1000)
+        : null;
+
+      const payload = {
+        workorder_id: selectedWorkorder,
+        action: status === "ACCEPTED" ? "accept" : "reject",
+        contractor_id: user.user_uid,
+        contractor_name: user.name,
+        contractor_remarks: contractorRemarks,
+        timestamp,
+      };
+
+      const result = await apiPost(
+        "/api/workorders/respond-workorder",
+        payload
+      );
+
+      if (result?.success) {
+        closeModal();
+        fetchWorkorders(activeTab);
+      } else {
+        alert(result?.message || "Action failed");
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="container-fluid my-5 px-0">
+      <div className="workorder-card mx-auto">
+        <div className="workorder-header">
+          PROVIDER WORK ORDERS
+        </div>
+
+        <div className="workorder-inner">
+          {/* TABS */}
+          <div className="workorder-tabs">
+            <button
+              className={`tab-btn ${activeTab === "ASSIGNED" ? "active" : ""}`}
+              onClick={() => setActiveTab("ASSIGNED")}
+            >
+              Assigned
+            </button>
+
+            <button
+              className={`tab-btn ${activeTab === "OPEN" ? "active" : ""}`}
+              onClick={() => setActiveTab("OPEN")}
+            >
+              Open
+            </button>
+ 
+            <button
+              className={`tab-btn ${activeTab === "COMPLETED" ? "active" : ""}`}
+              onClick={() => setActiveTab("COMPLETED")}
+            >
+              Completed
+            </button>
+            <button
+              className={`tab-btn ${activeTab === "REOPEN" ? "active" : ""}`}
+              onClick={() => setActiveTab("REOPEN")}
+            >
+              Reopen
+            </button>
+            <button 
+              className={`tab-btn ${activeTab === "CLOSED" ? "active" : ""}`}
+              onClick={() => setActiveTab("CLOSED")}
+            >
+             Closed 
+            </button>
+          </div>
+
+          {/* TABLE */}
+          {data.length === 0 ? (
+            <p className="text-center text-muted py-4">
+              No work orders found
+            </p>
+          ) : (
+            <div className="workorder-table-wrapper">
+              <table className="workorder-table">
+                <thead>
+                  <tr>
+                    <th>Work Order</th>
+                    <th>Status</th>
+                    <th>
+                      {activeTab === "COMPLETED"
+                        ? "Completed At"
+                        : activeTab === "CLOSED"
+                        ? "Closed At"
+                        : activeTab === "REOPEN"
+                        ? "Reopened At"
+                        : "Assigned At"}
+                    </th>
+
+                    <th>
+                      {activeTab === "OPEN"
+                        ? "Requested Time Close"
+                        : activeTab === "COMPLETED"
+                        ? "Requested Close"
+                        : activeTab === "REOPEN"
+                        ? "Admin Remarks"
+                        : activeTab === "CLOSED"
+                        ? "Closed Time"
+                        : "Expiry Time"}
+                    </th>
+
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.map((row, index) => (
+                    <tr key={index}>
+                      <td
+                        className="workorder-link"
+                        onClick={() => handleWorkorderClick(row)}
+                      >
+                        {row.WORKORDER_ID || row.workorder_id || row.workorder}
+                      </td>
+                      <td>{row.assignment_status || row.status}</td>
+                      <td>
+                        {activeTab === "COMPLETED"
+                          ? row.workorder_completed_time
+                          : activeTab === "CLOSED"
+                          ? row.workorder_close_time
+                          : activeTab === "REOPEN"
+                          ? row.workorder_reopen_time
+                          : row.assigned_at}
+                      </td>
+
+                      <td>
+                        {activeTab === "OPEN"
+                          ? row.requested_time_close
+                          : activeTab === "COMPLETED"
+                          ? row.requested_time_close
+                          : activeTab === "REOPEN"
+                          ? row.admin_remarks
+                          : activeTab === "CLOSED"
+                          ? row.workorder_close_time
+                          : row.expiry_time}
+                      </td>
+
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* MODAL */}
+      {showModal && (
+        <div className="modal-overlay">
+          <div className="modal-box">
+            <span className="modal-close" onClick={closeModal}>×</span>
+
+            <div className="modal-header">
+              Work Order Details
+            </div>
+
+            {loading ? (
+              <p className="text-center">Loading...</p>
+            ) : details ? (
+              <>
+                <div className="kv-grid">
+                  <div className="kv-row">
+                    <span className="kv-label">Work Order</span>
+                    <span className="kv-value">{selectedWorkorder}</span>
+                  </div>
+                  <div className="kv-row">
+                    <span className="kv-label">Region</span>
+                    <span className="kv-value">{details.region_name}</span>
+                  </div>
+                  <div className="kv-row">
+                    <span className="kv-label">State</span>
+                    <span className="kv-value">{details.state_name}</span>
+                  </div>
+                  <div className="kv-row">
+                    <span className="kv-label">City</span>
+                    <span className="kv-value">{details.city_name}</span>
+                  </div>
+                  <div className="kv-row">
+                    <span className="kv-label">Client</span>
+                    <span className="kv-value">{details.client}</span>
+                  </div>
+                  <div className="kv-row">
+                    <span className="kv-label">Work Category</span>
+                    <span className="kv-value">{details.category_name}</span>
+                  </div>
+                  <div className="kv-row">
+                    <span className="kv-label">Work Item</span>
+                    <span className="kv-value">{details.item_name}</span>
+                  </div>
+                  <div className="kv-row">
+                    <span className="kv-label">Work Type</span>
+                    <span className="kv-value">{details.type_name}</span>
+                  </div>
+                  <div className="kv-row">
+                    <span className="kv-label">Work Description</span>
+                    <span className="kv-value">{details.description_name}</span>
+                  </div>
+                  {activeTab === "REOPEN" ? (
+                    <div className="kv-row">
+                      <span className="kv-label">Admin Remarks</span>
+                      <span className="kv-value">
+                        {details.admin_remarks || "-"}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="kv-row">
+                      <span className="kv-label">Remarks</span>
+                      <span className="kv-value">{details.remarks}</span>
+                    </div>
+                  )}
+
+                  {details.detailed_description && (
+  <div className="kv-row">
+    <span className="kv-label">Detailed Description</span>
+    <span className="kv-value">
+      {details.detailed_description}
+    </span>
+  </div>
+)}
+                  {activeTab === "COMPLETED" ? (
+                    <div className="kv-row">
+                      <span className="kv-label">Work Order Completed</span>
+                      <span className="kv-value">
+                        {details.workorder_completed_time}
+                      </span>
+                    </div>
+                  ) : activeTab === "CLOSED" ? (
+                    <div className="kv-row">
+                      <span className="kv-label">Work Order Closed</span>
+                      <span className="kv-value">
+                        {details.workorder_close_time}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="kv-row">
+                      <span className="kv-label">Requested Close</span>
+                      <span className="kv-value">
+                        {details.requested_time_close}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {activeTab !== "REOPEN" &&
+                    details.closing_images &&
+                    details.closing_images.length > 0 && (
+                      <div className="kv-row">
+                        <span className="kv-label">Closing Proof</span>
+                        <span className="kv-value">
+                          <div className="media-preview-grid">
+                            {details.closing_images.map((url, index) => {
+                              const isVideo = url.match(/\.(mp4|webm|ogg)$/i);
+                              const fullUrl = `${BASE_URL}${url}`;
+
+                              return (
+                                <div key={index} className="media-preview-item">
+                                  {isVideo ? (
+                                    <video
+                                      src={fullUrl}
+                                      controls
+                                      className="media-preview"
+                                    />
+                                  ) : (
+                                    <img
+                                      src={fullUrl}
+                                      alt="closing proof"
+                                      className="media-preview"
+                                    />
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </span>
+                      </div>
+                  )}
+
+                  {/* ✅ CLOSING CERTIFICATE (ONLY CLOSED TAB) */}
+                  {activeTab === "CLOSED" && details.closing_certificate && (
+                    <div className="kv-row">
+                      <span className="kv-label">Closure Certificate</span>
+                  
+                      <span className="kv-value">
+                        <div className="certificate-box">
+                          <p className="certificate-text">
+                            📄 Workorder Closure Certificate Available
+                          </p>
+                  
+                          <a
+                            href={`${BASE_URL}${details.closing_certificate}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            download
+                            className="certificate-download-btn"
+                          >
+                            ⬇ Download Certificate
+                          </a>
+                        </div>
+                      </span>
+                    </div>
+                  )}
+
+
+
+                </div>
+
+                {/* ASSIGNED ONLY */}
+                {activeTab === "ASSIGNED" && (
+                  <>
+                    {/* 📷 CREATION TIME IMAGES */}
+                    {details.creation_time_image &&
+                    details.creation_time_image.length > 0 && (
+                      <div className="kv-row">
+                        <span className="kv-label">Uploaded Images</span>
+                        <span className="kv-value">
+                          <div className="media-preview-grid large">
+                            {details.creation_time_image.map((url, index) => {
+                              const isVideo = url.match(/\.(mp4|webm|ogg|mov|avi)$/i);
+                              const fullUrl = `${BASE_URL}${url}`;
+
+                              return (
+                                <div
+                                  key={index}
+                                  className="media-preview-item clickable"
+                                  onClick={() =>
+                                    setPreviewMedia({ url: fullUrl, isVideo })
+                                  }
+                                >
+                                  {isVideo ? (
+                                    <video
+                                      src={fullUrl}
+                                      className="media-preview"
+                                      muted
+                                    />
+                                  ) : (
+                                    <img
+                                      src={fullUrl}
+                                      alt="uploaded"
+                                      className="media-preview"
+                                    />
+                                  )}
+
+                                  {/* ⬇ Download */}
+                                  <a
+                                    href={fullUrl}
+                                    download
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="download-btn"
+                                  >
+                                    ⬇
+                                  </a>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </span>
+                      </div>
+                    )}
+
+
+                    {/* ✍️ CONTRACTOR REMARKS */}
+                    <div className="contractor-remarks">
+                      <label>Contractor Remarks</label>
+                      <textarea
+                        rows="3"
+                        value={contractorRemarks}
+                        onChange={(e) =>
+                          setContractorRemarks(e.target.value)
+                        }
+                      />
+                    </div>
+
+                    {/* ACTIONS */}
+                    <div className="modal-footer actions">
+                      <button
+                        className="btn-reject"
+                        disabled={submitting}
+                        onClick={() => handleAction("REJECTED")}
+                      >
+                        Reject
+                      </button>
+                      <button
+                        className="btn-accept"
+                        disabled={submitting}
+                        onClick={() => handleAction("ACCEPTED")}
+                      >
+                        Accept
+                      </button>
+                    </div>
+                  </>
+                )}
+
+
+                {(activeTab === "OPEN" || activeTab === "REOPEN") && (
+                  <>
+                    {/* 📷 IMAGE UPLOAD */}
+                    <div className="contractor-remarks">
+                      <label>
+                        {activeTab === "REOPEN"
+                          ? "Re-upload Images"
+                          : "Upload Images (for closing proof)"}
+                      </label>
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*,video/*"
+                        capture="environment"
+                        onChange={handleImageChange}
+                      />
+
+                      {openImages.length > 0 && (
+                        <div className="media-preview-grid">
+                          {openImages.map((file, index) => {
+                            const isVideo = file.type.startsWith("video/");
+                            const previewUrl = URL.createObjectURL(file);
+
+                            return (
+                              <div key={index} className="media-preview-item">
+                                {isVideo ? (
+                                  <video
+                                    src={previewUrl}
+                                    controls
+                                    className="media-preview"
+                                  />
+                                ) : (
+                                  <img
+                                    src={previewUrl}
+                                    alt="preview"
+                                    className="media-preview"
+                                  />
+                                )}
+
+                                <button
+                                  type="button"
+                                  className="remove-media-btn"
+                                  onClick={() => handleRemoveMedia(index)}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                     
+                    <div className="contractor-remarks">
+                      <label>
+                        {activeTab === "REOPEN"
+                          ? "Contractor Reopen Remarks"
+                          : "Contractor Remarks"}
+                      </label>
+                      <textarea
+                        rows="3"
+                        value={openRemarks}
+                        onChange={(e) => setOpenRemarks(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="modal-footer actions">
+                      <button
+                        className="btn-accept"
+                        disabled={openSubmitting}
+                        onClick={handleOpenSubmit}
+                      >
+                        Submit
+                      </button>
+                    </div>
+                  </>
+                )}
+
+              </>
+            ) : null}
+          </div>
+        </div>
+      )}
+
+      {previewMedia && (
+          <div className="modal-overlay" onClick={() => setPreviewMedia(null)}>
+            <div className="modal-box large" onClick={(e) => e.stopPropagation()}>
+              <span
+                className="modal-close"
+                onClick={() => setPreviewMedia(null)}
+              >
+                ×
+              </span>
+
+              {previewMedia.isVideo ? (
+                <video
+                  src={previewMedia.url}
+                  controls
+                  autoPlay
+                  className="zoom-media"
+                />
+              ) : (
+                <img
+                  src={previewMedia.url}
+                  alt="zoom"
+                  className="zoom-media"
+                />
+              )}
+
+              <a
+                href={previewMedia.url}
+                download
+                className="btn-accept mt-3"
+              >
+                Download
+              </a>
+            </div>
+          </div>
+        )}
+
+    </div>
+  );
+}
+
+export default ProviderWorkOrders;

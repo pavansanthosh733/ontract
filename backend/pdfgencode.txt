@@ -1,0 +1,94 @@
+def generate_pdf(details, email):
+    """
+    Generate a professional certificate-style PDF in landscape mode
+    """
+    pdf = FPDF(orientation='L', unit='mm', format='A4')  # Landscape A4
+    pdf.add_page()
+   
+    # Certificate border
+    pdf.set_line_width(1)
+    pdf.set_draw_color(41, 128, 185)  # Blue border
+    pdf.rect(10, 10, 277, 190)  # Outer border
+   
+    pdf.set_line_width(0.5)
+    pdf.set_draw_color(52, 152, 219)  # Lighter blue
+    pdf.rect(15, 15, 267, 180)  # Inner border
+   
+    # Header background rectangle
+    pdf.set_fill_color(41, 128, 185)  # Blue background
+    pdf.rect(15, 15, 267, 35, 'F')
+   
+    # Title - "Jlink Provider Certificate"
+    pdf.set_font("Arial", 'B', 28)
+    pdf.set_text_color(255, 255, 255)  # White text
+    pdf.set_xy(15, 25)
+    pdf.cell(267, 15, "Jlink Provider Certificate", 0, 1, 'C')
+   
+    # Certificate ID
+    cert_id = f"POV{random.randint(1000, 9999)}"
+    pdf.set_font("Arial", 'I', 12)
+    pdf.set_text_color(255, 255, 255)
+    pdf.set_xy(15, 42)
+    pdf.cell(267, 6, f"Certificate ID: {cert_id}", 0, 1, 'C')
+   
+    # Reset text color for body
+    pdf.set_text_color(0, 0, 0)
+   
+    # Subtitle
+    pdf.set_font("Arial", 'I', 14)
+    pdf.set_xy(15, 60)
+    pdf.cell(267, 8, "This certifies that the following provider has been registered", 0, 1, 'C')
+   
+    # Provider details section
+    pdf.set_font("Arial", '', 12)
+    y_position = 78
+    left_margin = 50
+   
+    # Add each detail with proper formatting
+    for key, value in details.items():
+        if key == "Provider ID":
+            continue  # Skip, we'll show cert_id instead
+       
+        # Label (bold)
+        pdf.set_xy(left_margin, y_position)
+        pdf.set_font("Arial", 'B', 12)
+        pdf.set_text_color(41, 128, 185)
+        pdf.cell(60, 8, f"{key}:", 0, 0, 'L')
+       
+        # Value
+        pdf.set_font("Arial", '', 12)
+        pdf.set_text_color(0, 0, 0)
+       
+        # Handle long text wrapping
+        value_str = str(value)
+        if len(value_str) > 50:
+            value_str = value_str[:47] + "..."
+       
+        pdf.cell(0, 8, value_str, 0, 1, 'L')
+        y_position += 12
+   
+    # Footer - date and signature line
+    pdf.set_font("Arial", 'I', 10)
+    pdf.set_text_color(100, 100, 100)
+    pdf.set_xy(15, 170)
+   
+    from datetime import datetime
+    issue_date = datetime.now().strftime("%B %d, %Y")
+    pdf.cell(133, 6, f"Issued on: {issue_date}", 0, 0, 'L')
+   
+    # Signature line
+    pdf.set_xy(180, 165)
+    pdf.line(180, 170, 250, 170)
+    pdf.set_xy(180, 171)
+    pdf.cell(70, 6, "Authorized Signature", 0, 1, 'C')
+   
+    # Footer note
+    pdf.set_font("Arial", 'I', 8)
+    pdf.set_xy(15, 185)
+    pdf.cell(267, 5, "This is a system-generated certificate. For verification, please contact Jlink support.", 0, 1, 'C')
+   
+    # Save PDF
+    safe_email = email.replace('@', '_').replace('.', '_')
+    pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{safe_email}_certificate.pdf")
+    pdf.output(pdf_path)
+    return pdf_path

@@ -1,0 +1,51 @@
+{
+  "name": "urban-web-application",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "engines": {
+    "node": "20.x"
+  },
+  "scripts": {
+    "predev": "node version.js",
+    "prebuild": "node version.js",
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.1.14",
+    "axios": "^1.13.1",
+    "bootstrap": "^5.3.8",
+    "cors": "^2.8.5",
+    "file-saver": "^2.0.5",
+    "firebase": "^12.12.0",
+    "html2pdf.js": "^0.12.1",
+    "lucide-react": "^0.545.0",
+    "react": "^19.1.1",
+    "react-bootstrap-icons": "^1.11.6",
+    "react-dom": "^19.1.1",
+    "react-google-recaptcha": "^3.1.0",
+    "react-icons": "^5.5.0",
+    "react-router-dom": "^7.9.4",
+    "react-select": "^5.10.2",
+    "recharts": "^3.3.0",
+    "sweetalert2": "^11.26.3",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.36.0",
+    "@types/react": "^19.1.16",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^5.0.4",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^9.36.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.22",
+    "globals": "^16.4.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.16",
+    "vite": "^7.1.7"
+  }
+}

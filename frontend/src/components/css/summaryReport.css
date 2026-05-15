@@ -1,0 +1,120 @@
+.summary-report-container {
+  padding: 20px;
+  background: #f5f7fb;
+  min-height: 100vh;
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+/* Card */
+.filters-card {
+  background: #fff;
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  margin-bottom: 20px;
+}
+
+/* Top Row */
+.filters-top {
+  display: flex;
+  gap: 12px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  margin-bottom: 12px;
+}
+
+.filters-top select {
+  flex: 1;
+  min-width: 180px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+/* Bottom Row */
+.filters-bottom {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+/* Buttons */
+.btn {
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn.primary {
+  background: #4b78eb;
+  color: white;
+}
+
+.btn.success {
+  background: #28a745;
+  color: white;
+}
+
+/* Table */
+.table-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  min-width: 1200px;
+  border-collapse: collapse;
+}
+
+th {
+  background: #4b78eb;
+  color: white;
+  padding: 10px;
+}
+
+td {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+tr:hover {
+  background: #f9fbff;
+}
+
+.price {
+  font-weight: 600;
+}
+
+.total-row {
+  background: #f1f4ff;
+  font-weight: bold;
+}
+
+.total {
+  color: #4b78eb;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .filters-bottom {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+  }
+}

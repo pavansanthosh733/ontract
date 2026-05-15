@@ -1,0 +1,262 @@
+/* ========================= */
+/* CARD */
+/* ========================= */
+.workorder-card {
+  max-width: 1200px;
+  border: 2px solid #0078d4;
+  border-radius: 14px;
+  background: #fff;
+}
+
+/* ========================= */
+/* HEADER */
+/* ========================= */
+.workorder-header {
+  background: #0078d4;
+  color: #fff;
+  text-align: center;
+  font-weight: 700;
+  padding: 14px 0;
+}
+
+/* ========================= */
+/* TABS */
+/* ========================= */
+.workorder-tabs {
+  display: flex;
+  border: 1.5px solid #0078d4;
+  border-radius: 12px;
+  margin: 16px 20px;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 12px;
+  background: #fff;
+  border: none;
+  font-weight: 600;
+  color: #0078d4;
+  cursor: pointer;
+}
+
+.tab-btn.active {
+  background: #0078d4;
+  color: #fff;
+}
+
+/* ========================= */
+/* TABLE WRAPPER */
+/* ========================= */
+.workorder-table-wrapper {
+  overflow: visible;   /* allow child to scroll */
+}
+
+
+/* ========================= */
+/* TABLE */
+/* ========================= */
+.workorder-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.workorder-table thead {
+  background: #0078d4;
+  color: #fff;
+}
+
+.workorder-table th,
+.workorder-table td {
+  padding: 12px 14px;
+  white-space: nowrap;
+}
+
+.workorder-table td {
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* ========================= */
+/* MODAL */
+/* ========================= */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.modal-box {
+  width: 900px;          /* 🔥 FIXED WIDTH */
+  max-width: 900px;
+  max-height: 85vh;
+  overflow: visible;
+}
+
+.modal-header {
+  font-weight: 700;
+  color: #0078d4;
+  margin-bottom: 12px;
+}
+
+/* ========================= */
+/* SCROLLABLE CONTRACTOR TABLE */
+/* ========================= */
+.horizontal-scroll {
+  max-height: 420px;
+  overflow-x: auto;   /* horizontal scroll */
+  overflow-y: auto;   /* vertical scroll */
+  width: 100%;
+}
+
+
+.full-width-table {
+  min-width: 900px;   /* force overflow */
+  width: 100%;
+}
+
+/* Sticky header inside modal */
+.horizontal-scroll thead th {
+  position: sticky;
+  top: 0;
+  background: #0078d4;
+  color: #fff;
+  z-index: 2;
+}
+
+/* Scrollbar styling */
+.horizontal-scroll::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.horizontal-scroll::-webkit-scrollbar-thumb {
+  background-color: #9aa4b2;
+  border-radius: 4px;
+}
+
+.horizontal-scroll::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+/* ========================= */
+/* CLOSE ICON */
+/* ========================= */
+.modal-close {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  cursor: pointer;
+  font-size: 16px;
+  color: #999;
+}
+
+.modal-close:hover {
+  color: #555;
+}
+
+
+.full-width-table th:nth-child(3),
+.full-width-table td:nth-child(3) {
+  min-width: 400px;
+}
+
+
+/* ================= COMPLETED DETAILS ================= */
+
+.completed-details {
+  padding: 10px 0;
+}
+
+.section-title {
+  font-weight: 600;
+  margin: 15px 0 10px;
+  color: #0d6efd;
+}
+
+/* Bigger key-value layout */
+.kv-grid.large .kv-row {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.kv-label {
+  font-weight: 600;
+  color: #555;
+}
+
+.kv-value {
+  color: #222;
+}
+
+/* ================= MEDIA ================= */
+
+.media-preview-grid.large {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.media-card {
+  display: block;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #ddd;
+  cursor: pointer;
+}
+
+.media-card img,
+.media-card video {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  background: #000;
+}
+
+.media-card:hover {
+  transform: scale(1.03);
+  transition: 0.2s ease;
+}
+.media-preview-grid.large {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.media-preview-item {
+  cursor: pointer;
+}
+
+.media-preview-item img,
+.media-preview-item video {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.modal-box.large img,
+.modal-box.large video {
+  width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+}
+.admin-remarks-textarea {
+  width: 100%;
+  resize: none;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+
+.modal-footer.actions.space-between {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+}

@@ -1,0 +1,299 @@
+/* ==============================================
+   ZONE PAGE WRAPPER
+============================================== */
+.zone-page {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  background: #f9fafb;
+  padding: 20px;
+}
+
+.zone-container {
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+/* ==============================================
+   BOX STYLES
+============================================== */
+.zone-box {
+  background: #ffffff;
+  border: 2px solid #2C78C9;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.zone-box h2 {
+  background: #2C78C9;
+  color: #fff;
+  padding: 12px;
+  text-align: center;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* ==============================================
+   FORM
+============================================== */
+.zone-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+}
+
+.zone-header-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  background: #2C78C9;
+  color: white;
+  padding: 0px 4px;
+  font-weight: 600;
+  border-radius: 6px 6px 0 0;
+}
+
+.zone-header-cell {
+  font-size: 13px;
+}
+
+.zone-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.zone-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.zone-input-wrapper input,
+.zone-input-wrapper select {
+  width: 100%;
+  height: 42px;
+  padding: 10px 48px 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.zone-input-wrapper select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='14' width='14' xmlns='http://www.w3.org/2000/svg'><polygon points='0,0 14,0 7,8'/></svg>");
+  background-repeat: no-repeat;
+  background-position: calc(100% - 60px) center;
+  background-size: 12px;
+}
+
+/* STAR */
+.zone-star {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 42px;
+  height: 100%;
+  background: rgba(0,0,0,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffb300;
+  border-radius: 0 6px 6px 0;
+  font-size: 18px;
+}
+
+/* COUNT */
+.zone-count-box {
+  height: 42px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  background: #f8fafc;
+  font-size: 14px;
+}
+
+/* ==============================================
+   CITY LIST
+============================================== */
+.zone-city-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding-top: 10px;
+}
+
+.zone-city-item {
+  border: 1px solid #cbd5e1;
+  padding: 10px;
+  border-radius: 6px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 14px;
+}
+
+.zone-selected-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.zone-selected-item {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.zone-selected-item button {
+  border: none;
+  background: #dc2626;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* ==============================================
+   BUTTONS
+============================================== */
+.zone-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.zone-btn-primary,
+.zone-btn-reset {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.zone-btn-primary {
+  background: #2C78C9;
+  color: white;
+}
+
+.zone-btn-primary:hover {
+  background: #1e5a9e;
+}
+
+.zone-btn-reset {
+  background: #6b7280;
+  color: white;
+}
+
+.zone-btn-reset:hover {
+  background: #4b5563;
+}
+
+/* ==============================================
+   RESPONSIVE
+============================================== */
+@media (max-width: 768px) {
+  .zone-row {
+    grid-template-columns: 1fr;
+  }
+
+  .zone-city-list,
+  .zone-selected-list {
+    grid-template-columns: 1fr;
+  }
+
+  .zone-actions {
+    flex-direction: column;
+  }
+}
+
+/* ==============================================
+   TABLE
+============================================== */
+.zone-table-wrapper {
+  padding: 20px;
+}
+
+.zone-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.zone-table thead th {
+  background: #e2e8f0;
+  padding: 10px;
+  font-weight: 600;
+  text-align: center;
+  border-bottom: 2px solid #cbd5e1;
+}
+
+.zone-table td {
+  padding: 10px;
+  text-align: center;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* FIXED TABLE */
+.zone-page .fixed-table,
+.fixed-table {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  border: 2px solid #cbd5e1;
+  border-radius: 8px;
+  background: white;
+  max-height: 320px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* FILTER INPUT */
+.zone-filter-input {
+  width: 90%;
+  padding: 6px;
+  font-size: 13px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  outline: none;
+}
+
+.zone-filter-input:focus {
+  border-color: #007bff;
+}
+
+/* BUTTONS */
+.zone-btn-edit-link,
+.zone-btn-delete {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 5px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  margin: 2px;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.zone-btn-edit-link {
+  background: #0284c7;
+  color: white;
+}
+
+.zone-btn-delete {
+  background: #dc2626;
+  color: white;
+}

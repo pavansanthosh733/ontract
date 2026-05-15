@@ -1,0 +1,151 @@
+/* ==========================
+   SIDEBAR STYLES (Scoped)
+========================== */
+
+.sidebar-container {
+  position: relative;
+}
+
+/* Sidebar Base */
+.sidebar-container .sidebar {
+  width: 240px;
+  background-color: #ffffff;
+  border-right: 1px solid #ddd;
+  padding: 1rem 0;
+  position: fixed;
+  top: 70px; /* adjust for navbar height */
+  left: 0;
+  height: calc(100vh - 60px);
+  overflow-y: auto;
+  transition: transform 0.3s ease-in-out;
+  z-index: 90;
+}
+
+.sidebar-container .sidebar.closed {
+  transform: translateX(-100%);
+}
+
+.sidebar-container .sidebar.open {
+  transform: translateX(0);
+}
+
+/* Hamburger (mobile) */
+.sidebar-container .hamburger {
+  display: none;
+  position: fixed;
+  top: 70px;      /* adjust based on navbar height */
+  left: 15px;
+  font-size: 1.6rem;
+  cursor: pointer;
+  color: #fff;
+  background: #3f7df0;
+  border-radius: 5px;
+  padding: 6px 12px;
+  z-index: 2000;
+}
+
+/* Dropdown Menu (WorkOrder Sidebar only) */
+.sidebar-container .sidebar .menu-section {
+  margin-bottom: 1rem;
+}
+
+.sidebar-container .sidebar .menu-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1.25rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #2d3a4b;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.sidebar-container .sidebar .menu-title:hover {
+  background-color: #f3f6fb;
+}
+
+.sidebar-container .sidebar .menu-symbol {
+  font-size: 0.8rem;
+  color: #555;
+}
+
+/* Floating Submenu */
+.sidebar-container .sidebar .submenu {
+  display: flex;
+  flex-direction: column;
+  padding-left: 1rem;
+  background-color: #f8faff;
+  border-left: 3px solid #3f7df0;
+}
+
+.sidebar-container .sidebar .submenu a {
+  text-decoration: none;
+  color: #333;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.sidebar-container .sidebar .submenu a:hover {
+  background-color: #e7f0ff;
+  color: #3f7df0;
+  font-weight: 500;
+}
+
+.sidebar-container .sidebar .active {
+  background-color: #3f7df0;
+  color: #fff !important;
+  font-weight: 600;
+}
+
+.sidebar-container .sidebar-divider {
+  border-top: 1px solid #e3e3e3;
+  margin: 0.75rem 1.25rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sidebar-container .hamburger {
+    display: block;
+  }
+
+  .sidebar-container .sidebar {
+    width: 210px;
+    top: 55px;
+    height: calc(100vh - 55px);
+    transform: translateX(-100%);
+  }
+
+  .sidebar-container .sidebar.open {
+    transform: translateX(0);
+  }
+}
+
+/* Layout container: sidebar + content */
+.workorder-layout {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  overflow: visible; /* allow full page scroll */
+}
+
+.workorder-content {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto; 
+  max-height: calc(100vh - 70px); /* depends on your header height */
+  background: #f6f9ff;
+  scrollbar-width: thin;
+}
+
+
+.workorder-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.workorder-content::-webkit-scrollbar-thumb {
+  background: #2c78c9;
+  border-radius: 3px;
+}

@@ -1,0 +1,370 @@
+/* ======================================================
+   DESCRIPTION PAGE — PAGE WRAPPER
+====================================================== */
+
+.description-page {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  background: #f9fafb;
+  padding: 20px;
+}
+
+.description-container {
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+
+
+/* ======================================================
+   BOX STYLE
+====================================================== */
+
+.desc-box {
+  background: white;
+  border: 2px solid #2C78C9;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.desc-box h2 {
+  background: #2C78C9;
+  color: #fff;
+  padding: 12px;
+  text-align: center;
+  font-size: 18px;
+  margin: 0;
+}
+
+
+
+/* ======================================================
+   FORM CREATE — MAIN SPACING FIX
+====================================================== */
+
+.description-page .form-create {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: space-between;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+
+
+/* ======================================================
+   FORM HEADER ROW
+====================================================== */
+
+.desc-header-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: #2C78C9;
+  color: white;
+  padding: 2px 4px;
+  font-weight: bold;
+  align-items: center;
+}
+
+.desc-header-row.two-col {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.desc-header-cell {
+  font-size: 10px;
+  padding: 0px 0px;
+}
+
+
+
+/* ======================================================
+   INPUT ROWS (3-COLUMN + 2-COLUMN)
+====================================================== */
+
+.desc-row {
+  display: grid;
+  gap: 20px;
+  padding: 15px;
+  box-sizing: border-box;
+}
+
+.desc-row.three {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.desc-row.two {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+
+
+/* ======================================================
+   COMBINED BODY — To match your other pages
+====================================================== */
+
+.description-page .combined-body {
+  display: flex;
+  width: 100%;
+  gap: 20px;
+  padding: 0;
+  margin: 0;
+}
+
+.description-page .combined-body.small-three {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+
+
+/* ======================================================
+   STAR INPUT WRAPPER — FIXED VERSION
+====================================================== */
+
+.desc-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.desc-input-wrapper input,
+.desc-input-wrapper select {
+  width: 100%;
+  height: 42px;
+  padding: 10px 50px 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  box-sizing: border-box;
+}
+
+/* Textarea */
+.desc-input-wrapper textarea {
+  width: 100%;
+  min-height: 90px;
+  resize: vertical;
+  padding: 10px 55px 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  box-sizing: border-box;
+}
+
+
+
+/* ⭐ STAR BOX — FIXED HEIGHT */
+.desc-star {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 42px;
+  height: 42px;
+  background: rgba(0,0,0,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #ffb300;
+  border-radius: 0 6px 6px 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* textarea star stays at top */
+.desc-input-wrapper textarea + .desc-star {
+  top: 0;
+}
+
+
+
+/* Dropdown arrow FIX */
+.desc-input-wrapper select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='14' width='14' xmlns='http://www.w3.org/2000/svg'><polygon points='0,0 14,0 7,8'/></svg>");
+  background-repeat: no-repeat;
+  background-position: calc(100% - 60px) center; /* left of star */
+  background-size: 12px;
+}
+
+
+
+/* ======================================================
+   BUTTONS
+====================================================== */
+
+.desc-actions {
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px 15px;
+}
+
+.desc-btn-primary,
+.desc-btn-reset {
+  flex: 1;
+  padding: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.desc-btn-primary {
+  background: #0077cc;
+  color: white;
+}
+
+.desc-btn-primary:hover {
+  background: #005fa3;
+}
+
+.desc-btn-reset {
+  background: #6b7280;
+  color: white;
+}
+
+.desc-btn-reset:hover {
+  background: #4b5563;
+}
+
+
+
+/* ======================================================
+   TABLE SECTION
+====================================================== */
+
+.desc-table-wrapper {
+  padding: 10px 20px 20px;
+}
+
+.desc-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.desc-table thead th {
+  background: #e2e8f0;
+  padding: 10px;
+  text-align: center;
+  font-weight: 600;
+  border-bottom: 2px solid #cbd5e1;
+}
+
+.desc-table td {
+  padding: 10px;
+  text-align: center;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+
+
+/* ======================================================
+   TABLE BUTTONS
+====================================================== */
+
+.desc-btn-edit,
+.desc-btn-delete,
+.desc-btn-save,
+.desc-btn-cancel {
+  padding: 5px 10px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.desc-btn-edit { background: #0284c7; color: white; }
+.desc-btn-delete { background: #dc2626; color: white; }
+.desc-btn-save { background: #16a34a; color: white; }
+.desc-btn-cancel { background: #6b7280; color: white; }
+/* FIX FORM FULL WIDTH + REMOVE SIDE ATTACHMENT */
+.form-create {
+  width: 100%;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  box-sizing: border-box;
+}
+
+/* Make header + rows stretch full width */
+.desc-header-row,
+.desc-row {
+  width: 100%;
+}
+
+/* Keep row spacing proper */
+.desc-row.three,
+.desc-row.two {
+  padding: 8px 0;
+}
+
+/* Fix big space on left */
+.desc-header-row,
+.desc-row {
+  margin: 0;
+}
+
+/* Fix textarea height */
+.desc-input-wrapper textarea {
+  min-height: 42px;
+  height: 42px;
+}
+
+/* Fix button alignment */
+.desc-actions {
+  width: 100%;
+  padding: 10px 0 5px;
+  display: flex;
+  justify-content: space-between;
+}
+
+
+/* Add spacing between action buttons */
+.region-table td:last-child button {
+  margin-right: 10px;
+}
+
+.region-table td:last-child button:last-child {
+  margin-right: 0;
+}
+
+/* Add spacing between action buttons */
+.state-table td:last-child button {
+  margin-right: 10px;
+}
+
+.state-table td:last-child button:last-child {
+  margin-right: 0;
+}
+
+/* 🔒 Make table header fixed while scrolling */
+.desc-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+/* ✅ Filter Input Boxes */
+.desc-filter-input {
+  width: 90%;
+  padding: 6px;
+  font-size: 13px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  outline: none;
+}
+
+.desc-filter-input:focus {
+  border-color: #007bff;
+}
+
+

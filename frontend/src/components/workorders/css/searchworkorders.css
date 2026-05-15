@@ -1,0 +1,256 @@
+/* --- Main Container --- */
+.workorders-container {
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 20px;
+  font-family: "Segoe UI", sans-serif;
+  color: #333;
+}
+
+/* --- Page Title --- */
+.page-title {
+  text-align: center;
+  color: #2C78C9;
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 25px;
+  text-transform: uppercase;
+  display: block;
+}
+
+
+
+
+/* --- Search Bar --- */
+.search-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 25px;
+}
+
+.search-bar input {
+  width: 350px;
+  padding: 10px 15px;
+  border-radius: 8px;
+  border: 1px solid #b0c4de;
+  font-size: 15px;
+  transition: 0.2s;
+}
+
+.search-bar input:focus {
+  outline: none;
+  border-color: #2C78C9;
+  box-shadow: 0 0 8px rgba(44, 120, 201, 0.4);
+}
+
+.search-bar button {
+  background-color: #2C78C9;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.search-bar button:hover {
+  background-color: #2368b1;
+}
+
+.error-message {
+  text-align: center;
+  color: #e63946;
+  margin-bottom: 15px;
+  font-weight: 500;
+}
+
+/* --- Workorder Details Card --- */
+.section-card {
+  border-radius: 10px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+  background: #fff;
+  margin-bottom: 30px;
+  border: 1px solid #e5e8f0;
+  overflow: hidden;
+}
+
+.section-header {
+  background-color: #2C78C9;
+  color: #fff;
+  font-weight: 600;
+  padding: 10px 15px;
+  text-transform: uppercase;
+  font-size: 15px;
+  border-bottom: 1px solid #d0dae4;
+  letter-spacing: 0.5px;
+}
+
+.section-content {
+  padding: 20px;
+}
+
+/* --- WorkOrder Layout --- */
+.wo-row {
+  margin-bottom: 0;
+  border-radius: 0;
+  overflow: hidden;
+  box-shadow: none;
+  border-top: none;
+}
+
+/* Makes blue and white sections attach vertically */
+.wo-row + .wo-row {
+  margin-top: -1px;
+}
+
+.wo-header-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background-color: #2C78C9;
+  color: #fff;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 0px 12px;
+  font-size: 13px;
+  border-radius: 0 !important;
+  margin: 0;
+}
+
+.wo-value-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background-color: #f8fafc;
+  border: 1px solid #d0dae4;
+  border-top: none;
+  border-radius: 0;
+  padding: 10px 15px;
+  font-size: 14px;
+  color: #333;
+}
+
+.wo-value-row div,
+.wo-header-row div {
+  padding: 5px 8px;
+}
+
+/* Round only outermost */
+.section-card:first-of-type .wo-row:first-child .wo-header-row {
+  border-top-left-radius: 8px !important;
+  border-top-right-radius: 8px !important;
+}
+
+.wo-row:last-child .wo-value-row {
+  border-bottom-left-radius: 8px !important;
+  border-bottom-right-radius: 8px !important;
+}
+
+/* --- NEW Blue Bar Before Close Button --- */
+.wo-footer-bar {
+  background-color: #2C78C9;
+  color: #fff;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 14px;
+  padding: 6px 12px;
+  text-align: center;
+  margin-top: 20px; /* separates it from the grid above */
+  border-radius: 0; /* ✅ square edges */
+  letter-spacing: 0.5px;
+}
+
+
+/* --- Close Workorder Button --- */
+.close-btn {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 10px 25px;
+  margin: 15px auto 0 auto; /* slightly less space now */
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  display: block;
+  transition: background 0.2s ease;
+  text-align: center;
+}
+
+.close-btn:hover {
+  background-color: #c0392b;
+}
+
+/* --- Child Workorders Table --- */
+.table-wrapper {
+  overflow-x: auto;
+  padding-top: 10px;
+}
+
+.child-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.child-table th {
+  background-color: #2C78C9;
+  color: white;
+  padding: 10px;
+  text-align: left;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.child-table td {
+  padding: 10px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #333;
+}
+
+.child-table tr:nth-child(even) {
+  background-color: #f8fafc;
+}
+
+.child-table tr:hover {
+  background-color: #eaf2f9;
+}
+
+/* --- No Child Workorders Message --- */
+.no-child-msg {
+  text-align: center;
+  font-size: 15px;
+  color: #2C78C9;
+  margin-top: 15px;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+  .wo-header-row,
+  .wo-value-row {
+    grid-template-columns: 1fr;
+  }
+
+  .search-bar {
+    flex-direction: column;
+  }
+
+  .search-bar input,
+  .search-bar button {
+    width: 100%;
+  }
+
+  .close-btn {
+    width: 100%;
+    float: none;
+  }
+}
+
+/* --- Optional: remove space when no header --- */
+.section-card.no-header {
+  padding-top: 0;
+}
+
+.section-card.no-header .table-wrapper {
+  margin-top: 0;
+}

@@ -1,0 +1,369 @@
+-- =========================================
+-- 1️⃣ User and Privileges
+-- =========================================
+CREATE USER flask_user WITH PASSWORD 'root';
+GRANT ALL PRIVILEGES ON DATABASE on_boarding TO flask_user;
+
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO flask_user;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO flask_user;
+ALTER SCHEMA public OWNER TO flask_user;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+GRANT ALL PRIVILEGES ON TABLES TO flask_user;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+GRANT ALL PRIVILEGES ON SEQUENCES TO flask_user;
+
+-- =========================================
+-- 2️⃣ ENUM Types
+-- =========================================
+CREATE TYPE provider_status AS ENUM ('registered', 'pending', 'approved', 'rejected');
+CREATE TYPE company_status AS ENUM ('registered', 'pending', 'approved', 'rejected');
+
+
+CREATE TABLE IF NOT EXISTS users_t (
+    user_uid BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1000000000 INCREMENT BY 1),
+    email_id VARCHAR(255) NOT NULL UNIQUE,
+    name VARCHAR(255),
+    password_hash VARCHAR(255) NOT NULL,
+    contact_number VARCHAR(15),
+    alternate_contact_number VARCHAR(20),
+    mailing_address TEXT,
+    billing_address TEXT,
+    tin_number VARCHAR(50),
+    status VARCHAR(50) DEFAULT 'registered',
+    active_status BOOLEAN DEFAULT FALSE,
+    activation_token VARCHAR(255),
+    service_type SMALLINT NOT NULL CHECK (service_type IN (0, 1)), -- 0=Provider,1=Company
+    user_id BIGINT, -- References provider_id or company_id depending on service_type
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_uid)
+);
+
+-- =========================================
+-- 3️⃣ Providers Table
+-- =========================================
+CREATE TABLE IF NOT EXISTS providers_t (
+    provider_id BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1000000000 INCREMENT BY 1),
+    user_uid BIGINT NOT NULL UNIQUE REFERENCES users_t(user_uid) ON DELETE CASCADE,
+    profile_pic BYTEA,
+    id_type VARCHAR(50),
+    id_number TEXT,
+    authorized_certificate BYTEA,
+    reset_token VARCHAR(255),
+    reset_expiry TIMESTAMP NULL,
+    PRIMARY KEY (provider_id)
+);
+
+-- =========================================
+-- 4️⃣ Providers Bank Details
+-- =========================================
+CREATE TABLE IF NOT EXISTS providers_bank_details_t (
+    provider_bank_id BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1000000000 INCREMENT BY 1),
+    provider_id BIGINT NOT NULL,
+    swift_code TEXT,
+    bank_account_number TEXT,
+    bank_name VARCHAR(100),
+    bank_statement BYTEA,
+    account_holder_name VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (provider_bank_id),
+    FOREIGN KEY (provider_id) REFERENCES providers_t(provider_id)
+);
+
+
+-- =========================================
+-- 6️⃣ Admins Table
+-- =========================================
+CREATE TABLE IF NOT EXISTS admins_t (
+    admin_id BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1000000000 INCREMENT BY 1),
+    name VARCHAR(100),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (admin_id)
+);
+
+-- Example admin insert (replace with bcrypt hash)
+-- Sample admin insert :replace {hashed_password} with bcrypt hash of a password, 
+-- process:
+-- 1. In new terminal type python and click on enter(it's open the python termianl)
+-- 2. Enter this statement: import bcrypt
+-- 3. run this command with your password: bcrypt.hashpw('password'.encode(), bcrypt.gensalt()).decode()
+-- 4. copy that hashed pasword which is given in the termianl and paste that password in the below insert query in place of "hashed_password"
+INSERT INTO admins_t ( name, email, password_hash) VALUES ( 'name', 'admin@gmail.com', 'hashed_password');
+
+
+-- =========================================
+-- 7️⃣ OTP Codes
+-- =========================================
+CREATE TABLE IF NOT EXISTS otp_codes_t (
+    otp_id BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1000000000 INCREMENT BY 1),
+    email_id VARCHAR(255) NOT NULL,
+    otp_code CHAR(6) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (otp_id)
+);
+
+-- =========================================
+-- 8️⃣ Admin Messages
+-- =========================================
+CREATE TABLE IF NOT EXISTS admin_messages_t (
+    message_id BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1000000000 INCREMENT BY 1),
+    email_id VARCHAR(255) NOT NULL,
+    message VARCHAR(1000) NOT NULL,
+    notification_type VARCHAR(50) DEFAULT 'message',
+    is_read BOOLEAN DEFAULT FALSE,
+    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (message_id)
+);
+
+-- =========================================
+-- 9️⃣ Company Details
+-- =========================================
+CREATE TABLE IF NOT EXISTS company_details_t (
+    company_id BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1000000000 INCREMENT BY 1),
+    user_uid BIGINT NOT NULL UNIQUE REFERENCES users_t(user_uid) ON DELETE CASCADE,
+    company_name VARCHAR(255),
+    brn_number VARCHAR(50),
+    logo_path BYTEA,
+    certificate_path BYTEA,
+    updated_at TIMESTAMP DEFAULT NOW(),
+    PRIMARY KEY (company_id)
+);
+
+-- =========================================
+-- 🔟 Company Bank Details
+-- =========================================
+CREATE TABLE IF NOT EXISTS company_bank_details_t (
+    company_bank_id BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1000000000 INCREMENT BY 1),
+    company_id BIGINT NOT NULL UNIQUE,
+    swift_code TEXT,
+    holder_name VARCHAR(100),
+    bank_name VARCHAR(100),
+    bank_statement BYTEA,
+    account_number TEXT,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    PRIMARY KEY (company_bank_id),
+    FOREIGN KEY (company_id) REFERENCES company_details_t(company_id)
+	);
+
+-- =========================================
+-- 11️⃣ Company Messages
+-- =========================================
+CREATE TABLE IF NOT EXISTS company_messages_t (
+    company_message_id BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1000000000 INCREMENT BY 1),
+    email_id VARCHAR(255),
+    message TEXT,
+    sent_at TIMESTAMP DEFAULT NOW(),
+    PRIMARY KEY (company_message_id)
+);
+
+-- =========================================
+-- Services
+-- =========================================
+
+CREATE TABLE IF NOT EXISTS services_t (
+    service_id BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1000000000 INCREMENT BY 1),
+    user_uid BIGINT NOT NULL,
+    service_type SMALLINT NOT NULL CHECK (service_type IN (0, 1)), -- 0 = Provider, 1 = Company
+    service_name VARCHAR(255) NOT NULL,
+    service_rate NUMERIC(10,2) NOT NULL,
+    
+    -- Location Details (Unified Naming)
+    region VARCHAR(100),
+    state VARCHAR(100),
+    city VARCHAR(100),
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    PRIMARY KEY (service_id),
+    FOREIGN KEY (user_uid) REFERENCES users_t(user_uid) ON DELETE CASCADE
+);
+
+-- =========================================
+-- 13️⃣ Standard Rates
+-- =========================================
+CREATE TABLE IF NOT EXISTS standard_rates_t (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    source_row_number    INTEGER,
+    client               VARCHAR(255),
+    trade                VARCHAR(255),
+    category_item        VARCHAR(255),
+    equipment_type       VARCHAR(255),
+    sub_type             VARCHAR(255),
+    brand                VARCHAR(255),
+    description          TEXT,
+    unit                 VARCHAR(50),
+    copper_pipe_price    TEXT,
+    price_rm             NUMERIC(14,2),
+    extra_col            TEXT,
+    created_at           TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at           TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+
+    -- 🔥 Unique constraint part of table definition
+    CONSTRAINT standard_rates_unique_constraint
+    UNIQUE (trade, category_item, equipment_type, description, unit)
+);
+
+
+CREATE UNIQUE INDEX IF NOT EXISTS unique_sor_line_idx
+ON standard_rates_t (
+    lower(trim(trade)),
+    lower(trim(category_item)),
+    lower(trim(coalesce(equipment_type, ''))),
+    lower(trim(description)),
+    lower(trim(unit))
+);
+
+
+
+-- =========================================
+-- 14️⃣ Indexes
+-- =========================================
+CREATE INDEX idx_provider_email ON providers(email_id);
+CREATE INDEX idx_provider_service_id ON provider_services(provider_id);
+CREATE INDEX idx_otp_email ON otp_codes(email_id);
+CREATE INDEX idx_company_email ON company_details(head_email);
+
+-- =========================================
+-- 15️⃣ Grant Privileges on Sequences
+-- =========================================
+GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO flask_user;
+
+
+CREATE TABLE IF NOT EXISTS email_notification_t
+(
+    "WORKORDER" character varying(255) COLLATE pg_catalog."default",
+    "SENDER_NAME" character varying(255) COLLATE pg_catalog."default",
+    "EMAIL_ID" character varying(255) COLLATE pg_catalog."default",
+    "STATUS" character varying(255) COLLATE pg_catalog."default",
+    "DATE" timestamp(6) with time zone
+);
+
+CREATE TABLE IF NOT EXISTS workorder_area_t
+(
+    id integer NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 1 MINVALUE 1 MAXVALUE 2147483647 CACHE 1 ),
+    workorder_area character varying(255) COLLATE pg_catalog."default",
+    workorder_area_id integer,
+    status character varying(255) COLLATE pg_catalog."default"
+);
+
+CREATE TABLE IF NOT EXISTS workorder_life_cycle_t
+(
+    id integer NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 1 MINVALUE 1 MAXVALUE 2147483647 CACHE 1 ),
+    workorder character varying(255) COLLATE pg_catalog."default",
+    workorder_type character varying(255) COLLATE pg_catalog."default",
+    workorder_area character varying(255) COLLATE pg_catalog."default",
+    created_t timestamp(6) with time zone,
+    requested_time_closing timestamp(6) with time zone,
+    remarks character varying(255) COLLATE pg_catalog."default",
+    status character varying(255) COLLATE pg_catalog."default",
+    contractor_name character varying(255) COLLATE pg_catalog."default",
+    contractor_id character varying(255) COLLATE pg_catalog."default",
+    contractor_remarks character varying(255) COLLATE pg_catalog."default",
+    CONSTRAINT "WORKORDER_LIFE_CYCLE_T_pkey" PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS workorder_mapping_t
+(
+    id integer NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 1 MINVALUE 1 MAXVALUE 2147483647 CACHE 1 ),
+    parent_workorder character varying(255) COLLATE pg_catalog."default",
+    child_workorder character varying(255) COLLATE pg_catalog."default",
+    created_at timestamp(6) with time zone,
+    CONSTRAINT "WORKORDER_MAPPING_T_pkey" PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS workorder_t
+(
+    "ID" integer NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 1 MINVALUE 1 MAXVALUE 2147483647 CACHE 1 ),
+    "WORKORDER" character varying(255) COLLATE pg_catalog."default",
+    "WORKORDER_TYPE" character varying(255) COLLATE pg_catalog."default",
+    "WORKORDER_AREA" character varying(255) COLLATE pg_catalog."default",
+    "CREATED_T" timestamp(6) with time zone,
+    "REQUESTED_TIME_CLOSING" timestamp(6) with time zone,
+    "REMARKS" character varying(255) COLLATE pg_catalog."default",
+    "STATUS" character varying(255) COLLATE pg_catalog."default",
+    "RATE" json DEFAULT '{"type_rates": {}, "total_rate": 0.0}'::json,
+    parent_workorder character varying(255) COLLATE pg_catalog."default",
+    image jsonb,
+    closing_images jsonb,
+    admin character varying(100) COLLATE pg_catalog."default",
+    ticket_assignment_type character varying(100) COLLATE pg_catalog."default",
+    CONSTRAINT "WORKORDER_T_pkey" PRIMARY KEY ("ID")
+);
+
+CREATE TABLE IF NOT EXISTS workorder_type_t
+(
+    id integer NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 1 MINVALUE 1 MAXVALUE 2147483647 CACHE 1 ),
+    workorder_type character varying(255) COLLATE pg_catalog."default",
+    workordertype_id integer,
+    status character varying(255) COLLATE pg_catalog."default",
+    CONSTRAINT "WORKORDER_TYPE_T_pkey" PRIMARY KEY (id)
+);
+
+
+
+select * from providers_t;
+select * from otp_codes_t;
+select * from providers_bank_details_t;
+select * from admin_messages_t;
+select * from admins_t;
+
+
+select * from company_details_t;
+select * from company_bank_details_t;
+select * from company_messages_t;
+
+select * from standard_rates_t;
+
+SELECT head_email, length(logo_path), length(certificate_path)
+FROM company_details_t
+WHERE head_email = '';
+
+
+update company_details_t set status='pending' where company_id='';
+
+delete from providers_t where provider_id='1000000002';
+delete from provider_services_t where provider_id='1000000002';
+delete from providers_bank_details_t where provider_id='1000000002';
+delete from admin_messages_t where email_id='';
+
+delete from company_details_t where company_id='1000000005';
+delete from company_services_t where company_id='1000000005';
+delete from company_bank_details_t where company_id='1000000002';
+
+delete from standard_rates_t where id in (1,3,2);
+
+delete from admins_t where admin_id='1000000000';
+
+
+drop table providers_t;
+drop table provider_services_t;
+drop table providers_bank_details_t;
+drop table admin_messages_t;
+drop table admins_t;
+drop table company_details_t;
+drop table company_services_t;
+drop table company_bank_details_t;
+drop table company_messages_t;
+drop table otp_codes_t;
+drop table standard_rates_t;
+
+
+
+select count(*) from standard_rates_t ;
+
+select * from users_t;
+select * from providers_t;
+select * from services_t;
+
+select * from company_details_t;
+select length(logo_path) from company_details_t where company_id='';
+
+update users_t set status='pending' where user_uid='';
+
+delete from users_t where user_uid='';
+delete from providers_t where provider_id='';
+delete from services_t where user_uid='';

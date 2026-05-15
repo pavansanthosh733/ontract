@@ -1,0 +1,43 @@
+.hero-section {
+  background: linear-gradient(135deg, #4a74f1, #f2101f);
+  min-height: 40vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem; /* Add padding for desktop */
+}
+
+.search-box {
+  max-width: 100%; /* Ensure it takes full width on small devices */
+}
+
+@media (min-width: 992px) {
+  .search-box {
+    max-width: 900px; /* Limit width on large screens */
+  }
+}
+.service-card {
+  transition: all 0.3s ease;
+}
+
+.service-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.footer h5 {
+  margin-bottom: 1rem;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}
+
+.role-card {
+  border-radius: 16px;
+  transition: transform 0.2s ease;
+}
+
+.role-card:hover {
+  transform: translateY(-4px);
+}

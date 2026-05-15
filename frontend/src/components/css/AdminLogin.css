@@ -1,0 +1,126 @@
+/* Page background */
+.admin-login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-family: 'Poppins', sans-serif;
+  padding: 20px;
+}
+
+/* White Card */
+.admin-card {
+  background-color: #ffffff;
+  border-radius: 15px;
+  padding: 40px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  animation: fadeIn 0.6s ease-in-out;
+}
+
+/* Title */
+.admin-title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #1e3a8a;
+  margin-bottom: 25px;
+}
+
+/* Form fields */
+.form-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #1e293b;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  font-size: 15px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 5px rgba(37, 99, 235, 0.4);
+}
+
+/* Buttons */
+.btn-primary,
+.btn-secondary {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  margin-top: 10px;
+  font-size: 1rem;
+}
+
+/* Primary button (blue) */
+.btn-primary {
+  background-color: #2d1bf3;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #1d4ed8;
+}
+
+/* Secondary button (outlined) */
+.btn-secondary {
+  background-color: transparent;
+  color: #2563eb;
+  border: 2px solid #2563eb;
+}
+
+.btn-secondary:hover {
+  background-color: #eff6ff;
+}
+
+/* Error message */
+.alert {
+  margin: 10px 0;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.alert.error {
+  background-color: #fde8e8;
+  color: #d93025;
+  border: 1px solid #f5c2c2;
+}
+
+.alert.success {
+  background-color: #e6ffed;
+  color: #0a8a0a;
+  border: 1px solid #b6e2b6;
+}
+
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

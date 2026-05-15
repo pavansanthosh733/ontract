@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Response</title>
+</head>
+<body style="font-family:Arial;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;">
+
+  {% if expired %}
+    <div style="background:#fff;padding:40px;border-radius:10px;box-shadow:0 10px 25px rgba(0,0,0,.2);text-align:center;">
+      <h2 style="color:#dc3545;">Link Expired</h2>
+      <p>This link was valid for {{ expiry }} minutes only.</p>
+    </div>
+
+  {% elif action %}
+    <div style="background:#fff;padding:40px;border-radius:10px;box-shadow:0 10px 25px rgba(0,0,0,.2);text-align:center;">
+      <div style="font-size:64px;color:{{ '#28a745' if action == 'accept' else '#dc3545' }};">
+        {{ '✓' if action == 'accept' else '✗' }}
+      </div>
+      <h3 style="color:{{ '#28a745' if action == 'accept' else '#dc3545' }}">
+        Work Order {{ action|capitalize }}
+      </h3>
+      <div style="background:#f8f9fa;padding:15px;border-radius:5px;margin:20px 0;border-left:4px solid {{ '#28a745' if action == 'accept' else '#dc3545' }};">
+        <strong>WO:</strong> {{ workorder.workorder }}
+      </div>
+      <p>Your response has been recorded.</p>
+      {% if remark %}<p><strong>Remark:</strong> {{ remark }}</p>{% endif %}
+      <p style="font-size:14px;color:#777;margin-top:30px;">Thank you!</p>
+    </div>
+
+  {% elif message %}
+    <div style="background:#fff;padding:40px;border-radius:10px;box-shadow:0 10px 25px rgba(0,0,0,.2);text-align:center;">
+      <h3>{{ title or "Notice" }}</h3>
+      <p>{{ message }}</p>
+    </div>
+
+  {% else %}
+    <div style="background:#fff;padding:40px;border-radius:10px;box-shadow:0 10px 25px rgba(0,0,0,.2);text-align:center;">
+      <h3>Invalid Link</h3>
+      <p>This link is invalid or already used.</p>
+    </div>
+  {% endif %}
+
+</body>
+</html>

@@ -1,0 +1,60 @@
+/* ===============================
+   COMPANY PROFILE - VIEW MODE
+================================*/
+
+.company-view {
+  max-width: 100%;
+  padding-bottom: 4rem;
+}
+
+.company-btn{
+  background-color: #007bff;
+
+}
+
+.company-header {
+  background: linear-gradient(90deg, #f8f9fa, #ffffff);
+  border-left: 5px solid #007bff;
+}
+
+.company-header h3 {
+  font-size: 1.6rem;
+}
+
+.info-grid label {
+  font-size: 0.9rem;
+}
+
+.info-grid span {
+  font-size: 1rem;
+  display: block;
+  word-break: break-word;
+}
+
+.services-section ul li {
+  padding: 3px 0;
+}
+
+.services-section h6 {
+  font-weight: 600;
+}
+
+.company-view .shadow-sm {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Mobile view improvements */
+@media (max-width: 768px) {
+  .company-header {
+    text-align: center;
+  }
+
+  .company-header img {
+    margin-bottom: 1rem;
+  }
+
+  .info-grid .col-md-6 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+}

@@ -1,0 +1,232 @@
+/* ===========================
+   ADMIN DASHBOARD - BASE STYLES (SCOPED)
+=========================== */
+
+.admin-dashboard .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.admin-dashboard .card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  background: #fff;
+}
+
+.admin-dashboard .card-header {
+  font-weight: 600;
+  font-size: 1.1rem;
+  padding: 0.75rem 1.25rem;
+}
+
+.admin-dashboard .card-body {
+  padding: 1.25rem;
+}
+
+.admin-dashboard .table {
+  width: 100%;
+  margin: 0;
+  border-collapse: collapse;
+}
+
+.admin-dashboard .table th {
+  background-color: #f3f4f6;
+  color: #374151;
+  font-weight: 600;
+  text-align: center;
+}
+
+.admin-dashboard .table td {
+  text-align: center;
+  vertical-align: middle;
+  padding: 0.75rem;
+}
+
+/* Badge colors */
+.admin-dashboard .badge {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  border-radius: 6px;
+}
+
+/* Buttons refinement */
+.admin-dashboard .btn-sm {
+  font-size: 0.85rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  transition: all 0.2s ease-in-out;
+}
+
+.admin-dashboard .btn-sm:hover {
+  transform: translateY(-1px);
+}
+
+/* Modals */
+.admin-dashboard .modal-content {
+  border-radius: 12px;
+}
+
+.admin-dashboard .modal-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.admin-dashboard .modal-title {
+  font-weight: 600;
+}
+
+.admin-dashboard textarea.form-control {
+  resize: none;
+  border-radius: 8px;
+}
+
+/* ===========================
+   RESPONSIVE DESIGN
+=========================== */
+
+/* Tablets */
+@media (max-width: 1024px) {
+  .admin-dashboard .container {
+    padding: 0.8rem;
+  }
+
+  .admin-dashboard .card-header h5 {
+    font-size: 1rem;
+  }
+
+  .admin-dashboard .table th,
+  .admin-dashboard .table td {
+    font-size: 0.9rem;
+  }
+}
+
+/* Phones */
+@media (max-width: 768px) {
+  .admin-dashboard .container {
+    padding: 0.5rem;
+  }
+
+  .admin-dashboard h5 {
+    font-size: 1rem;
+    text-align: center;
+  }
+
+  /* Convert table to card style */
+  .admin-dashboard .table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    border: none;
+  }
+
+  .admin-dashboard .table thead {
+    display: none;
+  }
+
+  .admin-dashboard .table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .admin-dashboard .table tbody tr {
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+    padding: 0.75rem 1rem;
+  }
+
+  .admin-dashboard .table tbody td {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.9rem;
+  }
+
+  .admin-dashboard .table tbody td:last-child {
+    border-bottom: none;
+  }
+
+  .admin-dashboard .table tbody td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #2563eb;
+    font-size: 0.85rem;
+  }
+
+  /* Buttons layout on mobile */
+  .admin-dashboard .btn-sm {
+    width: 48%;
+    margin-top: 6px;
+  }
+
+  .admin-dashboard td[data-label="Actions"],
+  .admin-dashboard td[data-label="Certificates"] {
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* Improve modal responsiveness */
+  .admin-dashboard .modal-dialog {
+    width: 95%;
+    margin: 0.5rem auto;
+  }
+
+  .admin-dashboard textarea.form-control {
+    font-size: 0.9rem;
+  }
+}
+
+/* Small phones */
+@media (max-width: 480px) {
+  .admin-dashboard .table tbody td {
+    font-size: 0.85rem;
+  }
+
+  .admin-dashboard .btn-sm {
+    font-size: 0.8rem;
+    width: 100%;
+  }
+
+  .admin-dashboard h5 {
+    font-size: 0.95rem;
+  }
+
+  .admin-dashboard .card {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .admin-dashboard .modal-content {
+    padding: 0.75rem;
+  }
+}
+
+/* Make modals scrollable on tiny devices */
+@media (max-height: 600px) {
+  .admin-dashboard .modal-body {
+    max-height: 65vh;
+    overflow-y: auto;
+  }
+}
+
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+  border: 0.3em solid #e0e0e0;
+  border-top: 0.3em solid #007bff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

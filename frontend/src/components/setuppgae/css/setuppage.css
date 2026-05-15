@@ -1,0 +1,445 @@
+/* === SCOPED PAGE WRAPPER === */
+.setup-page .page-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 25px;
+  width: 100%;
+  height: 100vh;
+  margin: 0 auto;
+  padding: 20px;
+  max-width: 1200px;
+  overflow: hidden;
+  box-sizing: border-box;
+  background: #f9fafb;
+}
+
+/* === Box Section === */
+.setup-page .box-section {
+  background: #f8fafc;
+  border: 2px solid #2C78C9;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* Box title/header */
+.setup-page .box-section h2 {
+  background: #2C78C9;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  padding: 12px 20px;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  text-align: center;
+}
+
+/* === Form Layout === */
+.setup-page .form-create {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  justify-content: space-between;
+  padding: 20px;
+}
+
+.setup-page .form-header-row {
+  display: flex;
+  width: 100%;
+  margin-bottom: -10px;
+  background: #2C78C9;
+  border-radius: 6px 6px 0 0;
+}
+
+.setup-page .form-header-cell {
+  flex: 1;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0px 2px;
+  text-align: left;
+}
+
+/* === Inputs === */
+.setup-page .form-group {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 45%;
+  position: relative;
+}
+
+.setup-page .input-with-star {
+  position: relative;
+  width: 100%;
+}
+
+.setup-page .input-with-star input,
+.setup-page .input-with-star select {
+  width: 100%;
+  padding: 10px 48px 10px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 0 0 6px 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.setup-page .required-star {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  height: calc(100% - 2px);
+  width: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fbbf24;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 0 5px 5px 0;
+  font-size: 16px;
+  font-weight: 700;
+  pointer-events: none;
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.3);
+  z-index: 3;
+}
+
+/* Dropdown adjustments */
+.setup-page .input-with-star select {
+  appearance: none;
+  background-color: #fff;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='14' width='14' xmlns='http://www.w3.org/2000/svg'><polygon points='0,0 14,0 7,7'/></svg>");
+  background-repeat: no-repeat;
+  background-position: calc(100% - 55px) center;
+  background-size: 12px;
+  padding-right: 70px;
+}
+
+/* === Buttons === */
+.setup-page .form-actions {
+  display: flex;
+  gap: 15px;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.setup-page .btn-primary,
+.setup-page .btn-reset {
+  flex: 1;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  padding: 10px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.setup-page .btn-primary {
+  background: #2C78C9;
+  color: #fff;
+}
+
+.setup-page .btn-primary:hover {
+  background: #1e5a9e;
+}
+
+.setup-page .btn-reset {
+  background: #6b7280;
+  color: white;
+}
+
+.setup-page .btn-reset:hover {
+  background: #4b5563;
+}
+
+/* === Table Section === */
+.setup-page .table-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.setup-page .table-wrapper {
+  flex: 1 !important;
+  padding: 20px !important;
+  background: #f8fafc !important;
+  border-radius: 0 0 10px 10px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+/* Scroll only inside table */
+.setup-page .fixed-table {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 2px solid #cbd5e1;
+  border-radius: 8px;
+  position: relative;
+  background: #ffffff;
+  max-height: 300px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scrollbar */
+.setup-page .fixed-table::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.setup-page .fixed-table::-webkit-scrollbar-thumb {
+  background-color: #94a3b8;
+  border-radius: 4px;
+}
+
+.setup-page .fixed-table::-webkit-scrollbar-track {
+  background-color: #f1f5f9;
+}
+
+/* Table Styling */
+.setup-page .workorder-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+}
+
+.setup-page .workorder-table thead {
+  position: sticky;
+  top: 0;
+  background: #e2e8f0;
+  z-index: 2;
+}
+
+.setup-page .workorder-table th {
+  background: #e2e8f0;
+  color: #1e293b;
+  font-weight: 600;
+  padding: 10px;
+  text-align: center;
+  border-bottom: 2px solid #cbd5e1;
+}
+
+.setup-page .workorder-table td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 10px;
+  text-align: center;
+  font-size: 14px;
+  color: #334155;
+}
+
+/* Hover Effect */
+.setup-page .workorder-table tbody tr:hover td {
+  background-color: #f1f5f9;
+}
+
+/* Buttons inside table */
+.setup-page .btn-edit,
+.setup-page .btn-delete,
+.setup-page .btn-save,
+.setup-page .btn-cancel {
+  padding: 6px 12px;
+  border-radius: 5px;
+  border: none;
+  font-weight: 500;
+  cursor: pointer;
+  margin: 0 3px;
+  transition: transform 0.1s ease-in-out;
+}
+
+.setup-page .btn-edit {
+  background: #0284c7;
+  color: white;
+}
+
+.setup-page .btn-edit:hover {
+  background: #0369a1;
+  transform: scale(1.05);
+}
+
+.setup-page .btn-delete {
+  background: #dc2626;
+  color: white;
+}
+
+.setup-page .btn-delete:hover {
+  background: #b91c1c;
+  transform: scale(1.05);
+}
+
+.setup-page .btn-save {
+  background: #16a34a;
+  color: white;
+}
+
+.setup-page .btn-save:hover {
+  background: #059669;
+}
+
+.setup-page .btn-cancel {
+  background: #6b7280;
+  color: white;
+}
+
+.setup-page .btn-cancel:hover {
+  background: #4b5563;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .setup-page .page-container {
+    height: auto;
+    overflow-y: auto;
+  }
+
+  .setup-page .form-create {
+    flex-direction: column;
+  }
+
+  .setup-page .form-group {
+    flex: 1 1 100%;
+  }
+
+  .setup-page .btn-edit,
+  .setup-page .btn-delete,
+  .setup-page .btn-save,
+  .setup-page .btn-cancel {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+}
+/* Only for Create State page */
+/* ================== FIX LEFT ALIGNMENT ================== */
+
+.setup-page .combined-body {
+  display: flex;
+  gap: 15px;
+  padding: 0 !important;  /* 🔥 remove padding */
+  margin: 0;
+  background-color: #f9fafb;
+}
+
+.create-city-page .combined-body {
+  padding: 0 !important;
+}
+
+
+
+/* Make all input/select identical */
+.setup-page .combined-body input,
+.setup-page .combined-body select {
+  width: 100%;
+  height: 42px;
+  box-sizing: border-box;
+}
+
+
+/* Fix wrapper alignment */
+/* ================== FIX STAR ALIGNMENT ================== */
+
+.setup-page .required-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.setup-page .required-wrapper .required-star {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 14px;
+  color: #ffb300;
+}
+
+.setup-page .required-wrapper input,
+.setup-page .required-wrapper select {
+  padding-right: 35px !important;
+}
+
+.setup-page .required-wrapper input,
+.setup-page .required-wrapper select {
+  padding-right: 28px !important;  /* space for star */
+}
+
+/* Remove default right grey box ONLY in setup page */
+.setup-page .required-wrapper input::-webkit-calendar-picker-indicator,
+.setup-page .required-wrapper select::-ms-expand,
+.setup-page .required-wrapper select::-webkit-inner-spin-button,
+.setup-page .required-wrapper select::-webkit-outer-spin-button {
+  display: none !important;
+  opacity: 0 !important;
+}
+
+
+/* Fix alignment for Create City input rows */
+.create-city-page .combined-body {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  width: 100%;
+}
+
+/* Each column same width */
+.create-city-page .combined-body .form-group {
+  width: 48%;  /* 2 columns layout */
+}
+
+/* Adjust star placement */
+.create-city-page .required-wrapper {
+  position: relative;
+}
+
+.create-city-page .required-wrapper .required-star {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #ffb300;
+  pointer-events: none;
+}
+
+.create-city-page select,
+.create-city-page input {
+  width: 100%;
+  padding-right: 30px !important;
+}
+/* ============================================
+   FIX UNIFORM INPUT + SELECT WIDTHS FOR ALL PAGES
+   ============================================ */
+
+.create-city-page .combined-body,
+.setup-page .combined-body {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+}
+
+.create-city-page .combined-body .form-group,
+.setup-page .combined-body .form-group {
+  width: 100%;  /* ensures perfect 50/50 split */
+}
+
+/* fix star alignment */
+.required-wrapper {
+  position: relative;
+}
+
+.required-wrapper input,
+.required-wrapper select {
+  width: 100%;
+  padding-right: 32px !important;
+}
+
+.required-wrapper .required-star {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #ffb300;
+}

@@ -1,0 +1,202 @@
+/* =========================================================
+   CompanyApp.css
+   Matches ProviderHome Layout (Header + Footer)
+   ========================================================= */
+
+.company-dashboard-page {
+  font-family: "Inter", "Segoe UI", "Roboto", sans-serif;
+  background: #f8f9fa;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===============================
+   NAVBAR (Header)
+   =============================== */
+.navbar {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e9ecef;
+  padding: 0.75rem 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.brand-icon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #0d6efd 0%, #0040b8 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  box-shadow: 0 2px 8px rgba(13, 110, 253, 0.2);
+}
+
+.navbar-brand {
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  color: #0d6efd !important;
+}
+
+.nav-link {
+  font-weight: 500;
+  color: #495057 !important;
+  transition: color 0.2s ease;
+  position: relative;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: #0d6efd !important;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: #dc3545;
+  color: white;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: 600;
+  min-width: 18px;
+  text-align: center;
+}
+
+/* Dropdown */
+.dropdown-menu {
+  border: 1px solid #e9ecef;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+  padding: 0.5rem;
+  min-width: 200px;
+}
+
+.dropdown-item {
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.dropdown-item:hover {
+  background: #f8f9fa;
+  color: #0d6efd;
+}
+
+/* ===============================
+   DASHBOARD CONTENT
+   =============================== */
+.dashboard-content {
+  flex: 1;
+  background: #fff;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+}
+
+/* ===============================
+   FOOTER
+   =============================== */
+.dashboard-footer {
+  background: white;
+  border-top: 1px solid #e9ecef;
+  padding: 1.5rem 0;
+  margin-top: auto;
+}
+
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.footer-content p {
+  margin: 0;
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.footer-links {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.footer-links a {
+  color: #6c757d;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.2s ease;
+}
+
+.footer-links a:hover {
+  color: #0d6efd;
+}
+
+/* ===============================
+   RESPONSIVE DESIGN
+   =============================== */
+@media (max-width: 992px) {
+  .navbar-collapse {
+    background-color: #fff;
+    padding: 1rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  .nav-link {
+    display: block;
+    color: #0d6efd !important;
+    margin: 0.3rem 0;
+  }
+
+  .dashboard-content {
+    padding: 1.25rem;
+  }
+
+  .brand-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 0.95rem;
+  }
+
+  .footer-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .footer-links {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+/* ===============================
+   ANIMATIONS
+   =============================== */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.navbar {
+  animation: fadeInDown 0.5s ease forwards;
+}
+
+.dashboard-content {
+  animation: fadeInDown 0.4s ease forwards;
+}

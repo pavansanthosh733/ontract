@@ -1,0 +1,238 @@
+/* ===================== PAGE WRAPPER ===================== */
+.item-page {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  background: #f9fafb;
+  padding: 20px;
+}
+
+.item-container {
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+/* ===================== BOX SECTION ===================== */
+.item-box {
+  background: white;
+  border: 2px solid #2C78C9;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.item-box h2 {
+  background: #2C78C9;
+  color: #fff;
+  padding: 12px;
+  text-align: center;
+  font-size: 18px;
+  margin: 0;
+}
+
+/* ===================== FORM ===================== */
+.item-form {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Header Row */
+.item-header-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  background: #2C78C9;
+  color: white;
+  padding: 0px 5px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* Input Row */
+.item-input-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+}
+
+/* Input Wrapper */
+.item-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.item-input-wrapper input,
+.item-input-wrapper select {
+  width: 100%;
+  height: 42px;
+  padding: 10px 48px 10px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  box-sizing: border-box;
+}
+
+/* Required Star Box */
+.item-star {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 40px;
+  height: 100%;
+  background: rgba(0,0,0,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  border-radius: 0 6px 6px 0;
+  color: #ffb300;
+}
+
+/* Dropdown arrow */
+.item-input-wrapper select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='14' width='14' xmlns='http://www.w3.org/2000/svg'><polygon points='0,0 14,0 7,7'/></svg>");
+  background-repeat: no-repeat;
+  background-position: calc(100% - 75px) center;
+  background-size: 14px;
+}
+
+/* ===================== BUTTONS ===================== */
+.item-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.item-btn-primary,
+.item-btn-reset {
+  flex: 1;
+  padding: 6px;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.item-btn-primary {
+  background: #0077cc;
+  color: white;
+}
+
+.item-btn-reset {
+  background: #6b7280;
+  color: white;
+}
+
+/* ===================== TABLE ===================== */
+.item-table-wrapper {
+  padding: 15px 20px 20px 20px;
+}
+
+.item-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed; /* aligns columns perfectly */
+}
+
+/* Header */
+.item-table th {
+  background: #e2e8f0;
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 2px solid #cbd5e1;
+  font-weight: bold;
+  font-size: 13px;
+}
+
+/* Cells */
+.item-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  vertical-align: middle;
+  font-size: 13px;
+}
+
+/* Center last column */
+.item-table th:last-child,
+.item-table td:last-child {
+  text-align: center;
+}
+
+/* Table Buttons */
+.item-btn-edit,
+.item-btn-delete,
+.item-btn-save,
+.item-btn-cancel {
+  padding: 5px 10px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  margin: 0 3px;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.item-btn-edit { background: #0284c7; color: white; }
+.item-btn-delete { background: #dc2626; color: white; }
+.item-btn-save { background: #16a34a; color: white; }
+.item-btn-cancel { background: #6b7280; color: white; }
+
+/* Add spacing between action buttons */
+.region-table td:last-child button {
+  margin-right: 10px;
+}
+
+.region-table td:last-child button:last-child {
+  margin-right: 0;
+}
+
+/* Add spacing between action buttons */
+.state-table td:last-child button {
+  margin-right: 10px;
+}
+
+.state-table td:last-child button:last-child {
+  margin-right: 0;
+}
+
+/* 🔒 Make table header fixed while scrolling */
+.item-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+/* ✅ Filter Input Boxes */
+.item-filter-input {
+  width: 90%;
+  padding: 6px;
+  font-size: 13px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  outline: none;
+}
+
+.item-filter-input:focus {
+  border-color: #007bff;
+}
+
+.item-btn-delete {
+    background: #dc2626;
+    color: white;
+    cursor: pointer;
+}
+
+/* ✅ Disabled but keep SAME color */
+.item-btn-delete:disabled {
+    background: #dc2626;   /* keep same red */
+    color: white;          /* keep text same */
+    opacity: 0.7;          /* slight fade (optional) */
+    cursor: not-allowed !important;  /* 🔥 important */
+}

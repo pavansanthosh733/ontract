@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Work Order Assignment</title>
+</head>
+<body style="font-family:Arial,sans-serif;line-height:1.6;color:#333;max-width:800px;margin:0 auto;padding:20px;background-color:#ffffff;">
+  <div style="background:linear-gradient(135deg,#667eea,#764ba2);padding:20px;border-radius:8px;margin-bottom:20px;">
+    <h2 style="margin:0;color:white;">Work Order Assignment</h2>
+  </div>
+
+  <div style="background:#f0f8ff;padding:15px;border-left:4px solid #007bff;margin-bottom:20px;">
+    <h3 style="margin:0;color:#007bff;">Hello {{ request_data["CONTRACTOR_NAME"] }},</h3>
+    <p style="margin:5px 0 0 0;">You have been assigned a new work order for area <strong>{{ request_data["region_name"] }}</strong>.</p>
+  </div>
+
+  <table border="1" cellspacing="0" cellpadding="12"
+         style="border-collapse:collapse;width:100%;max-width:700px;margin-bottom:25px;border:1px solid #ddd;">
+    <tr style="background:#f8f9fa;"><th align="left" style="width:40%;">Work Order</th><td><strong>{{ request_data["workorder"] }}</strong></td></tr>
+    <tr><th align="left" style="background:#f8f9fa;">Region</th><td>{{ request_data["region_name"] }}</td></tr>
+    <tr><th align="left" style="background:#f8f9fa;">Trade</th><td>{{ request_data["category_name"] }}</td></tr>
+    <tr><th align="left" style="background:#f8f9fa;">Remarks</th><td>{{ request_data["remarks"] or 'N/A' }}</td></tr>
+    <tr><th align="left" style="background:#f8f9fa;">Requested Date</th><td>{{ request_data["requested_time_close"] or 'N/A' }}</td></tr>
+  </table>
+
+  <div style="margin:30px 0;text-align:center;padding:20px;background:#f8f9fa;border-radius:8px;">
+    <p style="font-size:16px;margin-bottom:15px;color:#333;"><strong>Please respond:</strong></p>
+    <a href="{{ response_url }}"
+       style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:14px 35px;text-decoration:none;border-radius:6px;display:inline-block;font-size:16px;font-weight:600;box-shadow:0 4px 6px rgba(0,0,0,.2);">
+      Click Here to Confirm or Reject
+    </a>
+    <p style="margin-top:15px;font-size:13px;color:#dc3545;">Important: Link expires in <strong>{{ expiry_minutes }}</strong> minutes.</p>
+  </div>
+
+  <hr style="border:none;border-top:1px solid #ddd;margin:30px 0;">
+  <p style="font-size:12px;color:#777;text-align:center;">Please give your response on time.</p>
+</body>
+</html>

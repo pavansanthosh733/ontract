@@ -1,0 +1,251 @@
+/* ================================
+   CONTRACTOR – WORKORDERS DASHBOARD
+================================ */
+
+/* Page wrapper */
+.workorders-fullpage-container {
+  padding: 30px;
+  min-height: 100vh;
+  background: #f7faff;
+  display: flex;
+  justify-content: center;
+}
+
+/* Inner content box */
+.workorders-content {
+  width: 100%;
+  max-width: 1200px;
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(44, 120, 201, 0.15);
+}
+
+/* Header */
+.workorders-content h2 {
+  display: block !important;
+  text-align: center;
+  font-size: 32px;
+  font-weight: 700;
+  color: #0b2a4a;
+  margin-bottom: 30px;
+}
+
+/* ================================
+   FILTER SECTION
+================================ */
+.filters-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr) auto auto;
+  gap: 18px;
+  align-items: end;
+  margin-bottom: 30px;
+  padding: 25px;
+  background: #f9fbfd;
+  border: 1px solid #d7e3ef;
+  border-radius: 10px;
+}
+
+/* Filter fields */
+.filter-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-group label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #0b2a4a;
+  margin-bottom: 8px;
+}
+
+.filter-group input,
+.filter-group select {
+  padding: 12px 14px;
+  border: 1px solid #bfcad5;
+  border-radius: 6px;
+  font-size: 15px;
+  background: white;
+}
+
+.filter-group input:focus,
+.filter-group select:focus {
+  outline: none;
+  border-color: #2c78c9;
+  box-shadow: 0 0 4px rgba(44, 120, 201, 0.25);
+}
+
+/* ================================
+   BUTTONS
+================================ */
+.submit-btn,
+.reset-btn {
+  padding: 12px 22px;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.3s;
+  white-space: nowrap;
+}
+
+.submit-btn {
+  background: #10b759;
+  color: white;
+}
+
+.submit-btn:hover {
+  background: #0c9448;
+}
+
+.reset-btn {
+  background: #2c78c9;
+  color: white;
+}
+
+.reset-btn:hover {
+  background: #1c5da1;
+}
+
+/* ================================
+   TABLE WRAPPER
+================================ */
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 20px;
+}
+
+/* Workorders table */
+.workorders-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  min-width: 1100px;
+}
+
+.workorders-table th {
+  background-color: #2c78c9;
+  color: white;
+  padding: 14px;
+  text-align: left;
+  font-size: 14px;
+  text-transform: uppercase;
+}
+
+.workorders-table td {
+  padding: 12px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #333;
+}
+
+/* Alternate rows */
+.workorders-table tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+/* Row hover */
+.workorders-table tr:hover {
+  background: #eaf2f9;
+  cursor: pointer;
+}
+
+/* Clickable workorder ID */
+.workorder-link,
+.workorders-table td:first-child {
+  color: #007bff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.workorder-link:hover,
+.workorders-table td:first-child:hover {
+  text-decoration: underline;
+}
+
+/* ================================
+   STATUS COLORS
+================================ */
+.status-open {
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+.status-pending {
+  color: orange;
+  font-weight: 600;
+}
+
+.status-accepted {
+  color: #007bff;
+  font-weight: 600;
+}
+
+.status-rejected {
+  color: #ff4d4d;
+  font-weight: 600;
+}
+
+.status-completed {
+  color: #28a745;
+  font-weight: 600;
+}
+
+.status-inprogress {
+  color: #8bc34a;
+  font-weight: 600;
+}
+
+/* ================================
+   LOADING / ERROR
+================================ */
+.center {
+  text-align: center;
+  padding: 20px;
+  font-size: 16px;
+}
+
+.error {
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+/* ================================
+   RESPONSIVE
+================================ */
+@media (max-width: 992px) {
+  .filters-container {
+    grid-template-columns: 1fr;
+  }
+
+  .submit-btn,
+  .reset-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .workorders-content {
+    padding: 15px;
+  }
+
+  .workorders-content h2 {
+    font-size: 24px;
+  }
+
+  .workorders-table th,
+  .workorders-table td {
+    padding: 8px;
+    font-size: 13px;
+  }
+
+  .filter-group label {
+    font-size: 14px;
+  }
+
+  .filter-group input,
+  .filter-group select {
+    font-size: 14px;
+  }
+}

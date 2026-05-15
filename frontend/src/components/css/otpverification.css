@@ -1,0 +1,228 @@
+/* 22-10-2-2025 Bhanu */
+
+.otpverification-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8faff 0%, #e8f4ff 100%);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 20px;
+}
+
+.otpverification-card {
+  background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(30, 64, 175, 0.08);
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  border: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.otpverification-title {
+  margin-bottom: 12px;
+  color: #1e3a8a;
+  font-size: 28px;
+  font-weight: 700;
+  background: linear-gradient(90deg, #1e40af, #3b82f6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.otpverification-text {
+  margin-bottom: 30px;
+  color: #64748b;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.otpverification-error {
+  color: #dc2626;
+  background: #fef2f2;
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  border-left: 4px solid #dc2626;
+  text-align: left;
+}
+
+.otpverification-success {
+  color: #059669;
+  background: #f0fdf4;
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  border-left: 4px solid #059669;
+  text-align: left;
+}
+
+.otpverification-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.otpverification-input-group {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.otpverification-label {
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 15px;
+  letter-spacing: 0.5px;
+}
+
+.otpverification-input {
+  padding: 16px 20px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 20px;
+  transition: all 0.3s ease;
+  text-align: center;
+  letter-spacing: 8px;
+  font-weight: 700;
+  background: linear-gradient(145deg, #ffffff, #f8faff);
+  color: #1e40af;
+  height: 60px;
+}
+
+.otpverification-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+  transform: translateY(-1px);
+}
+
+.otpverification-input::placeholder {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.otpverification-button {
+  padding: 16px;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 50%, #1e40af 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  position: relative;
+  overflow: hidden;
+  height: 56px;
+}
+
+.otpverification-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(59, 130, 246, 0.3);
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 50%, #1e3a8a 100%);
+}
+
+.otpverification-button:disabled {
+  background: linear-gradient(135deg, #cbd5e1, #94a3b8);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.otpverification-resend-button {
+  margin-top: 16px;
+  background: transparent;
+  border: none;
+  color: #3b82f6;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.otpverification-resend-button:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.08);
+  color: #1d4ed8;
+}
+
+.otpverification-resend-button:disabled {
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.otpverification-timer {
+  color: #64748b;
+  font-size: 13px;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+/* Loading Spinner */
+.otpverification-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top: 2px solid #ffffff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 10px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .otpverification-container {
+    padding: 16px;
+  }
+  
+  .otpverification-card {
+    padding: 32px 24px;
+    margin: 8px;
+    border-radius: 14px;
+  }
+
+  .otpverification-title {
+    font-size: 24px;
+  }
+
+  .otpverification-text {
+    font-size: 14px;
+  }
+
+  .otpverification-input {
+    font-size: 18px;
+    height: 55px;
+    letter-spacing: 6px;
+    padding: 14px 16px;
+  }
+
+  .otpverification-button {
+    font-size: 15px;
+    height: 52px;
+    padding: 14px;
+  }
+}
+
+@media (max-width: 360px) {
+  .otpverification-input {
+    letter-spacing: 4px;
+    font-size: 16px;
+  }
+}

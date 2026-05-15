@@ -1,0 +1,342 @@
+/* ---------- Improved Responsive Table Styling ---------- */
+
+@media (max-width: 768px) {
+  table.table {
+    display: block;
+    border: none;
+    background: transparent;
+  }
+
+  table.table thead {
+    display: none;
+  }
+
+  table.table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  table.table tbody tr {
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 1rem 1.25rem;
+    border: 1px solid #e5e7eb;
+  }
+
+  table.table tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 0.95rem;
+    color: #374151;
+    border-bottom: 1px solid #f1f1f1;
+  }
+
+  table.table tbody td:last-child {
+    border-bottom: none;
+    padding-top: 12px;
+  }
+
+  table.table tbody td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #000000;
+    font-size: 0.9rem;
+  }
+
+  /* Buttons styling for mobile */
+  .btn-warning, .btn-danger {
+    width: 48%;
+    font-size: 0.9rem;
+    padding: 8px 0;
+    border-radius: 6px;
+    font-weight: 500;
+  }
+
+  .btn-warning {
+    background-color: #fbbf24;
+    border: none;
+    color: #111827;
+  }
+
+  .btn-danger {
+    background-color: #ef4444;
+    border: none;
+  }
+
+  td[data-label="Actions"] {
+    justify-content: center;
+    gap: 8px;
+  }
+
+  /* Make cards pop a bit more */
+  table.table tbody tr:hover {
+    transform: translateY(-2px);
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  }
+}
+
+.modal-backdrop {
+  position: fixed;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-box {
+  background: white;
+  padding: 20px;
+  width: 450px;
+  border-radius: 8px;
+}
+
+.modal-backdrop-custom {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1050;
+}
+
+.modal-box-custom {
+  width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: white;
+  border-radius: 10px;
+  padding: 20px 25px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.upload-btn-group button {
+  width: auto !important;
+  display: inline-block !important;
+}
+.upload-btn-group {
+  align-items: center;
+}
+.upload-btn-group .btn {
+  height: 38px;
+  line-height: 38px;
+  padding: 0 16px;
+}
+.upload-btn-group .btn {
+  height: 36px;
+  min-height: 36px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+.btn-upload {
+  background-color: #2563eb;
+  border-color: #2563eb;
+}
+.upload-btn-group .btn {
+  height: 38px;
+  min-height: 38px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+/* Fix outline button border affecting height */
+.upload-btn-group .btn-outline-secondary {
+  border-width: 1px;
+}
+/* =========================
+   RATE FORM GRID
+========================= */
+
+.rate-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.rate-form-grid .mb-3 {
+  margin-bottom: 0 !important;
+}
+
+.rate-form-grid label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+/* DESCRIPTION FULL WIDTH */
+.rate-form-grid .full-width {
+  grid-column: span 2;
+}
+
+/* MOBILE */
+@media (max-width: 768px) {
+  .rate-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rate-form-grid .full-width {
+    grid-column: span 1;
+  }
+}
+/* =========================
+   RATE MODAL DESIGN
+========================= */
+
+.rate-modal-content {
+  border: 2px solid #0078d4;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.18);
+}
+
+/* HEADER */
+.rate-modal-header {
+  background: #0078d4;
+  color: white;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.rate-modal-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
+/* CLOSE */
+.rate-close {
+  position: absolute;
+  right: 18px;
+  top: 12px;
+  font-size: 28px;
+  cursor: pointer;
+  color: white;
+  transition: 0.2s;
+}
+
+.rate-close:hover {
+  transform: scale(1.1);
+  opacity: 0.85;
+}
+
+/* BODY */
+.rate-form-grid {
+  padding: 28px;
+  background: #f8fbff;
+}
+
+/* LABELS */
+.rate-form-grid .form-label {
+  color: #003b73;
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 7px;
+}
+
+/* INPUTS */
+.rate-form-grid .form-control {
+  border-radius: 8px;
+  border: 1px solid #cfd8e3;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.rate-form-grid .form-control:focus {
+  border-color: #0078d4;
+  box-shadow: 0 0 0 0.15rem rgba(0,120,212,.15);
+}
+
+/* FOOTER */
+.modal-footer {
+  border-top: 1px solid #e5e7eb;
+  padding: 18px 24px;
+  background: white;
+}
+
+/* SAVE BUTTON */
+.modal-footer .btn-success {
+  background: #0078d4;
+  border: none;
+  padding: 10px 24px;
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+.modal-footer .btn-success:hover {
+  background: #005ea6;
+}
+
+/* CLOSE BUTTON */
+.modal-footer .btn-secondary {
+  border-radius: 8px;
+  padding: 10px 24px;
+}
+
+.required-star {
+  color: #ffc107;
+  font-weight: 700;
+  margin-left: 2px;
+}
+.rate-form-grid select.form-control {
+  appearance: auto !important;
+  -webkit-appearance: menulist !important;
+  -moz-appearance: menulist !important;
+
+  background-color: #fff;
+  cursor: pointer;
+}
+/* FOOTER BUTTONS */
+.rate-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+
+  padding: 16px 24px 20px;
+
+  border-top: 1px solid #dbe3ea;
+  background: #fff;
+}
+
+/* SMALL BUTTONS */
+.rate-btn {
+  width: 90px;
+  height: 36px;
+  border-radius: 6px !important;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.readonly-input {
+  cursor: not-allowed !important;
+  background-color: #e9ecef;
+}

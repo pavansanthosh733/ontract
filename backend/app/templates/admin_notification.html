@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Work Order {{ status_text }}</title>
+</head>
+<body style="font-family:Arial,sans-serif;line-height:1.6;color:#333;max-width:800px;margin:0 auto;padding:20px;">
+  <div style="background:{{ status_color }};padding:20px;border-radius:8px;margin-bottom:20px;">
+    <h2 style="margin:0;color:white;">{{ '✓ Checkmark' if status_text == 'ACCEPTED' else '✗ Cross' }} Work Order {{ status_text }}</h2>
+  </div>
+
+  <div style="background:#f8f9fa;padding:15px;border-left:4px solid {{ status_color }};margin-bottom:20px;">
+    <p style="margin:5px 0 0 0;font-size:16px;">Contractor <strong>{{ contractor_name }}</strong> has <strong>{{ status_text.lower() }}</strong> the work order.</p>
+  </div>
+
+  <table border="1" cellspacing="0" cellpadding="12"
+         style="border-collapse:collapse;width:100%;max-width:700px;margin-bottom:25px;border:1px solid #ddd;">
+    <tr style="background:#f8f9fa;"><th align="left" style="width:40%;">Work Order</th><td><strong>{{ workorder.workorder }}</strong></td></tr>
+    <tr><th align="left" style="background:#f8f9fa;">Contractor</th><td>{{ contractor_name }} (ID: {{ contractor_id }})</td></tr>
+    <tr><th align="left" style="background:#f8f9fa;">Status</th><td style="color:{{ status_color }};font-weight:bold;">{{ status_text }}</td></tr>
+    <tr><th align="left" style="background:#f8f9fa;">Response Date</th><td>{{ response_date }}</td></tr>
+    {% if remark %}
+      <tr><th align="left" style="background:#f8f9fa;">Remark</th><td>{{ remark }}</td></tr>
+    {% endif %}
+  </table>
+
+  <hr style="border:none;border-top:1px solid #ddd;margin:30px 0;">
+  <p style="font-size:12px;color:#777;text-align:center;">Automated notification – do not reply.</p>
+</body>
+</html>

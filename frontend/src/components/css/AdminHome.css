@@ -1,0 +1,258 @@
+/* -------------------------------
+   ADMIN DASHBOARD STYLES (Responsive)
+---------------------------------- */
+
+/* Base layout */
+body, html {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  background-color: #f9fafb;
+  color: #1f2937;
+}
+
+.min-h-screen {
+  min-height: 100vh;
+  background-color: #f9fafb;
+}
+
+.max-w-7xl {
+  max-width: 112rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Typography */
+h1, h2 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+h1 {
+  font-size: 1.875rem;
+}
+
+h2 {
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Stat cards */
+.bg-white {
+  background-color: #ffffff;
+}
+
+.rounded-lg {
+  border-radius: 0.75rem;
+}
+
+.shadow-md {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.hover\:shadow-lg:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+}
+
+.p-6 {
+  padding: 1.5rem;
+}
+
+.transition-shadow {
+  transition: box-shadow 0.3s ease;
+}
+
+/* Grid layouts */
+.grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.grid-cols-1 {
+  grid-template-columns: 1fr;
+}
+
+.md\:grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.lg\:grid-cols-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.lg\:grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* Color helpers */
+.bg-blue-500   { background-color: #3b82f6; }
+.bg-green-500  { background-color: #10b981; }
+.bg-purple-500 { background-color: #8b5cf6; }
+.bg-orange-500 { background-color: #f97316; }
+.bg-indigo-500 { background-color: #6366f1; }
+.bg-cyan-500   { background-color: #06b6d4; }
+
+/* Text styles */
+.text-gray-500 { color: #6b7280; }
+.text-gray-600 { color: #4b5563; }
+.text-gray-800 { color: #1f2937; }
+.text-gray-900 { color: #111827; }
+
+.text-sm { font-size: 0.875rem; }
+.text-xs { font-size: 0.75rem; }
+
+/* Icon alignment */
+svg { vertical-align: middle; }
+
+/* Background shades */
+.bg-gray-50  { background-color: #f9fafb; }
+.bg-gray-100 { background-color: #f3f4f6; }
+.bg-green-50 { background-color: #ecfdf5; }
+
+/* Hover animations */
+.hover\:bg-gray-100:hover {
+  background-color: #f3f4f6;
+}
+
+.transition-colors {
+  transition: background-color 0.25s ease;
+}
+
+/* Section spacing */
+.mb-8 {
+  margin-bottom: 2rem;
+}
+
+/* Smooth fade effect */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.4s ease-in-out;
+}
+
+/* ====================================
+   🌐 RESPONSIVE DESIGN FOR MOBILE VIEW
+==================================== */
+
+/* Tablets (max-width: 1024px) */
+@media (max-width: 1024px) {
+  .p-6 {
+    padding: 1.25rem;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  h2 {
+    font-size: 1.125rem;
+  }
+
+  .grid {
+    gap: 1rem;
+  }
+
+  .md\:grid-cols-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .lg\:grid-cols-4,
+  .lg\:grid-cols-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Mobile (max-width: 768px) */
+@media (max-width: 768px) {
+  .max-w-7xl {
+    padding: 0 0.75rem;
+  }
+
+  .p-6 {
+    padding: 1rem;
+  }
+
+  h1 {
+    font-size: 1.375rem;
+    text-align: center;
+  }
+
+  h2 {
+    font-size: 1rem;
+    justify-content: center;
+    text-align: center;
+  }
+
+  /* Stack all grid items in 1 column */
+  .grid,
+  .md\:grid-cols-2,
+  .lg\:grid-cols-4,
+  .lg\:grid-cols-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Center align text for better readability */
+  .text-gray-500,
+  .text-gray-600,
+  .text-gray-800,
+  .text-gray-900 {
+    text-align: center;
+  }
+
+  /* Icon adjustments */
+  .p-3.rounded-lg {
+    margin: 0 auto 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Activity list mobile look */
+  .space-y-3 > div {
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .space-y-3 > div > div:first-child {
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* Small phones (max-width: 480px) */
+@media (max-width: 480px) {
+  h1 {
+    font-size: 1.25rem;
+  }
+
+  h2 {
+    font-size: 0.95rem;
+  }
+
+  .p-6 {
+    padding: 0.875rem;
+  }
+
+  .grid {
+    gap: 0.75rem;
+  }
+
+  .text-sm {
+    font-size: 0.8rem;
+  }
+
+  .text-xs {
+    font-size: 0.7rem;
+  }
+
+  .stat-card h3 {
+    font-size: 1.5rem;
+  }
+}
+
+

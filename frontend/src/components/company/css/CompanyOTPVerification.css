@@ -1,0 +1,130 @@
+.otp-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+  font-family: "Poppins", sans-serif;
+  padding: 20px;
+}
+
+.otp-card {
+  background: #ffffff;
+  padding: 40px 30px;
+  border-radius: 16px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.otp-card:hover {
+  transform: translateY(-3px);
+}
+
+.otp-card h2 {
+  font-size: 1.8rem;
+  color: #1e40af;
+  margin-bottom: 8px;
+}
+
+.otp-card p {
+  font-size: 0.95rem;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.otp-card strong {
+  color: #2563eb;
+}
+
+/* -------------------------------
+   Input Field
+--------------------------------*/
+.otp-card input {
+  width: 100%;
+  padding: 12px;
+  font-size: 1.1rem;
+  letter-spacing: 2px;
+  border: 2px solid #cbd5e1;
+  border-radius: 10px;
+  text-align: center;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.otp-card input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+/* -------------------------------
+   Buttons
+--------------------------------*/
+.otp-card button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 18px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 10px;
+  background: #2563eb;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.otp-card button:hover {
+  background: #1e3a8a;
+}
+
+.resend-btn {
+  background: transparent;
+  border: 2px solid #2563eb;
+  color: #2563eb;
+  margin-top: 15px;
+  font-weight: 500;
+}
+
+.resend-btn:hover {
+  background: #2563eb;
+  color: #fff;
+}
+
+/* -------------------------------
+   Messages
+--------------------------------*/
+.success-text {
+  color: #16a34a;
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+}
+
+.error-text {
+  color: #dc2626;
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+}
+
+/* -------------------------------
+   Responsive
+--------------------------------*/
+@media (max-width: 600px) {
+  .otp-card {
+    padding: 30px 20px;
+  }
+
+  .otp-card h2 {
+    font-size: 1.5rem;
+  }
+
+  .otp-card input {
+    font-size: 1rem;
+  }
+}
+
+.resend-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

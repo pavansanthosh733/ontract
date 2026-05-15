@@ -1,0 +1,8 @@
+.vercel
+# .env*.local
+# src/api.js
+node_modules/
+.vercel.json
+
+.vercel
+# .env*.local
