@@ -48,6 +48,16 @@ def create_app(include_admin=True):
     app.config.from_object(Config)
 
     # ---------------------------------------------------------
+    # Liveness probe for ALB / ECS health checks.
+    # Returns 200 unconditionally — does NOT touch the database,
+    # so a transient DB blip won't trigger ECS to recycle the task.
+    # For deeper checks call /api/testdb/ which exercises Postgres.
+    # ---------------------------------------------------------
+    @app.route('/api/health', methods=['GET'])
+    def _health():
+        return {"status": "ok"}, 200
+
+    # ---------------------------------------------------------
     # Serve uploaded files (FIXED)
     # ---------------------------------------------------------
     @app.route('/uploads/<path:filename>')

@@ -274,14 +274,25 @@ jobs:
                 --region "$AWS_REGION" \
                 --query 'TargetGroups[0].TargetGroupArn' --output text)
             else
-              echo "✓ Target group $name already exists" >&2
+              echo "✓ Target group $name exists — syncing health-check settings" >&2
+              # Update health-check settings on existing TG in case they drifted
+              # (e.g. previous bootstrap used a wrong path that caused 502 flapping).
+              aws elbv2 modify-target-group \
+                --target-group-arn "$arn" \
+                --health-check-protocol HTTP \
+                --health-check-path "$health" \
+                --health-check-interval-seconds 30 \
+                --health-check-timeout-seconds 5 \
+                --healthy-threshold-count 2 --unhealthy-threshold-count 3 \
+                --matcher "HttpCode=$code" \
+                --region "$AWS_REGION" >/dev/null
             fi
             # ONLY the ARN goes to stdout so that $(create_tg ...) captures it cleanly.
             printf '%s' "$arn"
           }
 
-          BE_TG_ARN=$(create_tg "$BACKEND_TG"  5000 "/api/testdb/ping" "200-399")
-          FE_TG_ARN=$(create_tg "$FRONTEND_TG" 80   "/healthz"         "200")
+          BE_TG_ARN=$(create_tg "$BACKEND_TG"  5000 "/api/health" "200")
+          FE_TG_ARN=$(create_tg "$FRONTEND_TG" 80   "/healthz"    "200")
 
           # Guard against multi-line / empty ARNs sneaking into GITHUB_OUTPUT.
           [[ "$BE_TG_ARN" =~ ^arn:aws:elasticloadbalancing: ]] || { echo "::error::Backend TG ARN looks malformed: '$BE_TG_ARN'"; exit 1; }

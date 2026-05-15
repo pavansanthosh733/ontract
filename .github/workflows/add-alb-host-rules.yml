@@ -1,0 +1,229 @@
+name: Add ALB host-header rules (Ontract demo)
+
+# Adds host-header listener rules to your EXISTING shared ALB so that
+# requests for `ontractdemo.jhaishna.com` (or any host you choose) land on
+# the Ontract target groups, while every other host (cloudops.jhaishna.com etc.)
+# keeps hitting the existing default action on the listener — untouched.
+#
+# Rules created on each chosen listener (e.g. :443, :80):
+#   priority N    : host = ontract_host AND path = /api/* OR /uploads/*   → tg-ontract-backend
+#   priority N+1  : host = ontract_host                                    → tg-ontract-frontend
+#
+# Idempotent: if a rule with the same conditions already exists, it's reused
+# (and its action is refreshed). The listener's default action is NEVER changed.
+
+on:
+  workflow_dispatch:
+    inputs:
+      alb_name:
+        description: "ALB name (e.g. cloudops-alb)"
+        required: true
+        default: "cloudops-alb"
+      ontract_host:
+        description: "Hostname to route to Ontract (e.g. ontractdemo.jhaishna.com)"
+        required: true
+        default: "ontractdemo.jhaishna.com"
+      listener_ports:
+        description: "Comma-separated ALB listener ports to add the rules to (typically 443 ; add 80 too if you serve http)"
+        required: true
+        default: "443,80"
+      backend_tg_name:
+        description: "Backend target group name"
+        required: true
+        default: "tg-ontract-backend"
+      frontend_tg_name:
+        description: "Frontend target group name"
+        required: true
+        default: "tg-ontract-frontend"
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+
+jobs:
+  add-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Normalise inputs
+        id: in
+        run: |
+          trim() { local s="$1"; s="${s#"${s%%[![:space:]]*}"}"; s="${s%"${s##*[![:space:]]}"}"; printf '%s' "$s"; }
+          strip_spaces() { printf '%s' "$1" | tr -d '[:space:]'; }
+
+          ALB_NAME="$(trim '${{ inputs.alb_name }}')"
+          HOST="$(trim '${{ inputs.ontract_host }}')"
+          PORTS="$(strip_spaces '${{ inputs.listener_ports }}')"
+          BE_TG_NAME="$(trim '${{ inputs.backend_tg_name }}')"
+          FE_TG_NAME="$(trim '${{ inputs.frontend_tg_name }}')"
+
+          [[ "$ALB_NAME"    =~ ^[A-Za-z0-9-]+$        ]] || { echo "::error::alb_name invalid"; exit 1; }
+          [[ "$HOST"        =~ ^[A-Za-z0-9.-]+$       ]] || { echo "::error::ontract_host invalid"; exit 1; }
+          [[ "$BE_TG_NAME"  =~ ^[A-Za-z0-9-]+$        ]] || { echo "::error::backend_tg_name invalid"; exit 1; }
+          [[ "$FE_TG_NAME"  =~ ^[A-Za-z0-9-]+$        ]] || { echo "::error::frontend_tg_name invalid"; exit 1; }
+          for p in ${PORTS//,/ }; do
+            [[ "$p" =~ ^[0-9]+$ ]] || { echo "::error::listener port '$p' invalid"; exit 1; }
+          done
+
+          {
+            echo "alb_name=$ALB_NAME"
+            echo "host=$HOST"
+            echo "ports=$PORTS"
+            echo "be_tg_name=$BE_TG_NAME"
+            echo "fe_tg_name=$FE_TG_NAME"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      - name: Resolve ALB + target group ARNs
+        id: resolve
+        run: |
+          ALB_ARN=$(aws elbv2 describe-load-balancers \
+            --names "${{ steps.in.outputs.alb_name }}" \
+            --region "$AWS_REGION" \
+            --query 'LoadBalancers[0].LoadBalancerArn' --output text)
+          [[ -n "$ALB_ARN" && "$ALB_ARN" != "None" ]] \
+            || { echo "::error::ALB '${{ steps.in.outputs.alb_name }}' not found"; exit 1; }
+
+          BE_TG_ARN=$(aws elbv2 describe-target-groups \
+            --names "${{ steps.in.outputs.be_tg_name }}" --region "$AWS_REGION" \
+            --query 'TargetGroups[0].TargetGroupArn' --output text)
+          FE_TG_ARN=$(aws elbv2 describe-target-groups \
+            --names "${{ steps.in.outputs.fe_tg_name }}" --region "$AWS_REGION" \
+            --query 'TargetGroups[0].TargetGroupArn' --output text)
+
+          [[ -n "$BE_TG_ARN" && "$BE_TG_ARN" != "None" ]] \
+            || { echo "::error::Backend TG '${{ steps.in.outputs.be_tg_name }}' not found — run Bootstrap workflow first"; exit 1; }
+          [[ -n "$FE_TG_ARN" && "$FE_TG_ARN" != "None" ]] \
+            || { echo "::error::Frontend TG '${{ steps.in.outputs.fe_tg_name }}' not found — run Bootstrap workflow first"; exit 1; }
+
+          echo "alb_arn=$ALB_ARN" >> "$GITHUB_OUTPUT"
+          echo "be_tg_arn=$BE_TG_ARN" >> "$GITHUB_OUTPUT"
+          echo "fe_tg_arn=$FE_TG_ARN" >> "$GITHUB_OUTPUT"
+
+      - name: Add host-header rules on each listener
+        env:
+          ALB_ARN:    ${{ steps.resolve.outputs.alb_arn }}
+          BE_TG_ARN:  ${{ steps.resolve.outputs.be_tg_arn }}
+          FE_TG_ARN:  ${{ steps.resolve.outputs.fe_tg_arn }}
+          HOST:       ${{ steps.in.outputs.host }}
+          PORTS:      ${{ steps.in.outputs.ports }}
+        run: |
+          set -euo pipefail
+
+          # ----------------------------------------------------------------
+          # Helper: find a rule on a listener whose conditions match a
+          # given host (and optional path patterns). Returns the rule ARN
+          # of the first match, or empty.
+          # ----------------------------------------------------------------
+          find_rule_arn () {
+            # Args: listener_arn, host, "path1,path2"  (paths optional)
+            local listener_arn="$1"; local want_host="$2"; local want_paths="${3:-}"
+            aws elbv2 describe-rules --listener-arn "$listener_arn" --region "$AWS_REGION" --output json \
+            | jq -r --arg host "$want_host" --arg paths "$want_paths" '
+                .Rules[]
+                | select(.IsDefault | not)
+                | . as $r
+                | (
+                    [$r.Conditions[]
+                      | select(.Field=="host-header")
+                      | (.HostHeaderConfig.Values // .Values)[]?
+                    ]
+                  ) as $hosts
+                | (
+                    [$r.Conditions[]
+                      | select(.Field=="path-pattern")
+                      | (.PathPatternConfig.Values // .Values)[]?
+                    ] | sort | join(",")
+                  ) as $pths
+                | select(($hosts | index($host)) != null
+                         and ($pths == $paths))
+                | .RuleArn
+              ' | head -n1
+          }
+
+          # ----------------------------------------------------------------
+          # Helper: pick a free priority on a listener (between 1 and 50000).
+          # ----------------------------------------------------------------
+          next_priority () {
+            local listener_arn="$1"
+            aws elbv2 describe-rules --listener-arn "$listener_arn" --region "$AWS_REGION" \
+              --query "Rules[?Priority!='default'].Priority" --output text \
+              | tr '\t' '\n' | sort -n | awk 'BEGIN{p=10} $1==p{p++} END{print p}'
+          }
+
+          create_or_update_rule () {
+            # Args: listener_arn, host, "path1,path2" (or ""), conditions_json, tg_arn, label
+            local listener_arn="$1"; local host="$2"; local paths="$3"
+            local conditions_json="$4"; local tg_arn="$5"; local label="$6"
+            local existing
+            existing=$(find_rule_arn "$listener_arn" "$host" "$paths")
+            if [[ -n "$existing" ]]; then
+              echo "  ✓ Rule '$label' already exists — refreshing action ($existing)"
+              aws elbv2 modify-rule --rule-arn "$existing" \
+                --actions "Type=forward,TargetGroupArn=$tg_arn" \
+                --region "$AWS_REGION" >/dev/null
+            else
+              local prio; prio=$(next_priority "$listener_arn")
+              echo "  → Creating rule '$label' at priority $prio"
+              aws elbv2 create-rule --listener-arn "$listener_arn" \
+                --priority "$prio" \
+                --conditions "$conditions_json" \
+                --actions "Type=forward,TargetGroupArn=$tg_arn" \
+                --region "$AWS_REGION" >/dev/null
+            fi
+          }
+
+          # ----------------------------------------------------------------
+          # JSON conditions for the two rules
+          # ----------------------------------------------------------------
+          API_COND=$(jq -nc --arg h "$HOST" '[
+            {Field:"host-header", HostHeaderConfig:{Values:[$h]}},
+            {Field:"path-pattern", PathPatternConfig:{Values:["/api/*","/uploads/*"]}}
+          ]')
+          FE_COND=$(jq -nc --arg h "$HOST" '[
+            {Field:"host-header", HostHeaderConfig:{Values:[$h]}}
+          ]')
+
+          # ----------------------------------------------------------------
+          # Walk every requested listener port
+          # ----------------------------------------------------------------
+          IFS=',' read -ra PORT_LIST <<<"$PORTS"
+          for port in "${PORT_LIST[@]}"; do
+            LISTENER_ARN=$(aws elbv2 describe-listeners --load-balancer-arn "$ALB_ARN" \
+              --region "$AWS_REGION" \
+              --query "Listeners[?Port==\`$port\`].ListenerArn | [0]" --output text)
+            if [[ -z "$LISTENER_ARN" || "$LISTENER_ARN" == "None" ]]; then
+              echo "::warning::No listener on port $port — skipping"
+              continue
+            fi
+            echo "Listener :$port → $LISTENER_ARN"
+            # Order matters: more specific rule (host + path) must have a
+            # LOWER priority number (= higher priority) than the catch-all
+            # host rule. We create the API rule first so it gets a smaller number.
+            create_or_update_rule "$LISTENER_ARN" "$HOST" "/api/*,/uploads/*" "$API_COND" "$BE_TG_ARN" "api on $HOST → backend"
+            create_or_update_rule "$LISTENER_ARN" "$HOST" ""                  "$FE_COND"  "$FE_TG_ARN" "$HOST → frontend"
+          done
+
+      - name: Summary
+        run: |
+          {
+            echo "## Host-header rules added ✅"
+            echo ""
+            echo "Routes added on ALB **${{ steps.in.outputs.alb_name }}** for host \`${{ steps.in.outputs.host }}\`:"
+            echo ""
+            echo "| Match | Target group |"
+            echo "|---|---|"
+            echo "| host = \`${{ steps.in.outputs.host }}\` AND path = \`/api/*\` or \`/uploads/*\` | \`${{ steps.in.outputs.be_tg_name }}\` |"
+            echo "| host = \`${{ steps.in.outputs.host }}\` (everything else) | \`${{ steps.in.outputs.fe_tg_name }}\` |"
+            echo ""
+            echo "### Next"
+            echo "1. Open https://${{ steps.in.outputs.host }} — you should now see Ontract, not cloudops."
+            echo "2. Update GitHub Variable \`VITE_BACKEND_URL\` to \`https://${{ steps.in.outputs.host }}\` (same origin) and re-run the frontend deploy workflow."
+            echo "3. Update GitHub Variable \`ALLOWED_ORIGINS\` to \`https://${{ steps.in.outputs.host }}\` and re-run the backend deploy workflow."
+          } >> "$GITHUB_STEP_SUMMARY"
