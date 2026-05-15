@@ -1,0 +1,50 @@
+{
+  "family": "ontract-backend",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::__AWS_ACCOUNT_ID__:role/ecsTaskExecutionRole",
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "containerDefinitions": [
+    {
+      "name": "backend",
+      "image": "__AWS_ACCOUNT_ID__.dkr.ecr.__AWS_REGION__.amazonaws.com/ontract-backend:latest",
+      "essential": true,
+      "portMappings": [
+        { "containerPort": 5000, "protocol": "tcp" }
+      ],
+      "environment": [
+        { "name": "FLASK_DEBUG", "value": "false" },
+        { "name": "PORT", "value": "5000" },
+        { "name": "DATABASE_URL", "value": "__DATABASE_URL__" },
+        { "name": "SECRET_KEY", "value": "__SECRET_KEY__" },
+        { "name": "ENCRYPTION_KEY", "value": "__ENCRYPTION_KEY__" },
+        { "name": "SMTP_HOST", "value": "__SMTP_HOST__" },
+        { "name": "SMTP_PORT", "value": "__SMTP_PORT__" },
+        { "name": "SMTP_USER", "value": "__SMTP_USER__" },
+        { "name": "SMTP_PASSWORD", "value": "__SMTP_PASSWORD__" },
+        { "name": "SMTP_USE_TLS", "value": "true" },
+        { "name": "SMTP_USE_SSL", "value": "false" },
+        { "name": "FROM_EMAIL", "value": "__FROM_EMAIL__" },
+        { "name": "ALLOWED_ORIGINS", "value": "__ALLOWED_ORIGINS__" },
+        { "name": "PUBLIC_BASE_URL", "value": "__PUBLIC_BASE_URL__" },
+        { "name": "FRONTEND_URL", "value": "__FRONTEND_URL__" },
+        { "name": "FIREBASE_SERVICE_ACCOUNT_JSON", "value": "__FIREBASE_SERVICE_ACCOUNT_JSON__" },
+        { "name": "FIREBASE_CREDENTIALS_PATH", "value": "/app/serviceAccountKey.json" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/ontract-backend",
+          "awslogs-region": "__AWS_REGION__",
+          "awslogs-stream-prefix": "backend",
+          "awslogs-create-group": "true"
+        }
+      }
+    }
+  ]
+}

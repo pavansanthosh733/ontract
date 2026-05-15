@@ -137,12 +137,12 @@ def create_app(include_admin=True):
     # ---------------------------------------------------------
     # CORS
     # ---------------------------------------------------------
-    allowed_origins = [
+    # Pull from env (ALLOWED_ORIGINS, comma-separated). Falls back to
+    # safe local defaults. Demo can set ALLOWED_ORIGINS=* — production
+    # must list explicit origins (see PRODUCTION_BACKLOG.md item #4).
+    allowed_origins = Config.ALLOWED_ORIGINS or [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-        "https://*.ngrok-free.app",
-        "https://*.devtunnels.ms",
-        "*"
     ]
 
     CORS(
