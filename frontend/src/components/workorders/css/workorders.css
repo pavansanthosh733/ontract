@@ -435,3 +435,31 @@
   background: #bdbdbd;
   border-radius: 10px;
 }
+
+/* ===========================================
+FIX TABLE COLUMN WIDTH FOR DATE/TIME
+FILE: workorders.css
+=========================================== */
+
+.workorders-table td,
+.workorders-table th {
+  white-space: nowrap;
+  vertical-align: middle;
+  padding: 12px 14px;
+}
+
+.workorders-table td {
+  line-height: 1.5;
+}
+
+/* Requested Time column */
+.workorders-table td:nth-child(5),
+.workorders-table th:nth-child(5) {
+  min-width: 170px;
+}
+
+/* Created At column */
+.workorders-table td:nth-child(7),
+.workorders-table th:nth-child(7) {
+  min-width: 170px;
+}

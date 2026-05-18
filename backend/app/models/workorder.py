@@ -740,29 +740,66 @@ class WorkOrder(db.Model):
             logging.info("Dashboard Filter Query Triggered")
 
             sql = text("""
-                SELECT 
+                SELECT DISTINCT ON (w.workorder)
                     w.*,
                     c.category_name,
-                    r.region_name
+                    r.region_name,
+
+                    -- Contractor details
+                    u.name AS contractor_name,
+                    u.user_uid AS contractor_id,
+                    wa.assignment_status,
+                    wa.assigned_at
+
                 FROM workorder_t w
-                LEFT JOIN category_master_t c ON w.category = c.category_id
-                LEFT JOIN region_master_t r ON w.region = r.region_id
+
+                LEFT JOIN category_master_t c
+                    ON w.category = c.category_id
+
+                LEFT JOIN region_master_t r
+                    ON w.region = r.region_id
+
+                -- Get latest assignment
+                LEFT JOIN workorder_assignment_t wa
+                    ON wa."WORKORDER_ID" = w.workorder
+
+                LEFT JOIN users_t u
+                    ON CAST(wa.provider_id AS TEXT) = CAST(u.user_uid AS TEXT)
+
                 WHERE w.created_t BETWEEN :from_dt AND :to_dt
-                AND (:status = 'All' OR w.status = :status)
-                ORDER BY w.id DESC
+                AND (
+                        :status = 'All'
+                        OR LOWER(w.status) = LOWER(:status)
+                    )
+
+                ORDER BY
+                    w.workorder,
+                    wa.assigned_at DESC NULLS LAST,
+                    w.id DESC
             """)
 
-            rows = db.session.execute(sql, {
-                "from_dt": from_date,
-                "to_dt": to_date,
-                "status": status
-            }).mappings().all()
+            rows = db.session.execute(
+                sql,
+                {
+                    "from_dt": from_date,
+                    "to_dt": to_date,
+                    "status": status
+                }
+            ).mappings().all()
 
             return [dict(row) for row in rows], None
 
         except Exception as e:
-            logging.error("get_filtered_workorders error: %s", e)
+            logging.error(
+                "get_filtered_workorders error: %s",
+                e,
+                exc_info=True
+            )
+
             return None, str(e)
+        
+        
+        
     @classmethod
     def count_closed(cls):
         try:

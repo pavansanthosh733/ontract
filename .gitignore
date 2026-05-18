@@ -48,3 +48,9 @@ Thumbs.db
 
 # ===== Vercel (not used anymore, but keep ignored) =====
 .vercel
+
+.github/workflows/ecs-deploy.yml
+README-ecs.md
+backend/app/static/
+infra/
+workorder_mobile/
