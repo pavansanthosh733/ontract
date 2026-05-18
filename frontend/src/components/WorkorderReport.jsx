@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { apiPost } from "../api";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -9,16 +9,33 @@ const WorkorderReport = () => {
   const [endDate, setEndDate] = useState("");
   const [data, setData] = useState([]);
 
+  useEffect(() => {
+    if (startDate && endDate && endDate < startDate) {
+      setEndDate("");
+    }
+  }, [startDate, endDate]);
+
   const handleSearch = async () => {
+    if (!startDate || !endDate) {
+      alert("Please select from date and to date");
+      return;
+    }
+
+    if (endDate < startDate) {
+      alert("To date must be greater than or equal to from date");
+      return;
+    }
+
     try {
       const res = await apiPost("/api/workorder-report", {
         start_date: startDate,
         end_date: endDate,
       });
-      setData(res.data || []);
+
+      setData(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error(err);
-      alert(err.message);
+      alert(err?.response?.data?.message || err.message || "Failed to load report");
     }
   };
 
@@ -48,92 +65,112 @@ const WorkorderReport = () => {
     saveAs(fileData, "workorder_report.xlsx");
   };
 
-return (
-  <div className="workorder-report-container">
-    <h2 className="title">Workorder Report</h2>
+  return (
+    <div className="workorder-report-container">
+      <h2 className="title">Workorder Report</h2>
 
-    {/* 🔍 Filters */}
-    <div className="filters-card">
-      {/* Top Row */}
-      <div className="filters-top">
-        <input
-          type="datetime-local"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-        />
+      <div className="filters-card">
+        <div className="filters-row">
+          <div className="field-group">
+            <label>From Date</label>
+            <input
+              type="datetime-local"
+              value={startDate}
+              onChange={(e) => {
+                const value = e.target.value;
+                setStartDate(value);
+                if (endDate && value && endDate < value) {
+                  setEndDate("");
+                }
+              }}
+            />
+          </div>
 
-        <input
-          type="datetime-local"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-        />
+          <div className="field-group">
+            <label>To Date</label>
+            <input
+              type="datetime-local"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              min={startDate || undefined}
+            />
+          </div>
+
+          <div className="field-group button-group">
+            <label>Actions</label>
+            <div className="filters-actions">
+              <button className="btn primary" onClick={handleSearch}>
+                🔍 Search
+              </button>
+
+              <button className="btn success" onClick={downloadExcel}>
+                ⬇ Download
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Bottom Row */}
-      <div className="filters-bottom">
-        <button className="btn primary" onClick={handleSearch}>
-          🔍 Search
-        </button>
+      <div className="table-card">
+        <div className="table-wrapper">
+          <table className="report-table">
+            <thead>
+              <tr>
+                <th>Workorder</th>
+                <th>Status</th>
+                <th>Created Time</th>
+                <th>Category</th>
+                <th>Item</th>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Region</th>
+                <th>State</th>
+                <th>City</th>
+                <th>Client</th>
+                <th>Contractor</th>
+                <th>Price</th>
+              </tr>
+            </thead>
 
-        <button className="btn success" onClick={downloadExcel}>
-          ⬇ Download
-        </button>
+            <tbody>
+              {data.length > 0 ? (
+                data.map((row, i) => (
+                  <tr key={i}>
+                    <td>{row.workorder}</td>
+                    <td>{row.status}</td>
+                    <td>{row.created_time}</td>
+                    <td>{row.category_name}</td>
+                    <td>{row.item_name}</td>
+                    <td>{row.type_name}</td>
+                    <td>{row.description_name}</td>
+                    <td>{row.region_name}</td>
+                    <td>{row.state_name}</td>
+                    <td>{row.city_name}</td>
+                    <td>{row.client}</td>
+                    <td>{row.contractor_name}</td>
+                    <td className="price">₹{row.price_rm}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="13" className="empty-state">
+                    No data found
+                  </td>
+                </tr>
+              )}
+
+              {data.length > 0 && (
+                <tr className="total-row">
+                  <td colSpan="12">Total</td>
+                  <td className="price total">₹{totalPrice.toFixed(2)}</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
-
-    {/* 📊 Table */}
-    <div className="table-card">
-      <div className="table-wrapper">
-        <table className="report-table">
-          <thead>
-            <tr>
-              <th>Workorder</th>
-              <th>Status</th>
-              <th>Created Time</th>
-              <th>Category</th>
-              <th>Item</th>
-              <th>Type</th>
-              <th>Description</th>
-              <th>Region</th>
-              <th>State</th>
-              <th>City</th>
-              <th>Client</th>
-              <th>Contractor</th>
-              <th>Price</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {data.map((row, i) => (
-              <tr key={i}>
-                <td>{row.workorder}</td>
-                <td>{row.status}</td>
-                <td>{row.created_time}</td>
-                <td>{row.category_name}</td>
-                <td>{row.item_name}</td>
-                <td>{row.type_name}</td>
-                <td>{row.description_name}</td>
-                <td>{row.region_name}</td>
-                <td>{row.state_name}</td>
-                <td>{row.city_name}</td>
-                <td>{row.client}</td>
-                <td>{row.contractor_name}</td>
-                <td className="price">₹{row.price_rm}</td>
-              </tr>
-            ))}
-
-            {data.length > 0 && (
-              <tr className="total-row">
-                <td colSpan="12">Total</td>
-                <td className="price total">₹{totalPrice}</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-);
+  );
 };
 
 export default WorkorderReport;

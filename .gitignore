@@ -54,3 +54,9 @@ README-ecs.md
 backend/app/static/
 infra/
 workorder_mobile/
+
+# frontend
+frontend/src/firebase.js
+rontend/public/firebase-messaging-sw.js
+ frontend/.env
+
