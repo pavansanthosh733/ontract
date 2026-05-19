@@ -170,4 +170,16 @@ def create_app(include_admin=True):
         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     )
 
+
+    # ---------------------------------------------------------
+    # Scheduler
+    # ---------------------------------------------------------
+    try:
+        from app.automation.workorder_auto_assign import start_auto_scheduler
+        with app.app_context():
+            start_auto_scheduler(app)
+    except Exception as e:
+        logging.error("Scheduler failed", exc_info=True)
+
     return app
+
