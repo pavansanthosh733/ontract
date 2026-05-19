@@ -10,7 +10,7 @@ function Home({ user }) {
   useEffect(() => {
     const interval = setInterval(() => {
       setShowHint((prev) => !prev);
-    }, 3000);
+    }, 9000);
 
     return () => clearInterval(interval);
   }, []);
