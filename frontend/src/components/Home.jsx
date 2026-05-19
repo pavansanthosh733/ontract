@@ -33,7 +33,7 @@ function Home({ user }) {
           );
           bsCollapse.hide();
         }
-      }, 200);
+      }, 1800);
     };
 
     const navLinks = document.querySelectorAll(
