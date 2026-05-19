@@ -1,21 +1,23 @@
+/* home.css */
 .hero-section {
   background: linear-gradient(135deg, #4a74f1, #f2101f);
   min-height: 40vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem; /* Add padding for desktop */
+  padding: 2rem;
 }
 
 .search-box {
-  max-width: 100%; /* Ensure it takes full width on small devices */
+  max-width: 100%;
 }
 
 @media (min-width: 992px) {
   .search-box {
-    max-width: 900px; /* Limit width on large screens */
+    max-width: 900px;
   }
 }
+
 .service-card {
   transition: all 0.3s ease;
 }
@@ -40,4 +42,26 @@
 
 .role-card:hover {
   transform: translateY(-4px);
+}
+
+/* Keep Bootstrap dropdown hidden until opened */
+.navbar .dropdown-menu {
+  display: none;
+}
+
+.navbar .dropdown-menu.show {
+  display: block;
+}
+
+/* Make dropdown buttons look clean inside navbar */
+.navbar .dropdown-toggle.btn {
+  padding-left: 0;
+  padding-right: 0;
+  box-shadow: none;
+}
+
+.navbar .dropdown-toggle.btn:focus,
+.navbar .dropdown-toggle.btn:active {
+  box-shadow: none;
+  outline: none;
 }

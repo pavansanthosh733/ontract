@@ -1,5 +1,6 @@
+// Home.jsx
 import React, { useEffect, useState } from "react";
-import { Search, User, Building2 } from "lucide-react";
+import { Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import "./css/home.css";
 
@@ -15,32 +16,34 @@ function Home({ user }) {
   }, []);
 
   useEffect(() => {
-const navLinks = document.querySelectorAll(
-  ".navbar-collapse .nav-link, .navbar-collapse .dropdown-item"
-);
     const navbarCollapse = document.querySelector(".navbar-collapse");
-
     if (!navbarCollapse) return;
 
-const handleLinkClick = () => {
-  setTimeout(() => {
-    if (navbarCollapse.classList.contains("show")) {
-      const bsCollapse = new window.bootstrap.Collapse(navbarCollapse, {
-        toggle: false,
-      });
-      bsCollapse.hide();
-    }
-  }, 9000);
-};
+    const closeNavbar = () => {
+      setTimeout(() => {
+        if (
+          navbarCollapse.classList.contains("show") &&
+          window.bootstrap?.Collapse
+        ) {
+          const bsCollapse = window.bootstrap.Collapse.getOrCreateInstance(
+            navbarCollapse,
+            {
+              toggle: false,
+            }
+          );
+          bsCollapse.hide();
+        }
+      }, 200);
+    };
 
-    navLinks.forEach((link) =>
-      link.addEventListener("click", handleLinkClick)
+    const navLinks = document.querySelectorAll(
+      ".navbar-collapse .nav-link, .navbar-collapse .dropdown-item"
     );
 
+    navLinks.forEach((link) => link.addEventListener("click", closeNavbar));
+
     return () => {
-      navLinks.forEach((link) =>
-        link.removeEventListener("click", handleLinkClick)
-      );
+      navLinks.forEach((link) => link.removeEventListener("click", closeNavbar));
     };
   }, []);
 
@@ -109,6 +112,9 @@ const handleLinkClick = () => {
               type="button"
               data-bs-toggle="collapse"
               data-bs-target="#navbarNav"
+              aria-controls="navbarNav"
+              aria-expanded="false"
+              aria-label="Toggle navigation"
             >
               <span className="navbar-toggler-icon"></span>
             </button>
@@ -123,26 +129,27 @@ const handleLinkClick = () => {
               </li>
 
               <li className="nav-item dropdown">
-<button
-  className="nav-link dropdown-toggle btn btn-link text-decoration-none"
-  id="loginDropdown"
-  type="button"
-  data-bs-toggle="dropdown"
-  aria-expanded="false"
->
-  Login
-</button>
-                <ul className="dropdown-menu dropdown-menu-end">
+                <button
+                  className="nav-link dropdown-toggle btn btn-link text-decoration-none"
+                  id="loginDropdown"
+                  type="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                >
+                  Login
+                </button>
+
+                <ul
+                  className="dropdown-menu dropdown-menu-end"
+                  aria-labelledby="loginDropdown"
+                >
                   <li>
                     <Link className="dropdown-item" to="/login">
                       Individual
                     </Link>
                   </li>
                   <li>
-                    <Link
-                      className="dropdown-item"
-                      to="/contractor/login"
-                    >
+                    <Link className="dropdown-item" to="/contractor/login">
                       Contractor
                     </Link>
                   </li>
@@ -150,26 +157,27 @@ const handleLinkClick = () => {
               </li>
 
               <li className="nav-item dropdown ms-2">
-<button
-  className="nav-link dropdown-toggle btn btn-link text-decoration-none"
-  id="signupDropdown"
-  type="button"
-  data-bs-toggle="dropdown"
-  aria-expanded="false"
->
-  Sign Up
-</button>
-                <ul className="dropdown-menu dropdown-menu-end">
+                <button
+                  className="nav-link dropdown-toggle btn btn-link text-decoration-none"
+                  id="signupDropdown"
+                  type="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                >
+                  Sign Up
+                </button>
+
+                <ul
+                  className="dropdown-menu dropdown-menu-end"
+                  aria-labelledby="signupDropdown"
+                >
                   <li>
                     <Link className="dropdown-item" to="/signup">
                       Individual
                     </Link>
                   </li>
                   <li>
-                    <Link
-                      className="dropdown-item"
-                      to="/contractor/signup"
-                    >
+                    <Link className="dropdown-item" to="/contractor/signup">
                       Contractor
                     </Link>
                   </li>
@@ -216,62 +224,6 @@ const handleLinkClick = () => {
           </div>
         </div>
       </section>
-
-      {/* ROLE CTA */}
-      {/*<section className="py-5 bg-white">
-        <div className="container">
-          <h2 className="text-center fw-bold mb-4">
-            Join as Individual or Contractor
-          </h2>
-          <div className="row g-4">
-            <div className="col-md-6">
-              <div className="card shadow-sm border-0 h-100 role-card">
-                <div className="card-body text-center p-4">
-                  <User size={40} className="mb-3 text-primary" />
-                  <h4>Individual Provider</h4>
-                  <p className="text-muted">
-                    Start receiving service requests near your location.
-                  </p>
-                  <div className="d-flex gap-2 justify-content-center flex-wrap">
-                    <Link to="/login" className="btn btn-primary">
-                      Login
-                    </Link>
-                    <Link to="/signup" className="btn btn-outline-primary">
-                      Sign Up
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="col-md-6">
-              <div className="card shadow-sm border-0 h-100 role-card">
-                <div className="card-body text-center p-4">
-                  <Building2 size={40} className="mb-3 text-success" />
-                  <h4>Contractor / Company</h4>
-                  <p className="text-muted">
-                    Manage teams, work orders and invoices efficiently.
-                  </p>
-                  <div className="d-flex gap-2 justify-content-center flex-wrap">
-                    <Link
-                      to="/contractor/login"
-                      className="btn btn-success"
-                    >
-                      Login
-                    </Link>
-                    <Link
-                      to="/contractor/signup"
-                      className="btn btn-outline-success"
-                    >
-                      Sign Up
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>*/}
 
       {/* SERVICES */}
       <section className="py-5 bg-light">
