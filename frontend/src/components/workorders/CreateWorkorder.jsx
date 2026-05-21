@@ -52,7 +52,7 @@ const CreateWorkOrder = () => {
   useEffect(() => {
     const loadInitial = async () => {
       try {
-        const cat = await apiGet("/api/category");
+        const cat = await apiGet("/api/category/active");
         setCategories(Array.isArray(cat) ? cat : []);
 
         const regs = await apiGet("/api/region/");

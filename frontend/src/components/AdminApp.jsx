@@ -195,7 +195,7 @@ function AdminApp({ admin, setAdmin }) {
 
         <li>
           <Link
-            to="/admin/workorder"
+            to="/admin/workorder/product-workorder"
             onClick={() => handleLinkClick('product_workorder')}
           >
             Product Workorder

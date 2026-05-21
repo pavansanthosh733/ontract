@@ -9,6 +9,7 @@ import WorkorderAssignment from "./WorkorderAssignment";
 import WorkOrderTypePage from "./Workorder_type";
 import WorkOrderAreaPage from "./Workorder_Area";
 import CreateWorkOrder from "./CreateWorkorder";
+import CreateProductWorkorder from "./CreateProductWorkorder";
 import MappingPage from "./MappingPage";
 import WorkOrders from "./WorkOrder";
 import WorkOrderDetails from "./WorkOrderDetails";
@@ -35,7 +36,8 @@ function WorkOrderLayout() {
           <Route path="/search-workorder" element={<SearchWorkOrder/>} />  
           <Route path="/contractor" element={<Contractor />} />
           <Route path="/contractor/workorders/:workorder" element={<WorkOrderDetails />} />
-            <Route path="/WorkorderAssignment" element={<WorkorderAssignment />} />
+          <Route path="/WorkorderAssignment" element={<WorkorderAssignment />} />
+          <Route path="product-workorder" element={<CreateProductWorkorder />} />
 
         </Routes>
       </div>
