@@ -226,7 +226,7 @@
 .state-page .fixed-table {
   flex: 1;
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: auto;
   background: white;
   border: 2px solid #cbd5e1;
   border-radius: 8px;

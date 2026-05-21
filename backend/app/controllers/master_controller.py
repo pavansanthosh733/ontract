@@ -23,7 +23,9 @@ class MasterController:
         return MasterModel.delete_category(cat_id)
     
     
-    
+    @staticmethod
+    def get_active_categories():
+        return MasterModel.get_active_categories()
 
 
 

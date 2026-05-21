@@ -78,6 +78,14 @@ def delete_category(cat_id):
     return jsonify({"message": "Category deleted"}), 200
 
 
+@master_bp.route("/category/active", methods=["GET"])
+def get_active_categories():
+
+    categories = MasterController.get_active_categories()
+
+    return jsonify([dict(row) for row in categories]), 200
+
+
 # ===========================
 # ITEM ROUTES
 # ===========================

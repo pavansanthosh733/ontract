@@ -33,7 +33,7 @@ const ItemPage = () => {
   const cleanInput = (value) => value.replace(/[^A-Za-z0-9- ]/g, "");
 
   const fetchCategories = async () => {
-    const data = await apiGet("/api/category");
+    const data = await apiGet("/api/category/active");
     setCategories(Array.isArray(data) ? data : []);
   };
 
