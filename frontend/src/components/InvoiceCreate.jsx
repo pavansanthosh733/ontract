@@ -136,7 +136,7 @@ ${wo.client}`,
           workorder: CREDIT_ROW,
           desc: "Transaction Fee - Credit",
           qty: 1,
-          unit: -400,
+          unit: -300,
         },
       ]);
     } catch (err) {

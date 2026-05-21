@@ -1388,7 +1388,7 @@ class WorkOrder(db.Model):
                     and lower(f.type_name) = lower(sr.type)
                     and lower(d.description_name) = lower(sr.description)
                 WHERE TRIM(LOWER(wo.workorder))
-                 =
+                =
                 TRIM(LOWER(:workorder)) LIMIT 1
             """)
 
