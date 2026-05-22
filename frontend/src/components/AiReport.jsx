@@ -6,10 +6,9 @@ import "./css/aiReport.css";
 const PROMPT_SUGGESTIONS = [
   "Show workorder report for last month",
   "Top 5 contractors by open workorders",
-  "Give contractor report for Ravi between 2026-04-01 and 2026-04-30",
   "Show rate comparison report for last month with workorder, created time, price, service rate and difference",
   "Compare contractor A and contractor B side by side",
-  "Show overdue workorders for this month",
+
 ];
 
 function isIsoLikeDate(value) {
@@ -140,7 +139,7 @@ const AIReport = () => {
         err?.response?.data?.error ||
           err?.response?.data?.message ||
           err.message ||
-          "Failed to generate report."
+          "Failed to generate reports."
       );
     } finally {
       setLoading(false);

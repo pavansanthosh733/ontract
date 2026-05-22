@@ -157,7 +157,7 @@ class AIReportModel:
         "contractor_id",
     ]
 
-    # Canonical field -> SQL expression map for dynamic queries.
+    # Canonical field -> SQL expression map for dynamic queries given.
     FIELD_MAP = {
         "workorder": "a.workorder",
         "status": "a.status",

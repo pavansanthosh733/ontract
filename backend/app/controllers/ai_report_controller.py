@@ -5,7 +5,7 @@ from app.models.ai_report_model import AIReportModel
 
 ai_report_bp = Blueprint("ai_report", __name__)
 
-print("✅ ai_report_controller loaded")
+print("✅ ai_report_controller loaded successfully")
 
 
 @ai_report_bp.route("/contractors", methods=["GET"])

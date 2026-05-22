@@ -907,5 +907,5 @@ def generate_ai_report(
     }
     print(f"\n✅ ========== generate_ai_report COMPLETED ==========")
     print(f"📊 Final result: {len(response_data)} rows, {len(columns)} columns")
-    print(f"========================================\n")
+    print(f"=========================================\n")
     return result

@@ -93,7 +93,7 @@ GROUP_BY_ALIASES = [
 SYSTEM_PROMPT = """
 You are a report intent parser for a workorder analytics system.
 
-Convert the user prompt into STRICT JSON only.
+Convert the user prompt into STRICT JSON only .
 Do not add markdown, explanation, or extra text.
 
 Return this structure:
