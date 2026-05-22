@@ -27,6 +27,7 @@ function AdminApp({ admin, setAdmin }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportsOpen, setReportsOpen] = useState(false);
   const [registrationOpen, setRegistrationOpen] = useState(false);
+  const [workorderOpen, setWorkorderOpen] = useState(false);
 
   // 🔥 Get assigned modules from DB
   const modules = ctxAdmin?.modules
@@ -50,6 +51,7 @@ function AdminApp({ admin, setAdmin }) {
     const closeMenus = () => {
       setRegistrationOpen(false);
       setReportsOpen(false);
+      setWorkorderOpen(false);
     };
 
     document.addEventListener('click', closeMenus);
@@ -68,8 +70,10 @@ function AdminApp({ admin, setAdmin }) {
   const handleLinkClick = (link) => {
     setActiveLink(link);
     setMenuOpen(false);
+
     setRegistrationOpen(false);
     setReportsOpen(false);
+    setWorkorderOpen(false);
   };
 
   if (loading) return null;
@@ -115,9 +119,13 @@ function AdminApp({ admin, setAdmin }) {
   {hasModule('Registration') && (
     <li className="nav-item registration-menu">
       <div
-        className="nav-link"
+        className="nav-link-Home"
         onClick={(e) => {
           e.stopPropagation();
+
+          setReportsOpen(false);
+          setWorkorderOpen(false);
+
           setRegistrationOpen(!registrationOpen);
         }}
       >
@@ -159,16 +167,42 @@ function AdminApp({ admin, setAdmin }) {
     </li>
   )}
 
-  {/* Work Orders */}
+  {/* Work Orders Dropdown */}
   {hasModule('Work Orders') && (
-    <li>
-      <Link
-        to="/admin/workorder"
-        className={activeLink === 'workorders' ? 'active' : ''}
-        onClick={() => handleLinkClick('workorders')}
+    <li className="nav-item workorder-menu">
+      <div
+        className="nav-link-Home"
+        onClick={(e) => {
+          e.stopPropagation();
+
+          setRegistrationOpen(false);
+          setReportsOpen(false);
+
+          setWorkorderOpen(!workorderOpen);
+        }}
       >
         Work Orders
-      </Link>
+      </div>
+
+      <ul className={`reports-dropdown ${workorderOpen ? 'open' : ''}`}>
+        <li>
+          <Link
+            to="/admin/workorder"
+            onClick={() => handleLinkClick('service_workorder')}
+          >
+            Service Workorder
+          </Link>
+        </li>
+
+        <li>
+          <Link
+            to="/admin/workorder/product-workorder"
+            onClick={() => handleLinkClick('product_workorder')}
+          >
+            Product Workorder
+          </Link>
+        </li>
+      </ul>
     </li>
   )}
 
@@ -228,9 +262,13 @@ function AdminApp({ admin, setAdmin }) {
   {hasModule('Reports') && (
     <li className="nav-item reports-menu">
       <div
-        className="nav-link"
+        className="nav-link-Home"
         onClick={(e) => {
           e.stopPropagation();
+
+          setRegistrationOpen(false);
+          setWorkorderOpen(false);
+
           setReportsOpen(!reportsOpen);
         }}
       >

@@ -40,13 +40,14 @@
 
 .nav-links a:hover,
 .nav-links a.active {
+  color: white;
   text-decoration: underline;
   font-weight: bold;
 }
 
 /* make REPORTS same as other nav links */
-.nav-link {
-  color: white;
+.nav-link-Home {
+  color: white !important;
   font-weight: 500;
   cursor: pointer;
   text-decoration: none;
@@ -333,4 +334,27 @@
     color: white !important;
     padding-left: 10px;
   }
+}
+
+/* =========================================
+   WORKORDER DROPDOWN
+========================================= */
+
+.workorder-menu {
+  position: relative;
+}
+
+.workorder-menu .reports-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: #fff;
+  min-width: 220px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  z-index: 999;
+}
+.nav-links a,
+.nav-link {
+  color: white !important;
 }

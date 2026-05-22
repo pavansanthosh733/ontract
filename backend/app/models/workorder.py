@@ -1368,9 +1368,14 @@ class WorkOrder(db.Model):
                 c.category_name AS category,e.item_name,f.type_name,d.description_name AS description,
                 r.region_name AS region_name,s.state_name AS state,sr.client AS client,sr.price_rm
                 FROM workorder_t wo 
-                JOIN workorder_life_cycle_t wlc ON wlc.workorder = wo.workorder
-                JOIN users_t u ON wlc.contractor_id = u.user_uid 
-                JOIN providers_t p ON p.user_uid = u.user_uid
+                LEFT JOIN workorder_life_cycle_t wlc
+                ON wlc.workorder = wo.workorder
+
+                LEFT JOIN users_t u
+                ON wlc.contractor_id = u.user_uid 
+
+                LEFT JOIN providers_t p
+                ON p.user_uid = u.user_uid
                 LEFT JOIN description_master_t d ON wo.description = d.description_id 
                 LEFT JOIN category_master_t c ON c.category_id = wo.category
                 LEFT JOIN item_master_t e ON  e.item_id = wo.item
@@ -1382,7 +1387,9 @@ class WorkOrder(db.Model):
                     and lower(e.item_name) = lower(sr.item)
                     and lower(f.type_name) = lower(sr.type)
                     and lower(d.description_name) = lower(sr.description)
-                WHERE wo.workorder = :workorder LIMIT 1
+                WHERE TRIM(LOWER(wo.workorder))
+                =
+                TRIM(LOWER(:workorder)) LIMIT 1
             """)
 
             row = db.session.execute(
