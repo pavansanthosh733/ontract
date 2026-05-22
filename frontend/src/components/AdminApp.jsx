@@ -16,6 +16,7 @@ import SummaryReport from './SummaryReport';
 import RateComparisonReport from './RateComparisonReport';
 import RegistrationPage from './AdminRegistration';
 import AdminUpdate from './AdminUpdate';
+import AIReport from './AiReport';
 
 function AdminApp({ admin, setAdmin }) {
   const { admin: ctxAdmin, loading } = useAdmin();
@@ -272,6 +273,14 @@ function AdminApp({ admin, setAdmin }) {
             Rate Comparison Report
           </Link>
         </li>
+                <li>
+          <Link
+            to="/admin/reports/aireport"
+            onClick={() => handleLinkClick('aireport')}
+          >
+            Prompt Based Reports
+          </Link>
+        </li>
       </ul>
     </li>
   )}
@@ -347,6 +356,10 @@ function AdminApp({ admin, setAdmin }) {
           <Route
             path="/reports/rate-comparison"
             element={<RateComparisonReport />}
+          />
+           <Route
+            path="/reports/aireport"
+            element={<AIReport />}
           />
 
           <Route
