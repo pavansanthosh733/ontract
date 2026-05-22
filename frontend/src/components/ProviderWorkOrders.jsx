@@ -139,7 +139,7 @@ useEffect(() => {
       );
 
       if (res?.success) {
-        alert("Your request has been captured and team will cross check and close the workorder okay");
+        alert("Your request has been captured and team will cross check and close the ");
         closeModal();
         fetchWorkorders(activeTab);
       } else {
