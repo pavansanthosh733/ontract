@@ -195,8 +195,8 @@ function Home({ user }) {
             Find Trusted Services Near You
           </h1>
           <p className="lead mb-4">
-            From home cleaning to beauty & repair – book professionals instantly
-            and enjoy
+            From home cleaning to Beauty & Repair – Book professionals instantly
+            and enjoy the life
           </p>
 
           <div className="bg-white rounded-4 p-3 shadow-lg mx-auto search-box">
