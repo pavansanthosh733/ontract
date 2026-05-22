@@ -21,6 +21,8 @@ const [contractorModal, setContractorModal] = useState(null);
   const [servicesModalUser, setServicesModalUser] = useState(null);
   const [sending, setSending] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [providerPage, setProviderPage] = useState(1);
+  const [contractorPage, setContractorPage] = useState(1);
 const pageSize = 5;
 
   const navigate = useNavigate();
@@ -205,16 +207,23 @@ const handleDeactivate = async (email) => {
   if (loading) return <div className="text-center mt-5">Loading...</div>;
   if (error) return <div className="alert alert-danger text-center mt-5">{error}</div>;
 
-  const startIndex = (currentPage - 1) * pageSize;
-const endIndex = startIndex + pageSize;
+  // Provider pagination
+  const providerStartIndex = (providerPage - 1) * pageSize;
+  const providerEndIndex = providerStartIndex + pageSize;
 
-const paginatedProviders = providers.slice(startIndex, endIndex);
-const paginatedContractors = contractors.slice(startIndex, endIndex);
+  const paginatedProviders = providers.slice(providerStartIndex,providerEndIndex);
+  const providerTotalPages = Math.ceil(providers.length / pageSize);
 
-const totalPages = Math.max(
-  Math.ceil(providers.length / pageSize),
-  Math.ceil(contractors.length / pageSize)
-);
+  // Contractor pagination
+  const contractorStartIndex = (contractorPage - 1) * pageSize;
+  const contractorEndIndex = contractorStartIndex + pageSize;
+
+  const paginatedContractors = contractors.slice(
+    contractorStartIndex,
+    contractorEndIndex
+  );
+
+  const contractorTotalPages = Math.ceil(contractors.length / pageSize);
 
   return (
     <div className="admin-dashboard container mt-4">
@@ -336,7 +345,32 @@ paginatedProviders.map((p) => (
           </table>
         </div>
       </div>
+      <div className="d-flex justify-content-center mt-3">
+        <ul className="pagination">
+          {Array.from(
+            { length: providerTotalPages },
+            (_, index) => {
+              const pageNumber = index + 1;
 
+              return (
+                <li
+                  key={pageNumber}
+                  className={`page-item ${
+                    providerPage === pageNumber ? "active" : ""
+                  }`}
+                >
+                  <button
+                    className="page-link"
+                    onClick={() => setProviderPage(pageNumber)}
+                  >
+                    {pageNumber}
+                  </button>
+                </li>
+              );
+            }
+          )}
+        </ul>
+      </div>
       {/* ---------------- CONTRACTOR SECTION ---------------- */}
       <div className="card mb-4">
         <div className="card-header bg-secondary text-white">
@@ -455,39 +489,33 @@ paginatedProviders.map((p) => (
           </table>
         </div>
       </div>
-      <div className="d-flex justify-content-center mt-4">
+      
+      <div className="d-flex justify-content-center mt-3">
+        <ul className="pagination">
+          {Array.from(
+            { length: contractorTotalPages },
+            (_, index) => {
+              const pageNumber = index + 1;
 
-<ul className="pagination">
-
-{Array.from({ length: totalPages }, (_, index) => {
-
-const pageNumber = index + 1;
-
-return (
-
-<li
-key={pageNumber}
-className={`page-item ${currentPage === pageNumber ? "active" : ""}`}
->
-
-<button
-className="page-link"
-onClick={() => setCurrentPage(pageNumber)}
->
-
-{pageNumber}
-
-</button>
-
-</li>
-
-);
-
-})}
-
-</ul>
-
-</div>
+              return (
+                <li
+                  key={pageNumber}
+                  className={`page-item ${
+                    contractorPage === pageNumber ? "active" : ""
+                  }`}
+                >
+                  <button
+                    className="page-link"
+                    onClick={() => setContractorPage(pageNumber)}
+                  >
+                    {pageNumber}
+                  </button>
+                </li>
+              );
+            }
+          )}
+        </ul>
+      </div>
 
 
 
