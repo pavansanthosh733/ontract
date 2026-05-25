@@ -35,7 +35,7 @@ yarn-error.log*
 
 # ===== Runtime artefacts =====
 backend/logs/
-backend/uploads/
+# backend/uploads/
 *.log
 
 # ===== Editors / OS =====
