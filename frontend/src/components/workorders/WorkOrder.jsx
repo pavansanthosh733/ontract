@@ -261,7 +261,7 @@ const WorkOrders = () => {
                       <th>Region</th>
                       <th>Status</th>
                       <th>Requested Time</th>
-                      <th>Remarks</th>
+                      <th>Assignment Type</th>
                       <th>Created At</th>
                       <th>Contractor_Name</th>
                     </tr>
@@ -313,7 +313,7 @@ const WorkOrders = () => {
                           </td>
 
                           <td>
-                            {wo.remarks || "N/A"}
+                            {wo.ticket_assignment_type|| "N/A"}
                           </td>
 
                           <td>

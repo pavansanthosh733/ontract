@@ -764,7 +764,7 @@ class WorkOrder(db.Model):
                     ON wa."WORKORDER_ID" = w.workorder
 
                 LEFT JOIN users_t u
-                    ON CAST(wa.provider_id AS TEXT) = CAST(u.user_uid AS TEXT)
+                   ON wa.provider_id = u.user_uid
 
                 WHERE w.created_t BETWEEN :from_dt AND :to_dt
                 AND (

@@ -244,11 +244,9 @@ const CreateWorkOrder = () => {
     setImages(images.filter((_, i) => i !== index));
   };
 
-  const getMinDateTime = () => {
-    const now = new Date();
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-    return now.toISOString().slice(0, 16);
-  };
+  const getMinDate = () => {
+  return new Date().toISOString().split("T")[0];
+};
 
   // ===============================
   // SUBMIT (WITH DUPLICATE HANDLING)
@@ -568,13 +566,12 @@ const CreateWorkOrder = () => {
 
             <div className="form-group required-wrapper">
               <input
-                type="datetime-local"
-                name="REQUESTED_TIME_CLOSING"
-                min={getMinDateTime()}
-                required
-                value={formData.REQUESTED_TIME_CLOSING}
-                onChange={handleChange}
-              />
+  type="date"
+  name="REQUESTED_TIME_CLOSING"
+  required
+  value={formData.REQUESTED_TIME_CLOSING}
+  onChange={handleChange}
+/>
               <span className="required-star">★</span>
             </div>
 
