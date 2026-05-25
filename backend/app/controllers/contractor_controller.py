@@ -107,7 +107,7 @@ class ContractorController:
     
         # service type validation
         if contractor.get("service_type") is not None and contractor["service_type"] != 1:
-            print("❌ service_type mismatch")
+            print("service_type mismatch")
             print("=" * 60)
             return {"error": "Invalid credentials"}, 401
     
@@ -120,22 +120,22 @@ class ContractorController:
         print(f"🔍 Password Match    : {password_match}")
     
         if not password_match:
-            print("❌ Password mismatch")
+            print("Password mismatch")
             print("=" * 60)
             return {"error": "Invalid credentials"}, 401
     
         if not contractor["active_status"]:
-            print("❌ Account not activated")
-            print("=" * 60)
-            return {"error": "Account not activated"}, 401
+            return {
+                "error": "Account not activated. Please check your registered email and activate your account before login."
+            }, 401
     
         otp = ''.join(random.choices(string.digits, k=6))
-        print(f"📨 Generated OTP     : {otp}")
+        print(f"Generated OTP     : {otp}")
     
         ContractorModel.save_otp(email, otp)
         send_contractor_otp_email(email, otp)
     
-        print("✅ OTP sent successfully")
+        print("OTP sent successfully")
         print("=" * 60)
     
         return {"message": "OTP sent to contractor email"}, 200
