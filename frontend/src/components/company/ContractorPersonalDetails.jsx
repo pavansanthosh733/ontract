@@ -385,7 +385,7 @@ setFormData({
   company_name: data.company_name || "",
   brn_number: data.brn_number || "",
   tin_number: data.tin_number || "",
-  bumiputera: data.bumiputera === 1 ? 'yes' : 'no',
+  bumiputera: data.bumiputra_status?.toLowerCase() === "yes" ? "yes" : "no",
 
   mailing_address: (data.mailing_address || "").replace(/,\s*\d{5}$/, ""),
   billing_address: (data.billing_address || "").replace(/,\s*\d{5}$/, ""),

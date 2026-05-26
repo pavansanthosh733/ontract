@@ -161,8 +161,8 @@ class ContractorModel:
         # ---- Fetch base company + user info ----
         sql = text("""
             SELECT u.user_uid,u.email_id,u.contact_number,u.mailing_address,u.billing_address,
-                u.alternate_contact_number,u.tin_number,u.status,c.company_id,c.company_name,
-                c.brn_number,c.logo_path, c.certificate_path,u.name
+                u.alternate_contact_number,u.tin_number,u.status,u.bumiputra_status,
+                c.company_id,c.company_name,c.brn_number,c.logo_path, c.certificate_path,u.name
             FROM users_t u JOIN company_details_t c ON u.user_uid = c.user_uid
             WHERE u.email_id = :email
         """)
