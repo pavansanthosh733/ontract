@@ -1013,7 +1013,3 @@ class AdminModel:
         result = db.session.execute(sql, {"uid": user_uid}).mappings().all()
     
         return result
-    
-            
-        
-        
