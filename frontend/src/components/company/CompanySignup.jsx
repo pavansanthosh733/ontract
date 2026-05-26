@@ -53,8 +53,8 @@ function CompanySignup() {
 
     // REQUIRED VALIDATION
     if (
-      !companyName ||
-      !registrationNumber ||
+      //!companyName ||
+    //!registrationNumber ||
       !email ||
       !phoneNumber ||
       !password ||
@@ -88,13 +88,13 @@ function CompanySignup() {
 
     // PASSWORD MATCH
     if (password !== confirmPassword) {
-      alert("❌ Passwords do not match");
+      alert("Both passwords must be the same");
       return;
     }
 
     // CAPTCHA
     if (!captchaToken) {
-      alert("❌ Please verify captcha");
+      alert("Please verify captcha");
       return;
     }
 
@@ -165,7 +165,7 @@ function CompanySignup() {
 
         <form onSubmit={handleSubmit}>
 
-          {/* COMPANY NAME */}
+          {/* COMPANY NAME 
           <div className="hw-input">
 
             <span className="hw-icon company-icon"></span>
@@ -181,9 +181,9 @@ function CompanySignup() {
               }
             />
 
-          </div>
+          </div>*/}
 
-          {/* REGISTRATION NUMBER */}
+          {/* REGISTRATION NUMBER 
           <div className="hw-input">
 
             <span className="hw-icon user-icon"></span>
@@ -199,7 +199,7 @@ function CompanySignup() {
               }
             />
 
-          </div>
+          </div>*/}
 
           {/* EMAIL */}
           <div className="hw-input">
@@ -254,8 +254,6 @@ function CompanySignup() {
               }
               placeholder="Password"
               value={password}
-              maxLength={12}
-              minLength={8}
               onChange={(e) =>
                 setPassword(e.target.value)
               }
@@ -286,8 +284,6 @@ function CompanySignup() {
               }
               placeholder="Confirm Password"
               value={confirmPassword}
-              maxLength={12}
-              minLength={8}
               onChange={(e) =>
                 setConfirmPassword(
                   e.target.value

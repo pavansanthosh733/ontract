@@ -12,14 +12,13 @@ class ContractorModel:
 
     # ---------------- CREATE COMPANY (users_t + company_details_t) ----------------
     @staticmethod
-    def create_company(company_name, brn, hashed_password, phone, email, activation_token):
+    def create_company(hashed_password, phone, email, activation_token):
 
         # Step 1 — create user entry
         sql_user = text("""
-            INSERT INTO users_t 
-            (email_id, password_hash, contact_number, activation_token, active_status, 
-             status, service_type, created_at)
-            VALUES (:email, :pw, :phone, :token, FALSE, 'registered', 1, NOW())
+            INSERT INTO users_t (email_id,password_hash,contact_number,activation_token,
+            active_status,status,service_type, created_at)
+            VALUES (:email,:pw,:phone,:token,FALSE,'registered', 1, NOW())
             RETURNING user_uid
         """)
 
@@ -32,15 +31,12 @@ class ContractorModel:
 
         # Step 2 — create company entry
         sql_company = text("""
-            INSERT INTO company_details_t 
-            (company_id,user_uid, company_name, brn_number)
-            VALUES (:uid,:uid, :name, :brn)
+            INSERT INTO company_details_t (company_id,user_uid)
+            VALUES (:uid,:uid)
         """)
 
         db.session.execute(sql_company, {
-            "uid": user_uid,
-            "name": company_name,
-            "brn": brn
+            "uid": user_uid
         })
 
         db.session.commit()
@@ -50,9 +46,7 @@ class ContractorModel:
     @staticmethod
     def get_company_by_token(token):
         sql = text("""
-            SELECT email_id 
-            FROM users_t 
-            WHERE activation_token = :token AND service_type = 1
+            SELECT email_id FROM users_t WHERE activation_token = :token AND service_type = 1
         """)
         row = db.session.execute(sql, {"token": token}).fetchone()
         return dict(row._mapping) if row else None
@@ -76,8 +70,7 @@ class ContractorModel:
     
         sql = text("""
             SELECT password_hash, active_status, service_type
-            FROM users_t
-            WHERE email_id = :email
+            FROM users_t WHERE email_id = :email
         """)
     
         row = db.session.execute(sql, {"email": email}).fetchone()
@@ -130,36 +123,12 @@ class ContractorModel:
     @staticmethod
     def get_basic_info(email):
         sql = text("""
-            SELECT
-                c.company_id,
-                u.user_uid,
-                u.email_id,
-                u.contact_number,
-                u.status,
-                c.company_name,
-                c.brn_number,
-
-                u.name,
-                u.tin_number,
-                u.billing_address,
-                u.mailing_address,
-
-                p.id_number,
-
-                s.service_id,
-                s.service_name,
-                s.service_rate,
-                s.region,
-                s.state,
-                s.city
-            FROM users_t u
-            JOIN company_details_t c
-                ON u.user_uid = c.user_uid
-            LEFT JOIN providers_t p
-                ON p.user_uid = u.user_uid
-            LEFT JOIN services_t s
-                ON u.user_uid = s.user_uid
-            WHERE u.email_id = :email
+            SELECT c.company_id,u.user_uid,u.email_id,u.contact_number,u.status,c.company_name,c.brn_number,
+                u.name,u.tin_number,u.billing_address,u.mailing_address,p.id_number,s.service_id,
+                s.service_name,s.service_rate,s.region,s.state,s.city
+            FROM users_t u JOIN company_details_t c ON u.user_uid = c.user_uid
+            LEFT JOIN providers_t p ON p.user_uid = u.user_uid
+            LEFT JOIN services_t s ON u.user_uid = s.user_uid WHERE u.email_id = :email
         """)
 
         rows = db.session.execute(sql, {"email": email}).fetchall()
@@ -191,18 +160,10 @@ class ContractorModel:
     
         # ---- Fetch base company + user info ----
         sql = text("""
-            SELECT 
-                u.user_uid, u.email_id, u.contact_number, 
-                u.mailing_address, u.billing_address,
-                u.alternate_contact_number, u.tin_number, 
-                u.status,
-    
-                c.company_id, c.company_name, c.brn_number, 
-                c.logo_path, c.certificate_path,
-    
-                u.name
-            FROM users_t u
-            JOIN company_details_t c ON u.user_uid = c.user_uid
+            SELECT u.user_uid,u.email_id,u.contact_number,u.mailing_address,u.billing_address,
+                u.alternate_contact_number,u.tin_number,u.status,c.company_id,c.company_name,
+                c.brn_number,c.logo_path, c.certificate_path,u.name
+            FROM users_t u JOIN company_details_t c ON u.user_uid = c.user_uid
             WHERE u.email_id = :email
         """)
     
@@ -214,12 +175,9 @@ class ContractorModel:
     
         # ---- Fetch services ----
         sql_services = text("""
-            SELECT service_name, service_rate,
-                   region, state, city,
-                   category_name, item_name, type_name, description_name
-            FROM services_t
-            WHERE user_uid = :uid AND service_type = 1
-            ORDER BY created_at
+            SELECT service_name,service_rate,region,state,city,category_name, 
+            item_name,type_name,description_name FROM services_t
+            WHERE user_uid = :uid AND service_type = 1 ORDER BY created_at
         """)
     
         services = db.session.execute(
@@ -230,17 +188,8 @@ class ContractorModel:
     
         # ---- Fetch FULL Bank Details ----
         sql_bank = text("""
-            SELECT 
-                company_bank_id,
-                company_id,
-                bank_name,
-                swift_code,
-                holder_name,
-                account_number,
-                bank_statement_path,
-                created_at,
-                updated_at
-            FROM company_bank_details_t
+            SELECT company_bank_id,company_id,bank_name,swift_code,holder_name,account_number,
+            bank_statement_path,created_at,updated_at FROM company_bank_details_t
             WHERE company_id = :cid
         """)
     
@@ -336,17 +285,9 @@ class ContractorModel:
     
         # Update common fields in users_t
         sql_user = text("""
-            UPDATE users_t
-            SET 
-                name = :head_name,
-                mailing_address = :mailing,
-                billing_address = :billing,
-                contact_number = :contact,
-                alternate_contact_number = :alternate,
-                tin_number = :tin,
-                bumiputra_status = :bumiputra_status,
-                status = 'pending',
-                updated_at = CURRENT_TIMESTAMP
+            UPDATE users_t SET name = :head_name,mailing_address = :mailing,billing_address = :billing,
+                contact_number = :contact,alternate_contact_number = :alternate,tin_number = :tin,
+                bumiputra_status = :bumiputra_status,status = 'pending',updated_at = CURRENT_TIMESTAMP
             WHERE email_id = :email
         """)
     
@@ -366,12 +307,9 @@ class ContractorModel:
         # This now stores PATHS, not BYTEA.
         # If logo_path_value / cert_path_value is None, existing DB values remain unchanged.
         sql_company = text("""
-            UPDATE company_details_t
-            SET 
+            UPDATE company_details_t SET 
                 company_id = (SELECT user_uid FROM users_t WHERE email_id = :email),
-                company_name = :name,
-                brn_number = :brn,
-                logo_path = COALESCE(:logo, logo_path),
+                company_name = :name,brn_number = :brn,logo_path = COALESCE(:logo, logo_path),
                 certificate_path = COALESCE(CAST(:cert AS JSONB), certificate_path),
                 updated_at = CURRENT_TIMESTAMP
             WHERE user_uid = (SELECT user_uid FROM users_t WHERE email_id = :email)
@@ -405,32 +343,10 @@ class ContractorModel:
     
         for svc in services:
             db.session.execute(text("""
-                INSERT INTO services_t (
-                    user_uid,
-                    service_type,
-                    service_name,
-                    service_rate,
-                    region,
-                    state,
-                    city,
-                    category_name,
-                    item_name,
-                    type_name,
-                    description_name
-                )
-                VALUES (
-                    :uid,
-                    1,
-                    :name,
-                    :rate,
-                    :region,
-                    :state,
-                    :city,
-                    :category_name,
-                    :item_name,
-                    :type_name,
-                    :description_name
-                )
+                INSERT INTO services_t (user_uid,service_type,service_name,service_rate,region,
+                    state,city,category_name,item_name,type_name,description_name)
+                VALUES (:uid,1,:name,:rate,:region,:state,:city,:category_name,:item_name,
+                    :type_name,:description_name)
             """), {
                 "uid": uid,
                 "name": svc.get("service_name", "") or "",
@@ -451,11 +367,9 @@ class ContractorModel:
     @staticmethod
     def get_existing_bank_statement(email):
         sql = text("""
-            SELECT bank_statement_path
-            FROM company_bank_details_t cbd
+            SELECT bank_statement_path FROM company_bank_details_t cbd
             JOIN company_details_t c ON c.company_id = cbd.company_id
-            JOIN users_t u ON u.user_uid = c.user_uid
-            WHERE u.email_id = :email
+            JOIN users_t u ON u.user_uid = c.user_uid WHERE u.email_id = :email
             LIMIT 1
         """)
     
@@ -478,10 +392,8 @@ class ContractorModel:
             # Step 1: Get company_id from email
             # -----------------------------------------------------
             sql_id = text("""
-                SELECT c.company_id
-                FROM company_details_t c
-                JOIN users_t u ON u.user_uid = c.user_uid
-                WHERE u.email_id = :email
+                SELECT c.company_id FROM company_details_t c
+                JOIN users_t u ON u.user_uid = c.user_uid WHERE u.email_id = :email
                 LIMIT 1
             """)
     
@@ -506,10 +418,7 @@ class ContractorModel:
             # -----------------------------------------------------
             # Update users_t status to pending
             sql_user = text("""
-                UPDATE users_t
-                SET
-                    status = 'pending',
-                    updated_at = CURRENT_TIMESTAMP
+                UPDATE users_t SET status = 'pending',updated_at = CURRENT_TIMESTAMP
                 WHERE email_id = :email
             """)
             
@@ -517,26 +426,10 @@ class ContractorModel:
             
             
             sql_upsert = text("""
-                INSERT INTO company_bank_details_t
-                (
-                    company_id,
-                    swift_code,
-                    holder_name,
-                    account_number,
-                    bank_name,
-                    bank_statement_path,
-                    created_at
-                )
+                INSERT INTO company_bank_details_t(company_id,swift_code,holder_name,account_number,
+                    bank_name,bank_statement_path,created_at)
                 VALUES
-                (
-                    :id,
-                    :swift,
-                    :holder,
-                    :acc,
-                    :bank,
-                    :statement_path,
-                    NOW()
-                )
+                (:id,:swift,:holder,:acc,:bank,:statement_path,NOW())
                 ON CONFLICT (company_id)
                 DO UPDATE SET
                     swift_code = EXCLUDED.swift_code,
@@ -587,9 +480,7 @@ class ContractorModel:
     def fetch_notifications(email):
         sql = text("""
             SELECT message_id, message, sent_at, is_read, notification_type
-            FROM admin_messages_t
-            WHERE email_id = :email
-            ORDER BY sent_at DESC
+            FROM admin_messages_t WHERE email_id = :email ORDER BY sent_at DESC
         """)
         rows = db.session.execute(sql, {"email": email}).fetchall()
         return [dict(r._mapping) for r in rows]
@@ -597,8 +488,7 @@ class ContractorModel:
     @staticmethod
     def fetch_unread_count(email):
         sql = text("""
-            SELECT COUNT(*) AS count
-            FROM admin_messages_t
+            SELECT COUNT(*) AS count FROM admin_messages_t
             WHERE email_id = :email AND is_read = FALSE
         """)
         row = db.session.execute(sql, {"email": email}).fetchone()
@@ -607,9 +497,7 @@ class ContractorModel:
     @staticmethod
     def mark_notification_read(message_id):
         sql = text("""
-            UPDATE admin_messages_t 
-            SET is_read = TRUE 
-            WHERE message_id = :id
+            UPDATE admin_messages_t SET is_read = TRUE WHERE message_id = :id
         """)
         result = db.session.execute(sql, {"id": message_id})
         db.session.commit()
@@ -618,19 +506,9 @@ class ContractorModel:
     @staticmethod
     def get_active_session(refresh_token):
         sql = text("""
-            SELECT
-                id,
-                contractor_id,
-                refresh_token,
-                expires_at,
-                is_active,
-                token_family,
-                ip_address
-            FROM contractor_sessions
-            WHERE refresh_token = :token
-              AND is_active = TRUE
-              AND expires_at > NOW()
-            LIMIT 1
+            SELECT id,contractor_id,refresh_token,expires_at,is_active,token_family,ip_address
+            FROM contractor_sessions WHERE refresh_token = :token AND is_active = TRUE
+              AND expires_at > NOW() LIMIT 1
         """)
     
         row = db.session.execute(sql, {"token": refresh_token}).fetchone()
@@ -639,17 +517,8 @@ class ContractorModel:
     @staticmethod
     def get_contractor_by_id(contractor_id):
         sql = text("""
-            SELECT
-                c.company_id,
-                u.user_uid,
-                u.email_id,
-                u.contact_number,
-                u.status,
-                c.company_name,
-                c.brn_number
-            FROM users_t u
-            JOIN company_details_t c
-                ON u.user_uid = c.user_uid
+            SELECT c.company_id,u.user_uid,u.email_id,u.contact_number,u.status,c.company_name,c.brn_number
+            FROM users_t u JOIN company_details_t c ON u.user_uid = c.user_uid
             WHERE u.user_uid = :uid
             LIMIT 1
         """)
@@ -661,11 +530,8 @@ class ContractorModel:
     @staticmethod
     def rotate_session_token(old_token, new_token, expires_at):
         sql = text("""
-            UPDATE contractor_sessions
-            SET refresh_token = :new_token,
-                expires_at = :expires_at,
-                last_used_at = NOW()
-            WHERE refresh_token = :old_token
+            UPDATE contractor_sessions SET refresh_token = :new_token,
+            expires_at = :expires_at,last_used_at = NOW() WHERE refresh_token = :old_token
         """)
     
         db.session.execute(sql, {
@@ -682,11 +548,8 @@ class ContractorModel:
         print("\n🧠 MODEL → deactivate_session START")
     
         sql = text("""
-            UPDATE contractor_sessions
-            SET is_active = FALSE,
-                last_used_at = NOW(),
-                revoked_reason = 'rotated'
-            WHERE refresh_token = :token
+            UPDATE contractor_sessions SET is_active = FALSE,last_used_at = NOW(),
+            revoked_reason = 'rotated'WHERE refresh_token = :token
         """)
     
         result = db.session.execute(sql, {"token": refresh_token})
@@ -702,38 +565,19 @@ class ContractorModel:
     
     
     @staticmethod
-    def rotate_refresh_session(
-        contractor_id,
-        old_token,
-        new_token,
-        expires_at,
-        ip_address,
-        token_family
-    ):
+    def rotate_refresh_session(contractor_id,old_token,new_token,expires_at,ip_address,token_family):
         print("\n🚀 MODEL → rotate_refresh_session START")
     
         try:
             # STEP 1 → insert new token row
-            ContractorModel.create_session(
-                contractor_id,
-                new_token,
-                "WEB",
-                expires_at,
-                ip_address,
-                token_family=token_family,
-                rotated_from=old_token,
-                auto_commit=False
-            )
+            ContractorModel.create_session(contractor_id,new_token,"WEB",expires_at,ip_address,
+                token_family=token_family,rotated_from=old_token,auto_commit=False)
             print("✅ STEP 1 → new session inserted")
     
             # STEP 2 → deactivate old token row
             ContractorModel.deactivate_session(old_token, auto_commit=False)
-            print("✅ STEP 2 → old session deactivated")
     
             db.session.commit()
-            print("💾 TRANSACTION COMMIT SUCCESS")
-            print("🚀 MODEL → rotate_refresh_session END")
-    
             return True
     
         except Exception as e:
@@ -744,39 +588,16 @@ class ContractorModel:
         
         
     @staticmethod
-    def create_session(
-        contractor_id,
-        refresh_token,
-        device_name,
-        expires_at,
-        ip_address=None,
-        token_family=None,
-        rotated_from=None,
-        auto_commit=True
-    ):
+    def create_session(contractor_id,refresh_token,device_name,expires_at,ip_address=None,
+        token_family=None,rotated_from=None,auto_commit=True):
 
     
         try:
             sql = text("""
-                INSERT INTO contractor_sessions
-                (
-                    contractor_id,
-                    refresh_token,
-                    device_name,
-                    expires_at,
-                    ip_address,
-                    token_family,
-                    rotated_from
-                )
-                VALUES (
-                    :contractor_id,
-                    :refresh_token,
-                    :device_name,
-                    :expires_at,
-                    :ip_address,
-                    :token_family,
-                    :rotated_from
-                )
+                INSERT INTO contractor_sessions(contractor_id,refresh_token,device_name,expires_at,
+                ip_address,token_family,rotated_from)
+                VALUES (:contractor_id,:refresh_token,:device_name,:expires_at,:ip_address,
+                :token_family,:rotated_from)
             """)
     
             result = db.session.execute(sql, {
@@ -788,8 +609,6 @@ class ContractorModel:
                 "token_family": token_family,
                 "rotated_from": rotated_from
             })
-    
-        
     
             if auto_commit:
                 db.session.commit()

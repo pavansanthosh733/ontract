@@ -404,97 +404,155 @@ const handleBankStatementChange = (e) => {
 
   // VALIDATIONS
   const validateProfile = () => {
-    const newErrors = {};
+    
     const mobileRegex = /^[0-9]{10}$/;
-    const brnRegex = /^BR[0-9]{6,8}$/; // BR + 6–8 digits
-    // const tinRegex = /^IG[0-9]{5,6}$/; // IG + 5–6 digits
     const addressRegex = /^[A-Za-z0-9\s,./#'’()-]{10,200}$/; // ✅ allows normal address chars
-    // Malaysia TIN Validation (2023 Format)
+    const individualTINRegex = /^IG\d{9,11}$/;
+    const companyTINRegex = /^[A-Z]\d{10,11}$/;
 
-// Individual:
-// IG + 9 to 11 digits
-const individualTINRegex = /^IG\d{9,11}$/;
+    if (!formData.company_name?.trim()) {
+      alert('Company name is required.');
+      return false;
+    }
+    if (!formData.bumiputera) {
+      alert('Please select Bumiputera status.');
+      return false;
+    }
+    if (!formData.brn_number?.trim()) {
+      alert('BRN number is required.');
+      return false;
+    }
 
-// Company:
-// Single letter + 10 to 11 digits
-// Example: C1234567890
-const companyTINRegex = /^[A-Z]\d{10,11}$/;
+    if (!formData.tin_number) {
+      alert('TIN number is required.');
+      return false;
+    } else {
+      const formattedTIN = formData.tin_number.trim().toUpperCase();
 
+      const isValidTIN =
+        individualTINRegex.test(formattedTIN) ||
+        companyTINRegex.test(formattedTIN);
 
-    if (!formData.company_name) newErrors.company_name = 'Company name required.';
-    if (!formData.bumiputera)
-  newErrors.bumiputera = 'Please select Bumiputera status.';
-      // BRN Validation
-      if (!formData.brn_number) {
-        newErrors.brn_number = 'BRN number is required.';
-      } else if (!brnRegex.test(formData.brn_number.toUpperCase())) {
-        newErrors.brn_number = 'BRN must start with "BR" followed by 6–8 digits (e.g., BR123456).';
+      if (!isValidTIN) {
+        alert(
+          'Invalid Malaysia TIN format. Example: IG1150020000 or C1234567890'
+        );
+        return false;
       }
+    }
 
+    if (!mailingPostalCode) {
+      alert('Mailing postal code is required.');
+      return false;
+    }
 
-// TIN Validation
-if (!formData.tin_number) {
-  newErrors.tin_number = 'TIN number is required.';
-} else {
-  const formattedTIN = formData.tin_number.trim().toUpperCase();
+    if (!/^\d{5}$/.test(mailingPostalCode)) {
+      alert('Mailing postal code must be 5 digits.');
+      return false;
+    }
+    if (!billingPostalCode) {
+      alert('Billing postal code is required.');
+      return false;
+    }
+    if (!/^\d{5}$/.test(billingPostalCode)) {
+      alert('Billing postal code must be 5 digits.');
+      return false;
+    }
 
-  const isValidTIN =
-    individualTINRegex.test(formattedTIN) ||
-    companyTINRegex.test(formattedTIN);
-
-  if (!isValidTIN) {
-    newErrors.tin_number =
-      'Invalid Malaysia TIN format. Example: IG1150020000 or C1234567890';
-  }
-}
-
-
-
-    if (!mailingPostalCode) newErrors.mailingPostalCode = 'Postal code required.';
-    if (!/^\d{5}$/.test(mailingPostalCode)) newErrors.mailingPostalCode = 'Postal code must be 5 digits.';
-    if (!billingPostalCode) newErrors.billingPostalCode = 'Postal code required.';
-    if (!/^\d{5}$/.test(billingPostalCode)) newErrors.billingPostalCode = 'Postal code must be 5 digits.';
-    // if (!formData.mailing_address?.trim()) newErrors.mailing_address = 'Mailing address is required.';
-    // if (!formData.billing_address?.trim()) newErrors.billing_address = 'Billing address is required.';
-         // ✅ Mailing Address validation
-
-  if (!formData.mailing_address?.trim()) newErrors.mailing_address = 'Mailing address is required.';
-  else if (formData.mailing_address.trim().length < 10)
-    newErrors.mailing_address = 'Mailing address must be at least 10 characters long.';
-  else if (!addressRegex.test(formData.mailing_address))
-    newErrors.mailing_address = 'Mailing address contains invalid characters.';
+    if (!formData.mailing_address?.trim()) {
+        alert('Mailing address is required.');
+        return false;
+    } else if (formData.mailing_address.trim().length < 10) {
+        alert('Mailing address must be at least 10 characters long.');
+        return false;
+    } else if (!addressRegex.test(formData.mailing_address)) {
+        alert('Mailing address contains invalid characters.');
+        return false;
+    }
 
   // ✅ Billing Address validation
-  if (!formData.billing_address?.trim()) newErrors.billing_address = 'Billing address is required.';
-  else if (formData.billing_address.trim().length < 10)
-    newErrors.billing_address = 'Billing address must be at least 10 characters long.';
-  else if (!addressRegex.test(formData.billing_address))
-    newErrors.billing_address = 'Billing address contains invalid characters.';
+    if (!formData.billing_address?.trim()) {
+      alert('Billing address is required.');
+      return false;
+    } else if (formData.billing_address.trim().length < 10) {
+      alert('Billing address must be at least 10 characters long.');
+      return false;
+    } else if (!addressRegex.test(formData.billing_address)) {
+      alert('Billing address contains invalid characters.');
+      return false;
+    }
 
-    if (!mobileRegex.test(String(formData.contact_number || ''))) newErrors.contact_number = 'Contact number must be 10 digits.';
-    // if (formData.alternate_contact && !mobileRegex.test(String(formData.alternate_contact))) newErrors.alternate_contact = 'Alternate contact invalid.';
-      if (
-    formData.alternate_contact &&
-    !mobileRegex.test(String(formData.alternate_contact))
-  )
-    newErrors.alternate_contact = 'Alternate contact must be 10 digits.';
-    if (formData.alternate_contact && formData.alternate_contact === formData.contact_number)
-    newErrors.alternate_contact = 'Alternate contact must be different from main contact.';
+    if (!mobileRegex.test(String(formData.contact_number || ''))) {
+      alert('Contact number must be exactly 10 digits.');
+      return false;
+    }
+    
+    if (formData.alternate_contact && !mobileRegex.test(String(formData.alternate_contact))) {
+      alert('Alternate contact must be exactly 10 digits.');
+      return false;
+    }
 
-    if (locationServiceList.length === 0) newErrors.services = 'Add at least one service.';
-    locationServiceList.forEach((it, idx) => {
-      // if (!it.location) newErrors[`location-${idx}`] = 'Select location.';
-      if (!it.region) newErrors[`region-${idx}`] = 'Select region.';
-      if (!it.state) newErrors[`state-${idx}`] = 'Select state.';
-      if (!it.service) newErrors[`service-${idx}`] = 'Select service.';
-      if (!it.price || Number(it.price) <= 0) newErrors[`price-${idx}`] = 'Enter a valid price.';
-    });
+    if (formData.alternate_contact && formData.alternate_contact === formData.contact_number) {
+      alert('Alternate contact must be different from main contact.');
+      return false;
+    }
+
+    if (locationServiceList.length === 0) {
+      alert('At least one service is required.');
+      return false;
+    } else {
+
+      for (const [idx, item] of locationServiceList.entries()) {
+
+        if (!item.region_id) {
+          alert("Region is required");
+          return false;
+        }
+
+        if (!item.state_id) {
+          alert("State is required");
+          return false;
+        }
+
+        if (!item.city_id) {
+          alert("City is required");
+          return false;
+        }
+
+        if (!item.category_id) {
+          alert("Category is required");
+          return false;
+        }
+
+        if (!item.item_id) {
+          alert("Item is required");
+          return false;
+        }
+
+        if (!item.type_id) {
+          alert("Type is required");
+          return false;
+        }
+
+        if (!item.description_id) {
+          alert("Description is required");
+          return false;
+        }
+
+        if (!item.price || item.price <= 0) {
+          alert("Price must be greater than 0");
+          return false;
+        }
+
+      }
+    }
       // Contact person
-  if (!formData.contact_person?.trim())
-    newErrors.contact_person = 'Contact person is required.';
+    if (!formData.contact_person?.trim()) {
+      alert('Contact person is required.');
+      return false;
+    }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return true;
   };
 
   // PROFILE submit
@@ -549,9 +607,11 @@ if (!finalBilling.endsWith(billingPostalCode)) {
       });
       const data = await res.json();
       if (res.ok) {
+        alert('Your profile has been updated successfully. Admin will cross-check your details and approve your profile.');
+
         setSuccessMessage('Profile submitted. Pending admin approval.');
         setEditMode(false);
-        await fetchProfile(); // refresh profile view
+        await fetchProfile();
       } else {
         setErrors({ general: data.error || 'Failed to update profile' });
       }
@@ -563,19 +623,46 @@ if (!finalBilling.endsWith(billingPostalCode)) {
   };
 
   // bank VALIDATION (client-side)
-  const validateBank = () => {
-    const newErrors = {};
-    // SWIFT format (4 letters bank + 2 letters country + 2 alnum branch optional)
+    const validateBank = () => {
     const swiftRegex = /^[A-Z]{4}MY[A-Z0-9]{2}([A-Z0-9]{3})?$/;
-    const accountRegex = /^[0-9]{6,20}$/; // flexible digits
+    const accountRegex = /^[0-9]{6,20}$/;
+    if (!bankDetails.bankName) {
+      alert('Please select bank name.');
+      return false;
+    }
 
-    if (!bankDetails.bankName) newErrors.bankName = 'Bank name required.';
-    if (!bankDetails.holderName || bankDetails.holderName.trim().length < 2) newErrors.holderName = 'Account holder required.';
-    if (!accountRegex.test(String(bankDetails.accountNumber || ''))) newErrors.accountNumber = 'Invalid account number (6-20 digits).';
-    if (!swiftRegex.test(String(bankDetails.swift || '').toUpperCase())) newErrors.swift = 'Invalid SWIFT code.';
-    if (!bankStatement) newErrors.bankStatement = 'Bank statement file required.';
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    if (
+      !bankDetails.holderName ||
+      bankDetails.holderName.trim().length < 2
+    ) {
+      alert('Account holder name is required.');
+      return false;
+    }
+
+    if (
+      !accountRegex.test(
+        String(bankDetails.accountNumber || '')
+      )
+    ) {
+      alert('Account number must be 6 to 20 digits.');
+      return false;
+    }
+
+    if (
+      !swiftRegex.test(
+        String(bankDetails.swift || '').toUpperCase()
+      )
+    ) {
+      alert('Invalid SWIFT code.');
+      return false;
+    }
+
+    if (!bankStatement) {
+      alert('Please upload bank statement.');
+      return false;
+    }
+
+    return true;
   };
 
   // BANK submit
@@ -600,7 +687,8 @@ if (!finalBilling.endsWith(billingPostalCode)) {
       const data = await res.json();
       console.log("after ",data);
       if (res.ok) {
-        setSuccessMessage('Bank details submitted successfully.');
+        alert('Bank details updated successfully.');
+        setSuccessMessage('Bank details updated successfully.');
         setShowBankForm(false);
         await fetchProfile();
       } else {

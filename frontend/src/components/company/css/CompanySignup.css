@@ -9,7 +9,10 @@ body {
   font-family: Arial, Helvetica, sans-serif;
   background: #ffffff;
 }
-
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
 
 
 /* PAGE POSITION */

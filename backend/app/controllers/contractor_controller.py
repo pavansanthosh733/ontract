@@ -51,20 +51,20 @@ class ContractorController:
     # ---------------- Signup ----------------
     @staticmethod
     def signup(data):
-        brn = data.get('business_registration_number')
-        company_name = data.get('company_name')
+        #brn = data.get('business_registration_number')
+        #company_name = data.get('company_name')
         email = data.get('email_id')
         phone = data.get('phone_number')
         password = data.get('password')
 
-        if not all([brn, company_name, email, phone, password]):
+        if not all([email, phone, password]):
             return {"error": "All fields are required"}, 400
 
         hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
         token = str(uuid.uuid4())
 
         # creates users_t + company_details_t
-        ContractorModel.create_company(company_name, brn, hashed, phone, email, token)
+        ContractorModel.create_company(hashed, phone, email, token)
         send_contractor_activation_email(email, token)
 
         return {"message": "Signup successful. Activation link sent to your email."}, 200
@@ -620,9 +620,6 @@ class ContractorController:
             # Validate account number
             if not re.match(r"^[0-9]{6,20}$", account_number):
                 return {"error": "Invalid account number"}, 400
-    
-
-           
     
 
     
