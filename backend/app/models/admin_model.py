@@ -353,7 +353,7 @@ class AdminModel:
 
 
     # ======================= CONTRACTORS (COMPANIES) =======================
-# ======================= CONTRACTORS (COMPANIES) =======================
+# ======================= CONTRACTORS (COMPANIES) ===========================
     @staticmethod
     def list_contractors():
         sql = text("""

@@ -32,7 +32,7 @@ const ContractorDetailsModal = ({ contractor, onClose }) => {
 
 
 {/* BANK DETAILS */}
-<h6 className="text-primary mt-3">Bank Details</h6>
+<h6 className="text-primary mt-3">Bank Details Section</h6>
 <table className="table table-bordered table-sm">
   <tbody>
     {bank ? (
