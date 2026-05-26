@@ -26,73 +26,51 @@ const ContractorDetailsModal = ({ contractor, onClose }) => {
                 <tr><th>BRN</th><td>{contractor.brn_number || "N/A"}</td></tr>
                 <tr><th>Status</th><td>{contractor.status || "N/A"}</td></tr>
                 <tr><th>Company ID</th><td>{contractor.company_id || "N/A"}</td></tr>
-                <tr><th>Bumiputera</th><td>{contractor.bumiputra_status || "N/A"}</td></tr>
+                <tr><th>Bumiputra</th><td>{contractor.bumiputra_status || "N/A"}</td></tr>
               </tbody>
             </table>
 
 
-             {/* ✅ BANK DETAILS */}
-            <h6 className="text-primary mt-3">Bank Details</h6>
-            <table className="table table-bordered table-sm">
-              <tbody>
-                {bank ? (
-                  <>
-                    <tr>
-                      <th>Account Holder</th>
-                      <td>{bank.account_holder_name || "N/A"}</td>
-                    </tr>
+{/* BANK DETAILS */}
+<h6 className="text-primary mt-3">Bank Details</h6>
+<table className="table table-bordered table-sm">
+  <tbody>
+    {bank ? (
+      <>
+        <tr>
+          <th>Account Holder</th>
+          <td>{bank.holder_name || "N/A"}</td>
+        </tr>
 
-                    <tr>
-                      <th>Bank Name</th>
-                      <td>{bank.bank_name || "N/A"}</td>
-                    </tr>
+        <tr>
+          <th>Bank Name</th>
+          <td>{bank.bank_name || "N/A"}</td>
+        </tr>
 
-                    <tr>
-                      <th>Account Number</th>
-                      <td>{bank.bank_account_number || "N/A"}</td>
-                    </tr>
+        <tr>
+          <th>Swift Code</th>
+          <td>{bank.swift_code || "N/A"}</td>
+        </tr>
 
-                    <tr>
-                      <th>Swift Code</th>
-                      <td>{bank.swift_code || "N/A"}</td>
-                    </tr>
+        <tr>
+          <th>Company Bank ID</th>
+          <td>{bank.company_bank_id || "N/A"}</td>
+        </tr>
 
-                    <tr>
-                      <th>Status</th>
-                      <td>
-                        <span
-                          className={`badge ${
-                            bank.status === "approved"
-                              ? "bg-success"
-                              : bank.status === "pending"
-                              ? "bg-warning text-dark"
-                              : "bg-danger"
-                          }`}
-                        >
-                          {bank.status || "N/A"}
-                        </span>
-                      </td>
-                    </tr>
-
-                    <tr>
-                      <th>Bank details submiited At</th>
-                      <td>{bank.created_at || "N/A"}</td>
-                    </tr>
-
-                    <tr>
-                      <th>Provider Bank ID</th>
-                      <td>{bank.provider_bank_id || "N/A"}</td>
-                    </tr>
-                  </>
-                ) : (
-                  <tr>
-                    <td colSpan="2" className="text-center text-muted">
-                      No Bank Details Available
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+        <tr>
+          <th>Company ID</th>
+          <td>{bank.company_id || "N/A"}</td>
+        </tr>
+      </>
+    ) : (
+      <tr>
+        <td colSpan="2" className="text-center text-muted">
+          No Bank Details Available
+        </td>
+      </tr>
+    )}
+  </tbody>
+</table>
 
 
             <h6 className="text-primary mt-3">Services</h6>

@@ -353,17 +353,67 @@ class AdminModel:
 
 
     # ======================= CONTRACTORS (COMPANIES) =======================
+# ======================= CONTRACTORS (COMPANIES) =======================
     @staticmethod
     def list_contractors():
         sql = text("""
-            SELECT u.user_uid,c.company_id, c.company_name, u.email_id, u.contact_number, u.status,u.active_status, c.brn_number,u.bumiputra_status
+            SELECT
+                u.user_uid,
+                c.company_id,
+                c.company_name,
+                u.email_id,
+                u.contact_number,
+                u.status,
+                u.active_status,
+                c.brn_number,
+                u.bumiputra_status,
+    
+                -- bank details
+                b.company_bank_id,
+                b.company_id AS bank_company_id,
+                b.swift_code,
+                b.holder_name,
+                b.bank_name
+                
+    
             FROM users_t u
-            JOIN company_details_t c ON u.user_uid = c.user_uid
+            JOIN company_details_t c
+                ON u.user_uid = c.user_uid
+            LEFT JOIN company_bank_details_t b
+                ON b.company_id = c.company_id
             WHERE u.service_type = 1
             ORDER BY u.created_at DESC
         """)
+    
         rows = db.session.execute(sql).fetchall()
-        return [dict(r._mapping) for r in rows]
+        contractors = []
+    
+        for r in rows:
+            row = dict(r._mapping)
+    
+            contractor = {
+                "user_uid": row.get("user_uid"),
+                "company_id": row.get("company_id"),
+                "company_name": row.get("company_name"),
+                "email_id": row.get("email_id"),
+                "contact_number": row.get("contact_number"),
+                "status": row.get("status"),
+                "active_status": bool(row.get("active_status")),
+                "brn_number": row.get("brn_number"),
+                "bumiputra_status": row.get("bumiputra_status"),
+    
+                "bank_details": {
+                    "company_bank_id": row.get("company_bank_id"),
+                    "company_id": row.get("bank_company_id"),
+                    "swift_code": decrypt_value(row.get("swift_code")) if row.get("swift_code") else None,
+                    "holder_name": row.get("holder_name"),
+                    "bank_name": row.get("bank_name"),
+                } if row.get("company_bank_id") else None
+            }
+    
+            contractors.append(contractor)
+    
+        return contractors
 
     @staticmethod
     def get_contractor_services_by_company_ids(company_ids):
