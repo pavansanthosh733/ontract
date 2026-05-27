@@ -179,11 +179,25 @@ class AdminController:
         svc_map = {}
     
         for s in svcs:
+            
+            # print("\n--- BEFORE MAP ---")
+            # print("company_id:", s.get("company_id"))
+            # print("category_name:", s.get("category_name"))
+            # print("item_name:", s.get("item_name"))
+            # print("type_name:", s.get("type_name"))
+            # print("description_name:", s.get("description_name"))
+            # print("service_name:", s.get("service_name"))
+            # print("service_rate:", s.get("service_rate"))
+            
             svc_map.setdefault(s['company_id'], []).append({
-                "service_name": s['service_name'],
-                "service_rate": float(s['service_rate']),
-                "service_location": ", ".join(
-                    filter(None, [s.get("city"), s.get("state"), s.get("region")])
+                "category": s.get("category_name"),
+                "item": s.get("item_name"),
+                "type": s.get("type_name"),
+                "description": s.get("description_name"),
+                "service_name": s.get("service_name"),
+                "rate": float(s["service_rate"]) if s["service_rate"] else 0.0,
+                "location": ", ".join(
+                    filter(None, [s.get("region"), s.get("state"), s.get("city")])
                 )
             })
     

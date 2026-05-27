@@ -59,5 +59,7 @@ workorder_mobile/
 frontend/src/firebase.js
 rontend/public/firebase-messaging-sw.js
  frontend/.env
+frontend/.env.local
+frontend/.env.*.local
 
  backend/.env

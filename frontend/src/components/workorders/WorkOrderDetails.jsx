@@ -44,22 +44,22 @@ const WorkOrderDetails = () => {
 
   const filteredContractors = useMemo(() => {
     const nameFilter = filters.name.trim().toLowerCase();
-    const locationFilter = filters.location.trim().toLowerCase();
+    // const locationFilter = filters.location.trim().toLowerCase();
     const maxPrice = filters.maxPrice.trim();
 
     return [...contractors]
       .filter((c) => {
         const contractorName = (c.full_name || "").toLowerCase();
-        const serviceLocations = (c.service_locations || "").toLowerCase();
+        // const serviceLocations = (c.service_locations || "").toLowerCase();
         const rateValue = parseFloat(c.rate ?? 0);
 
         const nameOk = !nameFilter || contractorName.includes(nameFilter);
-        const locationOk =
-          !locationFilter || serviceLocations.includes(locationFilter);
+        // const locationOk =
+        //   !locationFilter || serviceLocations.includes(locationFilter);
         const priceOk =
           !maxPrice || (!Number.isNaN(rateValue) && rateValue <= Number(maxPrice));
 
-        return nameOk && locationOk && priceOk;
+        return nameOk  && priceOk;
       })
       .sort((a, b) => {
         const rateA = parseFloat(a.rate ?? 0);

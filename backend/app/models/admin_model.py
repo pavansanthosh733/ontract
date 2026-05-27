@@ -419,19 +419,39 @@ class AdminModel:
     def get_contractor_services_by_company_ids(company_ids):
         if not company_ids:
             return []
-
+    
         sql = text("""
-            SELECT c.company_id, s.service_name, s.service_rate, s.region, s.state, s.city
+            SELECT
+                c.company_id,
+                s.service_name,
+                s.service_rate,
+                s.region,
+                s.state,
+                s.city,
+                s.category_name,
+                s.item_name,
+                s.type_name,
+                s.description_name
             FROM services_t s
-            JOIN company_details_t c ON s.user_uid = c.user_uid
-            WHERE c.company_id = ANY(:ids) AND s.service_type = 1
+            JOIN company_details_t c
+                ON s.user_uid = c.user_uid
+            WHERE c.company_id = ANY(:ids)
+              AND s.service_type = 1
         """)
-
+    
         rows = db.session.execute(sql, {"ids": company_ids}).fetchall()
-        return [dict(r._mapping) for r in rows]
-
-
-
+    
+        result = [dict(r._mapping) for r in rows]
+    
+        print("\n========== FINAL RESULT ==========")
+    
+        for r in result:
+            print(r)
+    
+        return result
+    
+    
+    
     @staticmethod
     def get_contractor_services(user_uid):
         sql = text("""
