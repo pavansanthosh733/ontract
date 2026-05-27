@@ -35,7 +35,7 @@ function WorkOrderLayout() {
           <Route path="/list" element={<WorkOrders/>} />
           <Route path="/search-workorder" element={<SearchWorkOrder/>} />  
           <Route path="/contractor" element={<Contractor />} />
-          <Route path="/contractor/workorders/:workorder" element={<WorkOrderDetails />} />
+          <Route path="/contractor/workorderdetails/:workorder" element={<WorkOrderDetails />} />
           <Route path="/WorkorderAssignment" element={<WorkorderAssignment />} />
           <Route path="product-workorder" element={<CreateProductWorkorder />} />
 

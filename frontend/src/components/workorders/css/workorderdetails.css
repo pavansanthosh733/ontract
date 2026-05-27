@@ -186,3 +186,84 @@ textarea:focus {
     width: 100%;
   }
 }
+.workorders-container .contractor-section {
+  margin-top: 20px;
+}
+
+.workorders-container .contractor-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 12px 0 16px;
+}
+
+.workorders-container .contractor-filter-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+}
+
+.workorders-container .contractor-filter-input:focus {
+  border-color: #2563eb;
+}
+
+.workorders-container .contractor-table-wrap {
+  width: 100%;
+  max-height: 340px;
+  overflow-y: auto;
+  overflow-x: auto;
+  border: 1px solid #d0dae4;
+  border-radius: 8px;
+  background: #fff;
+}
+
+/* make header stay visible while scrolling */
+.workorders-container .contractor-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 650px;
+  background: #fff;
+}
+
+.workorders-container .contractor-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #2c78c9;
+  color: #fff;
+  font-weight: 700;
+  text-align: left;
+  padding: 12px 14px;
+  border-bottom: 1px solid #1f64a3;
+  white-space: nowrap;
+}
+
+.workorders-container .contractor-table tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #eaeaea;
+  color: #333;
+  background: #fff;
+  vertical-align: middle;
+}
+
+.workorders-container .contractor-table tbody tr:hover td {
+  background: #f8fbff;
+}
+
+.workorders-container .small-btn {
+  padding: 8px 14px;
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .workorders-container .contractor-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .workorders-container .contractor-table-wrap {
+    max-height: 280px;
+  }
+}

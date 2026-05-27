@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "./css/workorderdetails.css";
 import { apiGet, apiPost } from "../../api";
@@ -10,15 +10,18 @@ const WorkOrderDetails = () => {
   const [details, setDetails] = useState(null);
   const [contractors, setContractors] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [savingId, setSavingId] = useState(null);
   const [error, setError] = useState(null);
 
-  // FETCH DETAILS
+  const [filters, setFilters] = useState({
+    name: "",
+    maxPrice: "",
+  });
+
   useEffect(() => {
     const fetchDetails = async () => {
       try {
         const data = await apiGet(`/api/workorders/code/${workorder}`);
-
         data.RATE = data.RATE || { total_rate: 0, type_rates: {} };
         setDetails(data);
 
@@ -39,48 +42,63 @@ const WorkOrderDetails = () => {
     fetchDetails();
   }, [workorder]);
 
-  // HANDLE DROPDOWN
-  const handleChange = (e) => {
+  const filteredContractors = useMemo(() => {
+    const nameFilter = filters.name.trim().toLowerCase();
+    const locationFilter = filters.location.trim().toLowerCase();
+    const maxPrice = filters.maxPrice.trim();
+
+    return [...contractors]
+      .filter((c) => {
+        const contractorName = (c.full_name || "").toLowerCase();
+        const serviceLocations = (c.service_locations || "").toLowerCase();
+        const rateValue = parseFloat(c.rate ?? 0);
+
+        const nameOk = !nameFilter || contractorName.includes(nameFilter);
+        const locationOk =
+          !locationFilter || serviceLocations.includes(locationFilter);
+        const priceOk =
+          !maxPrice || (!Number.isNaN(rateValue) && rateValue <= Number(maxPrice));
+
+        return nameOk && locationOk && priceOk;
+      })
+      .sort((a, b) => {
+        const rateA = parseFloat(a.rate ?? 0);
+        const rateB = parseFloat(b.rate ?? 0);
+        return rateA - rateB;
+      });
+  }, [contractors, filters]);
+
+  const handleFilterChange = (e) => {
     const { name, value } = e.target;
-
-    if (name === "CONTRACTOR_NAME") {
-      const selected = contractors.find((c) => c.full_name === value);
-
-      setDetails((prev) => ({
-        ...prev,
-        CONTRACTOR_NAME: selected?.full_name || "",
-        CONTRACTOR_RATE: selected?.rate || "",
-        CONTRACTOR_ID: selected?.provider_id || "",
-        CONTRACTOR_EMAIL: selected?.email_id || ""
-      }));
-    } else {
-      setDetails((prev) => ({ ...prev, [name]: value }));
-    }
+    setFilters((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  // SAVE + SEND MAIL
-  const handleSave = async () => {
+  const handleAssignContractor = async (contractor) => {
     if (!details) return;
 
-    if (!details.CONTRACTOR_NAME?.trim()) {
-      window.alert("⚠️ Please select a contractor before assigning.");
-      return;
-    }
-
-    setSaving(true);
+    setSavingId(contractor.provider_id);
     setError(null);
 
-    try {
-      await apiPost(`/api/workorders/send-acceptance-mail/${workorder}`, {
-        ...details
-      });
+    const payload = {
+      ...details,
+      CONTRACTOR_NAME: contractor.full_name || "",
+      CONTRACTOR_RATE: contractor.rate || "",
+      CONTRACTOR_ID: contractor.provider_id || "",
+      CONTRACTOR_EMAIL: contractor.email_id || "",
+    };
 
-      window.alert("✅ Email sent to contractor!");
+    try {
+      await apiPost(`/api/workorders/send-acceptance-mail/${workorder}`, payload);
+      setDetails(payload);
+      window.alert(`✅ Contractor assigned and email sent to ${contractor.full_name}!`);
     } catch (err) {
       setError(err.message);
       window.alert("❌ Error: " + err.message);
     } finally {
-      setSaving(false);
+      setSavingId(null);
     }
   };
 
@@ -98,58 +116,121 @@ const WorkOrderDetails = () => {
         </div>
 
         <div className="section-content">
-          {/* Row 1 */}
           <div className="wo-header-row">
             <div>Work Order</div>
             <div>Category</div>
-            <div>Region</div>
+            <div>Item</div>
           </div>
           <div className="wo-value-row">
             <div>{details.workorder}</div>
             <div>{details.category_name}</div>
+            <div>{details.item_name}</div>
+          </div>
+
+          <div className="wo-header-row">
+            <div>Type</div>
+            <div>Description</div>
+            <div>Region</div>
+          </div>
+          <div className="wo-value-row">
+            <div>{details.type_name}</div>
+            <div>{details.description_name}</div>
             <div>{details.region_name}</div>
           </div>
 
-          {/* Row 2 */}
+          <div className="wo-header-row">
+            <div>State</div>
+            <div>City</div>
+            <div>Address</div>
+          </div>
+          <div className="wo-value-row">
+            <div>{details.state_name}</div>
+            <div>{details.city_name}</div>
+            <div>{details.address}</div>
+          </div>
+
           <div className="wo-header-row">
             <div>Status</div>
-            <div>Remarks</div>
             <div>Client</div>
+            <div>Remarks</div>
           </div>
           <div className="wo-value-row">
             <div>{details.status}</div>
-            <div>{details.remarks}</div>
             <div>{details.client}</div>
+            <div>{details.remarks}</div>
           </div>
 
-          {/* Contractor List (VISIBLE BY DEFAULT) */}
-          <div className="wo-header-row">
-            <div>Contractor</div>
-          </div>
-          <div className="wo-value-row">
-            <select
-  name="CONTRACTOR_NAME"
-  value={details.CONTRACTOR_NAME || ""}
-  onChange={handleChange}
-  style={{ width: "100%" }}
->
-  <option value="">-- Select Contractor --</option>
+          <div className="contractor-section">
+            <div className="wo-header-row">
+              <div>Contractors</div>
+            </div>
 
-  {contractors.map((c) => (
-    <option key={c.provider_id} value={c.full_name}>
-      {c.full_name} ({c.service_locations})
-    </option>
-  ))}
-</select>
-          </div>
+            <div className="contractor-filters">
+              <input
+                type="text"
+                name="name"
+                value={filters.name}
+                onChange={handleFilterChange}
+                placeholder="filter bu contractor name"
+                className="contractor-filter-input"
+              />
 
+              <input
+                type="number"
+                name="maxPrice"
+                value={filters.maxPrice}
+                onChange={handleFilterChange}
+                placeholder=" filter by price"
+                className="contractor-filter-input"
+                min="0"
+              />
+            </div>
+
+            <div className="contractor-table-wrap">
+              <table className="contractor-table">
+                <thead>
+                  <tr>
+                    <th>Contractor Name</th>
+                  
+                    <th>Price</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredContractors.length > 0 ? (
+                    filteredContractors.map((c) => (
+                      <tr key={c.provider_id}>
+                        <td>{c.full_name}</td>
+                       
+                        <td>
+                          ₹ {Number.parseFloat(c.rate || 0).toFixed(2)}
+                        </td>
+                        <td>
+                          <button
+                            className="blue-btn small-btn"
+                            onClick={() => handleAssignContractor(c)}
+                            disabled={savingId === c.provider_id}
+                          >
+                            {savingId === c.provider_id ? "Assigning..." : "Assign"}
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="4" style={{ textAlign: "center" }}>
+                        No contractors found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 
       <div className="wo-actions-center">
-        <button className="blue-btn" onClick={handleSave} disabled={saving}>
-          {saving ? "Saving..." : "💾 Assign Contractor"}
-        </button>
         <button className="blue-btn cancel" onClick={handleCancel}>
           ✖ Cancel
         </button>

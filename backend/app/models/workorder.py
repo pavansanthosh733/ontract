@@ -886,30 +886,53 @@ class WorkOrder(db.Model):
             print("[ERROR] get_standard_rates:", e)
             return []
 
+
     @classmethod
     def get_by_workorder_code(cls, workorder):
         try:
             sql = text("""
                 SELECT 
                     w.*,
+    
                     c.category_name,
-                    r.region_name
+                    i.item_name,
+                    t.type_name,
+                    d.description_name,
+                    r.region_name,
+                    s.state_name,
+                    ci.city_name
+    
                 FROM workorder_t w
-                LEFT JOIN category_master_t c ON w.category = c.category_id
-                LEFT JOIN region_master_t r ON w.region = r.region_id
+                LEFT JOIN category_master_t c
+                    ON w.category = c.category_id
+                LEFT JOIN item_master_t i
+                    ON w.item = i.item_id
+                LEFT JOIN type_master_t t
+                    ON w.type = t.type_id
+                LEFT JOIN description_master_t d
+                    ON w.description = d.description_id
+                LEFT JOIN region_master_t r
+                    ON w.region = r.region_id
+                LEFT JOIN state_master_t s
+                    ON w.state = s.state_id
+                LEFT JOIN city_master_t ci
+                    ON w.city = ci.city_id
+    
                 WHERE w.workorder = :workorder
                 LIMIT 1
             """)
-
+    
             row = db.session.execute(sql, {"workorder": workorder}).mappings().fetchone()
-
+    
             if not row:
                 return None, "Workorder not found"
-
+    
             return dict(row), None
-
+    
         except Exception as e:
             return None, str(e)
+    
+
 
     @classmethod
     def get_contractors_by_region_category_name(cls, region_name, category_name):

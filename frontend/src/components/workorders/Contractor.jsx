@@ -152,7 +152,7 @@ const WorkOrders = () => {
                     <td
                       onClick={() =>
                         navigate(
-                          `/admin/workorder/contractor/workorders/${wo.workorder}`
+                          `/admin/workorder/contractor/workorderdetails/${wo.workorder}`
                         )
                       }
                     >
