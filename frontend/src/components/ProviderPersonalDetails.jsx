@@ -309,12 +309,12 @@ const handleProfileImageChange = (e) => {
   const maxSize = 5 * 1024 * 1024;
 
   if (!allowedTypes.includes(file.type)) {
-    setErrors(prev => ({ ...prev, profileImage: "JPEG/PNG/GIF only" }));
+    alert("Only JPEG, PNG, or GIF files are allowed");
     return;
   }
 
   if (file.size > maxSize) {
-    setErrors(prev => ({ ...prev, profileImage: "Max 5MB allowed" }));
+    alert("Profile image must be less than 5MB");
     return;
   }
 
@@ -342,12 +342,12 @@ const handleCertificateChange = (e) => {
 
   for (const file of newFiles) {
     if (!allowedTypes.includes(file.type)) {
-      setErrors(prev => ({ ...prev, certificate: "JPEG/PNG/GIF/PDF only" }));
+      alert("Only JPEG, PNG, GIF, or PDF files are allowed");
       return;
     }
 
     if (file.size > maxSize) {
-      setErrors(prev => ({ ...prev, certificate: "Each file must be max 10MB" }));
+      alert("Each certificate file must be less than 10MB");
       return;
     }
 
@@ -403,7 +403,7 @@ setBillingPostalCode(billingMatch ? billingMatch[1] : "");
           state_id: s.state_id || null,
 
           city: s.city || "",
-          city_id: s.city_id || null,
+          city_id: s.city_id || s.city || null,
 
           category_id: s.category_id || "",
           category_name: s.category_name || "",
@@ -519,14 +519,6 @@ if (field === "state") {
 
 
 
-if (field === "city") {
-  const found = updated.cities.find(c => c.city_name === value.name);
-
-  updated.city = value.name;
-  updated.city_id = found?.city_id || null;
-}
-
-
   if (field === "price") updated.price = value;
 
   if (field === "category") {
@@ -550,7 +542,10 @@ if (field === "city") {
   }
 
   if (field === "description") {
-    updated.description_name = value;
+
+    const found = updated.descriptions.find(d => d.description_name === value);
+    updated.description_id = found?.id || null;
+    updated.description_name = found?.description_name || "";
   }
 
   list[index] = updated;
@@ -603,69 +598,202 @@ const fetchCitiesByRegionState = async (regionId, stateId) => {
 
   /* ================= SUBMIT ================= */
   const handleProfileSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    let finalMailing = mailingAddress.trim();
-   
-let finalBilling = billingAddress.trim();
+        e.preventDefault();
+        setLoading(true);
+        let finalMailing = mailingAddress.trim();
+      
+      const formattedTIN = tinNumber.trim().toUpperCase();
+      const individualTINRegex = /^IG\d{9,11}$/;
+      const companyTINRegex = /^[A-Z]\d{10,11}$/;
+      const isValidTIN =
+        individualTINRegex.test(formattedTIN) ||
+        companyTINRegex.test(formattedTIN);
 
-if (mailingPostalCode) finalMailing += `, ${mailingPostalCode}`;
-if (billingPostalCode) finalBilling += `, ${billingPostalCode}`;
+      if (!isValidTIN) {
+        alert(
+          "Invalid Malaysia TIN format. Example: IG1150020000 or C1234567890"
+        );
 
-const newErrors = {};
+        setLoading(false);
+        return;
+      }   
+    let finalBilling = billingAddress.trim();
 
-if (!bumiputera) {
-  newErrors.bumiputera =
-    "Please select Bumiputera status";
-}
+    if (mailingPostalCode) finalMailing += `, ${mailingPostalCode}`;
+    if (billingPostalCode) finalBilling += `, ${billingPostalCode}`;
 
-if (Object.keys(newErrors).length > 0) {
-  setErrors(newErrors);
-  setLoading(false);
-  return;
-}
+    const newErrors = {};
 
-if (!locationServiceList.length) {
-  setErrors({ services: "Add at least one service" });
-  setLoading(false);
-  return;
-}
+    if (!fullName.trim()) {
+      alert("Full name is required");
+      setLoading(false);
+      return;
+    }
+
+    if (!/^[A-Za-z\s\-']{1,100}$/.test(fullName)) {
+      alert("Invalid full name");
+      setLoading(false);
+      return;
+    }
+
+    if (!/^[0-9]{10}$/.test(contactNumber)) {
+      alert("Contact number must be 10 digits");
+      setLoading(false);
+      return;
+    }
+
+    if (!idType) {
+      alert("Please select ID Type");
+      setLoading(false);
+      return;
+    }
+
+    if (!idNumber) {
+      alert("ID Number is required");
+      setLoading(false);
+      return;
+    }
+
+    if (!mailingAddress.trim()) {
+      alert("Mailing address is required");
+      setLoading(false);
+      return;
+    }
+
+    if (!billingAddress.trim()) {
+      alert("Billing address is required");
+      setLoading(false);
+      return;
+    }
+
+    if (
+      alternateContactNumber &&
+      !/^[0-9]{10}$/.test(alternateContactNumber)
+    ) {
+      alert("Alternate contact number must be 10 digits");
+      setLoading(false);
+      return;
+    }
+
+    if (
+      alternateContactNumber &&
+      alternateContactNumber === contactNumber
+    ) {
+      alert("Alternate contact number must be different from contact number");
+      setLoading(false);
+      return;
+    }
+
+    if (!tinNumber.trim()) {
+      alert("TIN Number is required");
+      setLoading(false);
+      return;
+    }
+
+    if (!bumiputera) {
+      alert("Please select Bumiputera status");
+      setLoading(false);
+      return;
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      setLoading(false);
+      return;
+    }
+
+    if (!locationServiceList.length) {
+      alert("Add at least one service");
+      setLoading(false);
+      return;
+    }
 
 
+  for (const item of locationServiceList) {
 
-const servicesArray = locationServiceList.map(item => ({
-  region_id: item.region_id,
-  region_name: item.region,
+    if (!item.region_id) {
+      alert("Please select region");
+      setLoading(false);
+      return;
+    }
 
-  state_id: item.state_id,
-  state_name: item.state,
+    if (!item.state_id) {
+      alert("Please select state");
+      setLoading(false);
+      return;
+    }
 
-  city_id: item.city_id || null,
-  city_name: item.city || null,
+    if (!item.city_id && !item.city) {
+      alert("Please select city");
+      setLoading(false);
+      return;
+    }
 
-  category_id: item.category_id,
-  category_name: item.category_name,
+    if (!item.category_id) {
+      alert("Please select category");
+      setLoading(false);
+      return;
+    }
 
-  item_id: item.item_id,
-  item_name: item.item_name,
+    if (!item.item_id) {
+      alert("Please select item");
+      setLoading(false);
+      return;
+    }
 
-  type_id: item.type_id,
-  type_name: item.type_name,
+    if (!item.type_id) {
+      alert("Please select type");
+      setLoading(false);
+      return;
+    }
 
-  description_id: item.description_id || null,
-  description_name: item.description_name || null,
+    if (!item.description_name) {
+      alert("Please select description");
+      setLoading(false);
+      return;
+    }
 
-  price: parseFloat(item.price || 0)
+    if (!item.price || item.price <= 0) {
+      alert("Price must be greater than 0");
+      setLoading(false);
+      return;
+    }
+  }
 
-}));
+  const servicesArray = locationServiceList.map(item => ({
+    region_id: item.region_id,
+    region_name: item.region,
+
+    state_id: item.state_id,
+    state_name: item.state,
+
+    city_id: item.city_id || null,
+    city_name: item.city || null,
+
+    category_id: item.category_id,
+    category_name: item.category_name,
+
+    item_id: item.item_id,
+    item_name: item.item_name,
+
+    type_id: item.type_id,
+    type_name: item.type_name,
+
+    description_id: item.description_id || null,
+    description_name: item.description_name || null,
+
+    price: parseFloat(item.price || 0)
+
+  }));
+
 if (mailingPostalCode && mailingPostalCode.length !== 5) {
-  setErrors({ mailingPostalCode: "Enter valid 5-digit postal code" });
+  alert("Enter valid 5-digit mailing postal code");
   setLoading(false);
   return;
 }
 
 if (billingPostalCode && billingPostalCode.length !== 5) {
-  setErrors({ billingPostalCode: "Enter valid 5-digit postal code" });
+  alert("Enter valid 5-digit billing postal code");
   setLoading(false);
   return;
 }
@@ -701,27 +829,20 @@ try {
     formData
   );
 
-  await Swal.fire({
-    icon: "success",
-    title: "Success",
-    text: "Profile updated successfully",
-    confirmButtonText: "OK",
-  });
+  alert(
+    response?.message ||
+    "Profile has been submitted successfully. Admin will cross-check and approve your profile."
+  );
 
-  // optional redirect
-  // navigate("/provider/profile");
     navigate("/provider_home/providerupdateprofile");
 
 } catch (err) {
   console.error(err);
 
-  Swal.fire({
-    icon: "error",
-    title: "Update Failed",
-    text:
-      err?.response?.data?.message ||
-      "Profile update failed",
-  });
+  alert(
+    err?.response?.data?.message ||
+    "Profile update failed"
+  );
 
   setErrors({
     general: "Profile update failed",
@@ -938,13 +1059,22 @@ handleChange(idx, "state", {
   className="form-select"
   value={item.city || ""}
   onChange={e => {
-const selectedCity = item.cities.find(
-  c => c.city_name === e.target.value
-);
 
-handleChange(idx, "city", {
-  name: selectedCity?.city_name || ""
-});
+    const selectedCity = item.cities.find(
+      c => String(c.city_name).trim() === String(e.target.value).trim()
+    );
+
+    if (!selectedCity) {
+      alert("Please select valid city");
+      return;
+    }
+
+    const updatedList = [...locationServiceList];
+
+    updatedList[idx].city = selectedCity.city_name;
+    updatedList[idx].city_id = selectedCity.city_id;
+
+    setLocationServiceList(updatedList);
 
   }}
   disabled={!item.state_id}
@@ -1058,8 +1188,10 @@ handleChange(idx, "city", {
         <div className="col-md-3">
           <select
             className="form-select"
-            value={item.description_name}
-            onChange={e => handleChange(idx, "description", e.target.value)}
+            value={item.description_name || ""}
+            onChange={e =>
+              handleChange(idx, "description", e.target.value)
+            }
             disabled={!item.descriptions?.length}
           >
             <option value="">Description</option>

@@ -240,7 +240,7 @@ class ProviderController:
             ProviderModel.update_status(email, "pending")
 
         send_email(email, "Bank Details Updated", "Your bank details were successfully updated.")
-        return {"message": "Bank details updated"}, 200
+        return {"message": "Bank details updated successfully. Admin will review and approve your details shortly."}, 200
 
     # ===================================================================
     #                     3) PROFILE + SERVICES (UPDATED)
@@ -474,7 +474,7 @@ class ProviderController:
         )
     
         return {
-            "message": "Profile submitted successfully",
+            "message": "Profile has been submitted successfully. Admin will cross check and approve your profile.",
             "status": "pending"
         }, 200
         
@@ -512,13 +512,12 @@ class ProviderController:
         bank_details = None
         provider_id = provider["provider_id"]
         bank_row = ProviderModel.get_bank(provider_id)
-
         if bank_row:
             bank_details = {
                 "bank_name": bank_row['bank_name'],
                 "swift": decrypt_value(bank_row["swift_code"]),
                 "bank_account_number": decrypt_value(bank_row["bank_account_number"]),
-                "holder_name": decrypt_value(bank_row["account_holder_name"]),
+                "holder_name": bank_row["account_holder_name"],
                 "bank_statement": base64.b64encode(bank_row["bank_statement"]).decode()
                 if bank_row.get("bank_statement") else None
             }

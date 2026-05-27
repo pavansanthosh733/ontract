@@ -118,12 +118,7 @@ function CompanySignup() {
         "✅ Registration successful.\n\nActivation link sent to your email."
       );
 
-      navigate("/contractor/login", {
-        state: {
-          message:
-            "Activation link sent to your email. Please activate before login.",
-        },
-      });
+      navigate("/");
 
     } catch (err) {
 

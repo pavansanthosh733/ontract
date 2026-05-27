@@ -264,9 +264,6 @@ const fetchCompletedOrders = async (userUid) => {
                 <p className="welcome-subtitle">Here's what's happening with your business today</p>
               </div>
               <div className="quick-actions d-none d-md-flex gap-3">
-               {/*  <Link to="/provider_home/services" className="btn btn-outline-primary btn-action">
-                 <FaTools className="me-2" /> Manage Services
-                </Link>*/}
                 <Link to="/provider_home/workorders" className="btn btn-primary btn-action">
                   <FaClipboardList className="me-2" /> WORK ORDERS
                 </Link>

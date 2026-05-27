@@ -257,18 +257,11 @@ class ProviderModel:
         # ✅ UPDATE providers_t
         # =====================================================
         sql_provider = text("""
-            UPDATE providers_t
-            SET
-                id_type = :id_type,
-                id_number = :id_number,
+            UPDATE providers_t SET id_type = :id_type,id_number = :id_number,
                 profile_pic = COALESCE(:profile_pic, profile_pic),
                 authorized_certificate = COALESCE(CAST(:certificate AS JSONB), authorized_certificate),
-                updated_at = CURRENT_TIMESTAMP   -- ✅ ADDED
-            WHERE user_uid = (
-                SELECT user_uid
-                FROM users_t
-                WHERE email_id = :email
-            )
+                updated_at = CURRENT_TIMESTAMP
+            WHERE user_uid = (SELECT user_uid FROM users_t WHERE email_id = :email)
         """)
     
         provider_params = {
@@ -377,9 +370,8 @@ class ProviderModel:
     @staticmethod
     def get_bank(provider_id):
         sql = text("""
-            SELECT bank_name, swift_code, bank_account_number, 
-                   account_holder_name, bank_statement
-            FROM providers_bank_details_t
+            SELECT bank_name, swift_code,account_holder_name, bank_account_number, 
+            bank_statement FROM providers_bank_details_t
             WHERE provider_id = :id
             LIMIT 1
         """)

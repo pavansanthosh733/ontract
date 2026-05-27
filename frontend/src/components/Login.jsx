@@ -76,12 +76,12 @@ function Login() {
     setError("");
 
     if (!email || !password) {
-      setError("Email and Password are required");
+      alert("Email and Password are required");
       return;
     }
 
     if (captchaInput.toUpperCase() !== generatedCaptchaCode) {
-      setError("Invalid Captcha");
+      alert("Invalid Captcha");
       generateCaptcha();
       return;
     }
@@ -98,13 +98,16 @@ function Login() {
       const data = await res.json();
 
       if (res.ok) {
-        navigate("/verify-otp", { state: { email } });
+        alert(data.message);
+        navigate("/verify-otp", {
+          state: { email }
+        });
       } else {
-        setError(data.error || "Login failed");
+        alert(data.error || "Login failed");
         generateCaptcha();
       }
     } catch (err) {
-      setError("Something went wrong");
+      alert("Something went wrong");
       generateCaptcha();
     } finally {
       setLoading(false);

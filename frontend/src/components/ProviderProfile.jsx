@@ -6,15 +6,8 @@ import { useUser } from "../context/UserContext";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 
 function ProviderProfile({ user }) {
-// function ProviderProfile() {
 
-
-   const navigate = useNavigate();
-//      const { user } = useUser();
-    // console.log("User from context:", user);
-    // console.log("context r user",user);
-
-
+  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [fullName, setFullName] = useState('');
   const [idType, setIdType] = useState('');
@@ -38,7 +31,6 @@ function ProviderProfile({ user }) {
   const [editMode, setEditMode] = useState(false);
   const [pollInterval, setPollInterval] = useState(null);
   const [bumiputera, setBumiputera] = useState("");
-
   const [regions, setRegions] = useState({});
   const [states, setStates] = useState([]);
 
@@ -52,31 +44,25 @@ function ProviderProfile({ user }) {
 
   const [idTypes, setIdTypes] = useState([]);
 
-useEffect(() => {
-  apiGet("/api/state/id-types")
-    .then(data => {
-      if (Array.isArray(data)) setIdTypes(data);
-      else setIdTypes([]);
-    })
-    .catch(() => setIdTypes([]));
-}, []);
-
-
-
+  useEffect(() => {
+    apiGet("/api/state/id-types")
+      .then(data => {
+        if (Array.isArray(data)) setIdTypes(data);
+        else setIdTypes([]);
+      })
+      .catch(() => setIdTypes([]));
+  }, []);
 
   const [servicesList, setServicesList] = useState([]);
 
- useEffect(() => {
-  apiGet("/api/category")
-    .then(data => {
-      if (Array.isArray(data)) setServicesList(data);
-      else setServicesList([]);
-    })
-    .catch(() => setServicesList([]));
-}, []);
-
-
-
+  useEffect(() => {
+    apiGet("/api/category")
+      .then(data => {
+        if (Array.isArray(data)) setServicesList(data);
+        else setServicesList([]);
+      })
+      .catch(() => setServicesList([]));
+  }, []);
 
   useEffect(() => {
     if (user) fetchProfile();
@@ -94,175 +80,155 @@ useEffect(() => {
   }, [profile?.status]);
 
  // Fetch Malaysia Regions
-useEffect(() => {
-  apiGet("/api/region/")
-    .then(data => setRegions(Array.isArray(data) ? data : []))
-    .catch(() => setRegions([]));
-}, []);
+  useEffect(() => {
+    apiGet("/api/region/")
+      .then(data => setRegions(Array.isArray(data) ? data : []))
+      .catch(() => setRegions([]));
+  }, []);
 
 
-const fetchStates = (regionId, index) => {
-  apiGet(`/api/state/by-region/${regionId}`)
-    .then(data => {
-      setLocationServiceList(prev => {
-        const updated = [...prev];
-        updated[index].states = Array.isArray(data) ? data : [];
-        return updated;
+  const fetchStates = (regionId, index) => {
+    apiGet(`/api/state/by-region/${regionId}`)
+      .then(data => {
+        setLocationServiceList(prev => {
+          const updated = [...prev];
+          updated[index].states = Array.isArray(data) ? data : [];
+          return updated;
+        });
+      })
+      .catch(() => {
+        setLocationServiceList(prev => {
+          const updated = [...prev];
+          updated[index].states = [];
+          return updated;
+        });
       });
-    })
-    .catch(() => {
-      setLocationServiceList(prev => {
-        const updated = [...prev];
-        updated[index].states = [];
-        return updated;
-      });
-    });
-};
+  };
 
-const fetchAndAppend = async (type, postalCode) => {
-  if (postalCode.length !== 5) return;
+  const fetchAndAppend = async (type, postalCode) => {
+    if (postalCode.length !== 5) return;
 
-  try {
-    const data = await apiGet(`/api/malaysia_postcode?postcode=${postalCode}`);
+    try {
+      const data = await apiGet(`/api/malaysia_postcode?postcode=${postalCode}`);
 
-    const city = data?.city || '';
-    const state = data?.state || '';
-    const fullAppend = `${city}, ${state} ${postalCode}`.trim();
+      const city = data?.city || '';
+      const state = data?.state || '';
+      const fullAppend = `${city}, ${state} ${postalCode}`.trim();
 
-    if (type === 'mailing') {
-      setMailingAddress(prev => {
-        const trimmedPrev = prev.trim();
-        if (trimmedPrev.includes(fullAppend)) return trimmedPrev;
+      if (type === 'mailing') {
+        setMailingAddress(prev => {
+          const trimmedPrev = prev.trim();
+          if (trimmedPrev.includes(fullAppend)) return trimmedPrev;
 
-        return trimmedPrev ? `${trimmedPrev}, ${fullAppend}` : fullAppend;
-      });
-    } else {
-      setBillingAddress(prev => {
-        const trimmedPrev = prev.trim();
-        if (trimmedPrev.includes(fullAppend)) return trimmedPrev;
+          return trimmedPrev ? `${trimmedPrev}, ${fullAppend}` : fullAppend;
+        });
+      } else {
+        setBillingAddress(prev => {
+          const trimmedPrev = prev.trim();
+          if (trimmedPrev.includes(fullAppend)) return trimmedPrev;
 
-        return trimmedPrev ? `${trimmedPrev}, ${fullAppend}` : fullAppend;
-      });
+          return trimmedPrev ? `${trimmedPrev}, ${fullAppend}` : fullAppend;
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching address:", error);
     }
-  } catch (error) {
-    console.error("Error fetching address:", error);
-  }
-};
+  };
 
-const fetchProfile = async () => {
-  try {
-    const data = await apiPost("/api/profile", { email: user.email });
+  const fetchProfile = async () => {
+      try {
+        const data = await apiPost("/api/profile", { email: user.email });
 
-    console.log("profile data", data);
+        console.log("profile data", data);
 
-    setProfile(data);
+        setProfile(data);
 
-    if (data.status === "approved" && !data.bank_details) {
-      setShowBankForm(true);
-    }
+        if (data.status === "approved" && !data.bank_details) {
+          setShowBankForm(true);
+        }
 
-    if (Array.isArray(data.services)) {
-const locServ = data.services.map(s => ({
-  region_id: s.region_id,
-  region_name: s.region,
+        if (Array.isArray(data.services)) {
+          const locServ = data.services.map(s => ({
+            region_id: s.region_id,
+            region_name: s.region,
+            state_id: s.state_id,
+            state_name: s.state,
+            city_id: s.city_id,
+            city_name: s.city,
+            category_id: s.category_id,
+            category_name: s.category_name,
+            item_id: s.item_id,
+            item_name: s.item_name,
+            type_id: s.type_id,
+            type_name: s.type_name,
+            description_id: s.description_id,
+            description_name: s.description_name,
+            price: s.service_rate,
+            states: [],
+            cities: [],
+            items: [],
+            types: [],
+            descriptions: []
+          }));
+          setLocationServiceList(locServ);
+        } else {
+          setLocationServiceList([]);
+        }
 
-  state_id: s.state_id,
-  state_name: s.state,
+        setFullName(data.full_name || "");
+        setIdType(data.id_type || "");
+        setIdNumber(data.id_number || "");
+        setMailingAddress(data.mailing_address || "");
+        setBillingAddress(data.billing_address || "");
 
-  city_id: s.city_id,
-  city_name: s.city,
+        const mailingMatch = data.mailing_address?.match(/(\d{5})$/);
+        if (mailingMatch) setMailingPostalCode(mailingMatch[1]);
 
-  category_id: s.category_id,
-  category_name: s.category_name,
+        const billingMatch = data.billing_address?.match(/(\d{5})$/);
+        if (billingMatch) setBillingPostalCode(billingMatch[1]);
 
-  item_id: s.item_id,
-  item_name: s.item_name,
+        setContactNumber(data.contact_number || data.phone_number || "");
+        setAlternateContactNumber(data.alternate_contact_number || "");
+        setTinNumber(data.tin_number || "");
+      setBumiputera(
+      String(data.bumiputra_status || "").toLowerCase()
+    );
 
-  type_id: s.type_id,
-  type_name: s.type_name,
-
-  description_id: s.description_id,
-  description_name: s.description_name,
-
-  price: s.service_rate,
-
-  states: [],
-  cities: [],
-  items: [],
-  types: [],
-  descriptions: []
-}));
-setLocationServiceList(locServ);
-
-    } else {
-      setLocationServiceList([]);
-    }
-
-    setFullName(data.full_name || "");
-    setIdType(data.id_type || "");
-    setIdNumber(data.id_number || "");
-    setMailingAddress(data.mailing_address || "");
-    setBillingAddress(data.billing_address || "");
-
-    const mailingMatch = data.mailing_address?.match(/(\d{5})$/);
-    if (mailingMatch) setMailingPostalCode(mailingMatch[1]);
-
-    const billingMatch = data.billing_address?.match(/(\d{5})$/);
-    if (billingMatch) setBillingPostalCode(billingMatch[1]);
-
-    setContactNumber(data.contact_number || data.phone_number || "");
-    setAlternateContactNumber(data.alternate_contact_number || "");
-    setTinNumber(data.tin_number || "");
-  setBumiputera(
-  String(data.bumiputra_status || "").toLowerCase()
-);
-
-  } catch (error) {
-    console.error("Profile fetch error:", error);
-    setErrors({
-      general: error.message || "Error fetching profile."
-    });
-  }
-};
+      } catch (error) {
+        alert(error.message || "Error fetching profile");
+      }
+  };
 
 
   const enterEditMode = () => setEditMode(true);
 
-const handleAddLocationService = () => {
-  setLocationServiceList(prev => [
-    ...prev,
-    {
-      region_id: "",
-      region_name: "",
-
-      state_id: "",
-      state_name: "",
-
-      city_id: "",
-      city_name: "",
-
-      category_id: "",
-      category_name: "",
-
-      item_id: "",
-      item_name: "",
-
-      type_id: "",
-      type_name: "",
-
-      description_id: "",
-      description_name: "",
-
-      price: "",
-
-      states: [],
-      cities: [],
-      items: [],
-      types: [],
-      descriptions: []
-    }
-  ]);
-};
+  const handleAddLocationService = () => {
+    setLocationServiceList(prev => [
+      ...prev,
+      {
+        region_id: "",
+        region_name: "",
+        state_id: "",
+        state_name: "",
+        city_id: "",
+        city_name: "",
+        category_id: "",
+        category_name: "",
+        item_id: "",
+        item_name: "",
+        type_id: "",
+        type_name: "",
+        description_id: "",
+        description_name: "",
+        price: "",
+        states: [],
+        cities: [],
+        items: [],
+        types: [],
+        descriptions: []
+      }
+    ]);
+  };
 
 
   const handleRemoveLocationService = (index) => {
@@ -271,124 +237,124 @@ const handleAddLocationService = () => {
     setLocationServiceList(list);
   };
 
- const handleChange = async (index, field, value) => {
-  setLocationServiceList(prev => {
-    const list = [...prev];
-    const row = { ...list[index] };
+  const handleChange = async (index, field, value) => {
+    setLocationServiceList(prev => {
+      const list = [...prev];
+      const row = { ...list[index] };
 
-    switch (field) {
+      switch (field) {
 
-      case "region":
-        row.region_id = value.id;
-        row.region_name = value.name;
+        case "region":
+          row.region_id = value.id;
+          row.region_name = value.name;
 
-        row.state_id = row.city_id = "";
-        row.category_id = row.item_id = row.type_id = row.description_id = "";
+          row.state_id = row.city_id = "";
+          row.category_id = row.item_id = row.type_id = row.description_id = "";
 
-        row.states = [];
-        row.cities = [];
-        row.items = [];
-        row.types = [];
-        row.descriptions = [];
+          row.states = [];
+          row.cities = [];
+          row.items = [];
+          row.types = [];
+          row.descriptions = [];
 
-        apiGet(`/api/state/by-region/${value.id}`).then(data => {
-          setLocationServiceList(p => {
-            const copy = [...p];
-            copy[index].states = data || [];
-            return copy;
-          });
-        });
-        break;
-
-      case "state":
-        row.state_id = value.id;
-        row.state_name = value.name;
-
-        row.city_id = "";
-        row.cities = [];
-
-        apiGet(`/api/city/by-region-state?region_id=${row.region_id}&state_id=${value.id}`)
-          .then(data => {
+          apiGet(`/api/state/by-region/${value.id}`).then(data => {
             setLocationServiceList(p => {
               const copy = [...p];
-              copy[index].cities = data || [];
+              copy[index].states = data || [];
               return copy;
             });
           });
-        break;
+          break;
 
-      case "city":
-        row.city_id = value.id;
-        row.city_name = value.name;
-        break;
+        case "state":
+          row.state_id = value.id;
+          row.state_name = value.name;
 
-      case "category":
-        row.category_id = value.id;
-        row.category_name = value.name;
+          row.city_id = "";
+          row.cities = [];
 
-        row.item_id = row.type_id = row.description_id = "";
-        row.items = [];
-        row.types = [];
-        row.descriptions = [];
+          apiGet(`/api/city/by-region-state?region_id=${row.region_id}&state_id=${value.id}`)
+            .then(data => {
+              setLocationServiceList(p => {
+                const copy = [...p];
+                copy[index].cities = data || [];
+                return copy;
+              });
+            });
+          break;
 
-        apiGet(`/api/items/${value.id}`).then(data => {
-          setLocationServiceList(p => {
-            const copy = [...p];
-            copy[index].items = data || [];
-            return copy;
-          });
-        });
-        break;
+        case "city":
+          row.city_id = value.id;
+          row.city_name = value.name;
+          break;
 
-      case "item":
-        row.item_id = value.id;
-        row.item_name = value.name;
+        case "category":
+          row.category_id = value.id;
+          row.category_name = value.name;
 
-        row.type_id = row.description_id = "";
-        row.types = [];
-        row.descriptions = [];
+          row.item_id = row.type_id = row.description_id = "";
+          row.items = [];
+          row.types = [];
+          row.descriptions = [];
 
-        apiGet(`/api/types/filter?category_id=${row.category_id}&item_id=${value.id}`)
-          .then(data => {
+          apiGet(`/api/items/${value.id}`).then(data => {
             setLocationServiceList(p => {
               const copy = [...p];
-              copy[index].types = data || [];
+              copy[index].items = data || [];
               return copy;
             });
           });
-        break;
+          break;
 
-      case "type":
-        row.type_id = value.id;
-        row.type_name = value.name;
+        case "item":
+          row.item_id = value.id;
+          row.item_name = value.name;
 
-        row.description_id = "";
-        row.descriptions = [];
+          row.type_id = row.description_id = "";
+          row.types = [];
+          row.descriptions = [];
 
-        apiGet(`/api/description/filter?category_id=${row.category_id}&item_id=${row.item_id}&type_id=${value.id}`)
-          .then(data => {
-            setLocationServiceList(p => {
-              const copy = [...p];
-              copy[index].descriptions = data || [];
-              return copy;
+          apiGet(`/api/types/filter?category_id=${row.category_id}&item_id=${value.id}`)
+            .then(data => {
+              setLocationServiceList(p => {
+                const copy = [...p];
+                copy[index].types = data || [];
+                return copy;
+              });
             });
-          });
-        break;
+          break;
 
-      case "description":
-        row.description_id = value.id;
-        row.description_name = value.name;
-        break;
+        case "type":
+          row.type_id = value.id;
+          row.type_name = value.name;
 
-      case "price":
-        row.price = value;
-        break;
-    }
+          row.description_id = "";
+          row.descriptions = [];
 
-    list[index] = row;
-    return list;
-  });
-};
+          apiGet(`/api/description/filter?category_id=${row.category_id}&item_id=${row.item_id}&type_id=${value.id}`)
+            .then(data => {
+              setLocationServiceList(p => {
+                const copy = [...p];
+                copy[index].descriptions = data || [];
+                return copy;
+              });
+            });
+          break;
+
+        case "description":
+          row.description_id = value.id;
+          row.description_name = value.name;
+          break;
+
+        case "price":
+          row.price = value;
+          break;
+      }
+
+      list[index] = row;
+      return list;
+    });
+  };
 
 
   const handleProfileImageChange = (e) => {
@@ -399,21 +365,18 @@ const handleAddLocationService = () => {
     const maxSize = 5 * 1024 * 1024; // 5MB
 
     if (!allowedTypes.includes(file.type)) {
-      setErrors(prev => ({ ...prev, profileImage: 'Only JPEG, PNG, or GIF files are allowed.' }));
+      alert("Only JPEG, PNG, or GIF files are allowed.");
       e.target.value = '';
       setProfileImage(null);
       return;
     }
 
     if (file.size > maxSize) {
-      setErrors(prev => ({ ...prev, profileImage: 'File size must be less than 5MB.' }));
+      alert("Profile image size must be less than 5MB.");
       e.target.value = '';
       setProfileImage(null);
       return;
     }
-
-    // 🚫 Prevent same file as certificate
-
 
     setErrors(prev => ({ ...prev, profileImage: null }));
     setProfileImage(file);
@@ -424,12 +387,12 @@ const handleAddLocationService = () => {
 
   if (!newFiles.length) return;
 
-  const allowedTypes = [
-    'image/jpeg',
-    'image/png',
-    'image/gif',
-    'application/pdf'
-  ];
+    const allowedTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'application/pdf'
+    ];
 
   const maxSize = 10 * 1024 * 1024;
 
@@ -438,34 +401,18 @@ const handleAddLocationService = () => {
   for (const file of newFiles) {
 
     if (!allowedTypes.includes(file.type)) {
-      setErrors(prev => ({
-        ...prev,
-        certificate:
-          'Only JPEG, PNG, GIF, or PDF files are allowed.'
-      }));
+      alert("Only JPEG, PNG, GIF, or PDF files are allowed.");
       return;
     }
 
     if (file.size > maxSize) {
-      setErrors(prev => ({
-        ...prev,
-        certificate:
-          'Each file must be less than 10 MB.'
-      }));
+      alert("Each certificate file must be less than 10 MB.");
       return;
     }
 
     // prevent same file as profile image
-    if (
-      profileImage &&
-      file.name === profileImage.name &&
-      file.size === profileImage.size
-    ) {
-      setErrors(prev => ({
-        ...prev,
-        certificate:
-          'Certificate and profile image cannot be the same file.'
-      }));
+    if (profileImage && file.name === profileImage.name && file.size === profileImage.size) {
+      alert("Certificate and profile image cannot be the same file.");
       return;
     }
 
@@ -499,20 +446,14 @@ const handleAddLocationService = () => {
     const maxSize = 10 * 1024 * 1024; // 10 MB
 
     if (!allowedTypes.includes(file.type)) {
-      setErrors(prev => ({
-        ...prev,
-        bankStatement: 'Only PDF, JPEG, PNG, or GIF files are allowed.'
-      }));
-      e.target.value = '';      // clear the file input
+      alert("Only PDF, JPEG, PNG, or GIF files are allowed.");
+      e.target.value = '';   
       setBankStatement(null);
       return;
     }
 
     if (file.size > maxSize) {
-      setErrors(prev => ({
-        ...prev,
-        bankStatement: 'File size must be less than 10 MB.'
-      }));
+      alert("Bank statement size must be less than 10MB.");
       e.target.value = '';
       setBankStatement(null);
       return;
@@ -525,138 +466,187 @@ const handleAddLocationService = () => {
 
 
   const validateProfile = () => {
-    const newErrors = {};
     const nameRegex = /^[A-Za-z\s\-']{1,100}$/;
     const mobileRegex = /^[0-9]{10}$/;
-    const addressRegex = /^[A-Za-z0-9\s,./#'’()-]{10,200}$/; // ✅ allows normal address chars
+    const addressRegex = /^[A-Za-z0-9\s,./#'’()-]{10,200}$/;
 
-    if (!fullName) newErrors.fullName = 'Full name is required.';
-    if (!nameRegex.test(fullName)) newErrors.fullName = 'Invalid full name.';
-    if (!mobileRegex.test(contactNumber)) newErrors.contactNumber = 'Contact number must be 10 digits.';
-    if (!idType) newErrors.idType = 'ID Type is required.';
-    if (!idNumber) newErrors.idNumber = 'ID Number is required.';
-    if (idType === 'MyKad' && !/^[0-9]{9,12}$/.test(idNumber))
-    newErrors.idNumber = 'MyKad number must be 9–12 digits.';
-    if (idType === 'Passport' && !/^[A-Z0-9]{6,9}$/.test(idNumber))
-      newErrors.idNumber = 'Passport number must be 6–9 characters.';
-    if (idType === 'MyPR' && !/^[A-Z0-9]{6,9}$/.test(idNumber))
-      newErrors.idNumber = 'MyPR number must be 6–9 characters.';
-      // ✅ Mailing Address validation
-  if (!mailingAddress.trim()) newErrors.mailingAddress = 'Mailing address is required.';
-  else if (mailingAddress.trim().length < 10)
-    newErrors.mailingAddress = 'Mailing address must be at least 10 characters long.';
-  else if (!addressRegex.test(mailingAddress))
-    newErrors.mailingAddress = 'Mailing address contains invalid characters.';
+    if (!fullName.trim()) {
+      alert("Full name is required");
+      return false;
+    }
 
-  // ✅ Billing Address validation
-  if (!billingAddress.trim()) newErrors.billingAddress = 'Billing address is required.';
-  else if (billingAddress.trim().length < 10)
-    newErrors.billingAddress = 'Billing address must be at least 10 characters long.';
-  else if (!addressRegex.test(billingAddress))
-    newErrors.billingAddress = 'Billing address contains invalid characters.';
+    if (!nameRegex.test(fullName)) {
+      alert("Invalid full name");
+      return false;
+    }
 
-    if (!mailingPostalCode) newErrors.mailingPostalCode = 'Postal code required.';
-    if (!/^\d{5}$/.test(mailingPostalCode)) newErrors.mailingPostalCode = 'Postal code must be 5 digits.';
-    if (!billingPostalCode) newErrors.billingPostalCode = 'Postal code required.';
-    if (!/^\d{5}$/.test(billingPostalCode)) newErrors.billingPostalCode = 'Postal code must be 5 digits.';
-    // if (!mobileRegex.test(alternateContactNumber)) newErrors.alternateContactNumber = 'Alternate number must be 10 digits.';
-    if (alternateContactNumber) {
-      if (!mobileRegex.test(alternateContactNumber)) {
-        newErrors.alternateContactNumber = 'Alternate contact number must be 10 digits.';
-      } else if (alternateContactNumber === contactNumber) {
-        newErrors.alternateContactNumber = 'Alternate contact number must be different from Contact Number.';
+    // CONTACT NUMBER
+    if (!mobileRegex.test(contactNumber)) {
+      alert("Contact number must be 10 digits");
+      return false;
+    }
+
+    // ID TYPE
+    if (!idType) {
+      alert("ID Type is required");
+      return false;
+    }
+
+    // ID NUMBER
+    if (!idNumber) {
+      alert("ID Number is required");
+      return false;
+    }
+
+    // MAILING ADDRESS
+    if (!mailingAddress.trim()) {
+      alert("Mailing address is required");
+      return false;
+    }
+
+    if (!addressRegex.test(mailingAddress)) {
+      alert("Invalid mailing address");
+      return false;
+    }
+
+    // BILLING ADDRESS
+    if (!billingAddress.trim()) {
+      alert("Billing address is required");
+      return false;
+    }
+
+    if (!addressRegex.test(billingAddress)) {
+      alert("Invalid billing address");
+      return false;
+    }
+
+    // POSTAL CODES
+    if (!/^\d{5}$/.test(mailingPostalCode)) {
+      alert("Mailing postal code must be 5 digits");
+      return false;
+    }
+
+    if (!/^\d{5}$/.test(billingPostalCode)) {
+      alert("Billing postal code must be 5 digits");
+      return false;
+    }
+
+    // ALTERNATE NUMBER
+    if (
+      alternateContactNumber &&
+      !mobileRegex.test(alternateContactNumber)
+    ) {
+      alert("Alternate contact number must be 10 digits");
+      return false;
+    }
+
+    if (
+      alternateContactNumber &&
+      alternateContactNumber === contactNumber
+    ) {
+      alert(
+        "Alternate contact number must be different from Contact Number"
+      );
+      return false;
+    }
+
+    // TIN NUMBER
+    if (!tinNumber) {
+      alert("TIN Number is required");
+      return false;
+    }
+
+    const formattedTIN = tinNumber.trim().toUpperCase();
+
+    const individualTINRegex = /^IG\d{9,11}$/;
+    const companyTINRegex = /^[A-Z]\d{10,11}$/;
+
+    const isValidTIN =
+      individualTINRegex.test(formattedTIN) ||
+      companyTINRegex.test(formattedTIN);
+
+    if (!isValidTIN) {
+      alert(
+        "Invalid Malaysia TIN format. Example: IG1150020000 or C1234567890"
+      );
+      return false;
+    }
+
+    // BUMIPUTERA
+    if (!bumiputera) {
+      alert("Please select Bumiputera status");
+      return false;
+    }
+
+    // SERVICES
+    if (locationServiceList.length === 0) {
+      alert("At least one service is required");
+      return false;
+    }
+
+    for (let item of locationServiceList) {
+
+      if (!item.region_id) {
+        alert("Region is required");
+        return false;
+      }
+
+      if (!item.state_id) {
+        alert("State is required");
+        return false;
+      }
+
+      if (!item.city_id) {
+        alert("City is required");
+        return false;
+      }
+
+      if (!item.category_id) {
+        alert("Category is required");
+        return false;
+      }
+
+      if (!item.item_id) {
+        alert("Item is required");
+        return false;
+      }
+
+      if (!item.type_id) {
+        alert("Type is required");
+        return false;
+      }
+
+      if (!item.description_id) {
+        alert("Description is required");
+        return false;
+      }
+
+      if (!item.price || item.price <= 0) {
+        alert("Price must be greater than 0");
+        return false;
       }
     }
-    // if (!tinNumber) newErrors.tinNumber = 'TIN Number is required.';
-    // if (!/^IG[0-9]{5,6}$/.test(tinNumber)) newErrors.tinNumber = 'TIN must start with IG followed by  5-6 digits.';
 
-// Malaysia TIN Validation (2023 Format)
-
-if (!tinNumber) {
-  newErrors.tinNumber = 'TIN Number is required.';
-} else {
-  const formattedTIN = tinNumber.trim().toUpperCase();
-
-  // Individual TIN
-  // Example: IG1150020000
-  const individualTINRegex = /^IG\d{9,11}$/;
-
-  // Company / Business TIN
-  // Example: C1234567890
-  const companyTINRegex = /^[A-Z]\d{10,11}$/;
-
-  const isValidTIN =
-    individualTINRegex.test(formattedTIN) ||
-    companyTINRegex.test(formattedTIN);
-
-  if (!isValidTIN) {
-    newErrors.tinNumber =
-      'Invalid Malaysia TIN format. Example: IG1150020000 or C1234567890';
-  }
-}
-
-
-    if (!bumiputera)
-    newErrors.bumiputera = "Please select Bumiputera status";
-
-    if (locationServiceList.length === 0) {
-      newErrors.services = 'At least one service is required.';
-    } else {
-      locationServiceList.forEach((item, idx) => {
-if (!item.region_id) newErrors[`region-${idx}`] = "Region required";
-if (!item.state_id) newErrors[`state-${idx}`] = "State required";
-if (!item.city_id) newErrors[`city-${idx}`] = "City required";
-
-if (!item.category_id) newErrors[`category-${idx}`] = "Category required";
-if (!item.item_id) newErrors[`item-${idx}`] = "Item required";
-if (!item.type_id) newErrors[`type-${idx}`] = "Type required";
-
-if (!item.price || item.price <= 0)
-  newErrors[`price-${idx}`] = "Price must be > 0";
-
-      });
+    // PROFILE IMAGE
+    if (!profileImage) {
+      alert("Profile image is required");
+      return false;
     }
 
-    if (profileImage) {
-      const maxSize = 5 * 1024 * 1024;
-      if (profileImage.size > maxSize) newErrors.profileImage = 'Image < 5MB.';
-      if (!['image/jpeg', 'image/png', 'image/gif'].includes(profileImage.type))
-        newErrors.profileImage = 'JPEG/PNG/GIF only.';
-    }
-  if (certificates.length > 0) {
- certificates.forEach(file => {
-  const maxSize = 10 * 1024 * 1024;
-
-  if (file.size > maxSize) {
-    newErrors.certificate = 'Each certificate must be less than 10MB.';
-  }
-
-  if (
-    ![
-      'image/jpeg',
-      'image/png',
-      'image/gif',
-      'application/pdf'
-    ].includes(file.type)
-  ) {
-    newErrors.certificate =
-      'JPEG/PNG/GIF/PDF only.';
-  }
-});
+    // CERTIFICATE
+    if (certificates.length === 0) {
+      alert("Certificate is required");
+      return false;
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return true;
   };
 
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
     if (!validateProfile()) return;
     setLoading(true);
-    if (!bumiputera)
-     newErrors.bumiputera = "Please select Bumiputera status";
 
-    // Append postal to address if not already ending with it
     let finalMailing = mailingAddress.trim();
     if (!finalMailing.endsWith(mailingPostalCode)) {
       finalMailing += finalMailing ? `, ${mailingPostalCode}` : mailingPostalCode;
@@ -712,34 +702,52 @@ const servicesArray = locationServiceList.map(item => ({
  try {
   const data = await apiPost("/api/update_profile", formData);
 
-  console.log("after profile submit", data);
+  alert(data?.message ||
+    "Profile has been submitted successfully. Admin will cross-check and approve your profile."
+  );
 
   setProfile(prev => ({ ...prev, status: "pending" })); // instant UI update
   setEditMode(false);
   await fetchProfile();
 
 } catch (error) {
-  setErrors({ general: error.message || 'Error updating profile.' });
-} finally {
+  alert(error.message || "Error updating profile");
   setLoading(false);
 }
 
   };
 
   const validateBankDetails = () => {
-    const newErrors = {};
     const swiftRegex = /^([A-Z]{4}MY[A-Z0-9]{2})([A-Z0-9]{3})?$/;
     const accountRegex = /^[0-9]{9,18}$/;
     const holderNameRegex = /^[A-Za-z\s\-']{1,100}$/;
 
-    if (!bankDetails.bankName) newErrors.bankName = 'Bank required.';
-    if (!holderNameRegex.test(bankDetails.holderName)) newErrors.holderName = 'Invalid holder name.';
-    if (!accountRegex.test(bankDetails.accountNumber)) newErrors.accountNumber = '9-18 digits only.';
-    if (!swiftRegex.test(bankDetails.swift)) newErrors.swift = 'Invalid SWIFT (e.g., MAYBMYKL).';
-    if (!bankStatement) newErrors.bankStatement = 'Statement required.';
+    if (!bankDetails.bankName) {
+      alert("Bank is required");
+      return false;
+    }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    if (!holderNameRegex.test(bankDetails.holderName)) {
+      alert("Invalid holder name");
+      return false;
+    }
+
+    if (!accountRegex.test(bankDetails.accountNumber)) {
+      alert("Account number must be 9-18 digits");
+      return false;
+    }
+
+    if (!swiftRegex.test(bankDetails.swift)) {
+      alert("Invalid SWIFT code");
+      return false;
+    }
+
+    if (!bankStatement) {
+      alert("Bank statement is required");
+      return false;
+    }
+
+    return true;
   };
 
   const handleBankSubmit = async (e) => {
@@ -769,7 +777,7 @@ try {
   fetchProfile();
 
 } catch (error) {
-  setErrors({ general: error.message || 'Error submitting bank details.' });
+  alert(error.message || "Error submitting bank details");
 
 } finally {
   setLoading(false);  

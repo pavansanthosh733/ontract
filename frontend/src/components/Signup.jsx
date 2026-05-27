@@ -9,12 +9,10 @@ function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [passwordError, setPasswordError] = useState("");
   const [captchaToken, setCaptchaToken] = useState(null);
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [popup, setPopup] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const recaptchaRef = useRef();
   const navigate = useNavigate();
@@ -36,39 +34,44 @@ function Signup() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
 
     const normalizedEmail = email.toLowerCase().trim();
 
+    // ALL FIELDS
     if (!phoneNumber || !email || !password || !confirmPassword) {
-      setError("All fields are required");
+      alert("All fields are required");
       return;
     }
 
+    // MOBILE
     if (phoneNumber.length !== 10) {
-      setError("Mobile number must be exactly 10 digits");
+      alert("Mobile number must be exactly 10 digits");
       return;
     }
 
+    // EMAIL
     if (!isValidEmail(normalizedEmail)) {
-      setError("Invalid email format");
+      alert("Invalid email format");
       return;
     }
 
+    // PASSWORD
     if (!isValidPassword(password)) {
-      setError(
+      alert(
         "Password must be 8–12 characters, include 1 uppercase and 1 special character. No spaces allowed."
       );
       return;
     }
 
+    // CONFIRM PASSWORD
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
+      alert("Passwords do not match");
       return;
     }
 
+    // CAPTCHA
     if (!captchaToken) {
-      setError("Please verify captcha");
+      alert("Please verify captcha");
       return;
     }
 
@@ -77,7 +80,10 @@ function Signup() {
     try {
       const res = await fetch(`${BASE_URLS.user}/api/signup`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
+
         body: JSON.stringify({
           phone_number: phoneNumber,
           email: normalizedEmail,
@@ -88,20 +94,29 @@ function Signup() {
 
       const data = await res.json();
 
+      // SUCCESS
       if (data.status === "ok") {
-        navigate("/login", {
-          state: {
-            message:
-              "Activation link sent to your email. Please activate before login.",
-          },
-        });
+
+        alert(
+          "Activation link sent to your Registered email. Please activate before login."
+        );
+
+        navigate("/");
+
       } else {
-        setPopup(data.message || "Signup failed");
+
+        alert(data.message || "Signup failed");
+
         recaptchaRef.current.reset();
         setCaptchaToken(null);
       }
-    } catch {
-      setError("Something went wrong");
+
+    } catch (err) {
+
+      console.error(err);
+
+      alert("Something went wrong");
+
     } finally {
       setLoading(false);
     }
@@ -115,16 +130,6 @@ function Signup() {
         <div className="contract-header"></div>
         <div className="login-title">Create Account</div>
 
-        {error && <div className="login-error">{error}</div>}
-
-        {popup && (
-          <div className="popup-overlay">
-            <div className="popup-box">
-              <p>{popup}</p>
-              <button onClick={() => setPopup("")}>OK</button>
-            </div>
-          </div>
-        )}
 
         <form onSubmit={handleSubmit}>
           {/* MOBILE */}
@@ -168,27 +173,13 @@ function Signup() {
               type={showPassword ? "text" : "password"}
               placeholder="Password"
               value={password}
-              maxLength={12}
-              minLength={8}
               onKeyDown={(e) => {
                 if (e.key === " ") e.preventDefault();
               }}
               onChange={(e) => {
                 const value = e.target.value;
-
                 if (value.includes(" ")) return;
-
                 setPassword(value);
-
-                if (value.length === 0) {
-                  setPasswordError("");
-                } else if (!isValidPassword(value)) {
-                  setPasswordError(
-                    "Password must be 8–12 characters, include 1 uppercase and 1 special character. No spaces allowed."
-                  );
-                } else {
-                  setPasswordError("");
-                }
               }}
               disabled={loading}
             />
@@ -202,28 +193,35 @@ function Signup() {
             </span>
           </div>
 
-          {passwordError && (
-            <div className="field-error">{passwordError}</div>
-          )}
-
           {/* CONFIRM PASSWORD */}
           <div className="hw-input">
             <span className="hw-icon lock-icon"></span>
+
             <input
-              type="password"
+              type={showConfirmPassword ? "text" : "password"}
               placeholder="Confirm Password"
               value={confirmPassword}
-              maxLength={12}
-              minLength={8}
               onKeyDown={(e) => {
                 if (e.key === " ") e.preventDefault();
               }}
               onChange={(e) => {
                 const value = e.target.value;
-                if (!value.includes(" ")) setConfirmPassword(value);
+                if (!value.includes(" ")) {
+                  setConfirmPassword(value);
+                }
               }}
               disabled={loading}
             />
+
+            <span
+              className="hw-icon eye-icon"
+              onClick={() =>
+                setShowConfirmPassword(!showConfirmPassword)
+              }
+              style={{ cursor: "pointer" }}
+            >
+              {showConfirmPassword ? "🙈" : "👁️"}
+            </span>
           </div>
 
           {/* CAPTCHA */}

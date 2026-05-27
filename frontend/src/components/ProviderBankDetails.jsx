@@ -104,10 +104,15 @@ function ProviderBankDetails() {
     ];
 
     if (!allowedTypes.includes(file.type)) {
-      setErrors({ bankStatement: "Only PDF, JPG or PNG allowed" });
+      alert("Only PDF, JPG or PNG files are allowed");
       return;
     }
 
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert("File size must be less than 10MB");
+      return;
+    }
     setBankStatement(file);
     setErrors({});
   };
@@ -116,53 +121,151 @@ function ProviderBankDetails() {
   // VALIDATION
   // --------------------------------------
   const validate = () => {
-    const newErrors = {};
+
     const swiftRegex = /^([A-Z]{4}MY[A-Z0-9]{2})([A-Z0-9]{3})?$/;
     const accountRegex = /^[0-9]{9,18}$/;
 
-    if (!bankDetails.bankName) newErrors.bankName = "Bank required";
-    if (!bankDetails.holderName) newErrors.holderName = "Holder name required";
-    if (!accountRegex.test(bankDetails.accountNumber))
-      newErrors.accountNumber = "Invalid account number";
-    if (!swiftRegex.test(bankDetails.swift))
-      newErrors.swift = "Invalid SWIFT code";
-
-    // ✅ Statement required ONLY if not already uploaded
-    if (!existingStatement && !bankStatement) {
-      newErrors.bankStatement = "Statement required";
+    // BANK
+    if (!bankDetails.bankName) {
+      alert("Please select bank");
+      return false;
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    // HOLDER NAME
+    if (!bankDetails.holderName.trim()) {
+      alert("Holder name is required");
+      return false;
+    }
+
+    // ACCOUNT NUMBER
+    if (!accountRegex.test(bankDetails.accountNumber)) {
+      alert("Invalid account number");
+      return false;
+    }
+
+    // SWIFT
+    if (!swiftRegex.test(bankDetails.swift)) {
+      alert("Invalid SWIFT code");
+      return false;
+    }
+
+    // BANK STATEMENT
+    if (!existingStatement && !bankStatement) {
+      alert("Please upload bank statement");
+      return false;
+    }
+
+    return true;
   };
 
   // --------------------------------------
   // SUBMIT
   // --------------------------------------
+  // --------------------------------------
+// SUBMIT
+// --------------------------------------
   const handleSubmit = async (e) => {
+
     e.preventDefault();
+
     if (!validate()) return;
 
     setLoading(true);
 
-    const formData = new FormData();
-    formData.append("email", user.email_id);
-    formData.append("bank_name", bankDetails.bankName);
-    formData.append("holder_name", bankDetails.holderName);
-    formData.append("account_number", bankDetails.accountNumber);
-    formData.append("swift", bankDetails.swift);
-
-    if (bankStatement) {
-      formData.append("bank_statement", bankStatement);
-    }
-
     try {
-      await apiPost("/api/update_bank", formData);
-      setSuccessMessage("Bank details updated successfully");
-      setTimeout(() => navigate(-1), 1500);
+
+      const formData = new FormData();
+
+      formData.append(
+        "email",
+        user.email_id
+      );
+
+      formData.append(
+        "bank_name",
+        bankDetails.bankName
+      );
+
+      formData.append(
+        "holder_name",
+        bankDetails.holderName
+      );
+
+      formData.append(
+        "account_number",
+        bankDetails.accountNumber
+      );
+
+      formData.append(
+        "swift",
+        bankDetails.swift
+      );
+
+      // ✅ NEW FILE SELECTED
+      if (bankStatement) {
+
+        formData.append(
+          "bank_statement",
+          bankStatement
+        );
+
+      }
+
+      // ✅ USE EXISTING PREVIEW FILE
+      else if (statementPreview) {
+
+        const response = await fetch(
+          statementPreview
+        );
+
+        const blob = await response.blob();
+
+        const file = new File(
+          [blob],
+          "existing_statement",
+          {
+            type: blob.type
+          }
+        );
+
+        formData.append(
+          "bank_statement",
+          file
+        );
+      }
+
+      // ✅ DEBUG
+      for (let pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
+      }
+
+      // ✅ API CALL
+      const data = await apiPost(
+        "/api/update_bank",
+        formData
+      );
+
+      // ✅ SUCCESS
+      alert(
+        data?.message ||
+        "Bank details updated successfully"
+      );
+
+      setTimeout(() => {
+        navigate(-1);
+      }, 1500);
+
     } catch (err) {
-      setErrors({ general: err.message || "Submission failed" });
+
+      console.error(err);
+
+      alert(
+        err.message ||
+        "Submission failed"
+      );
+
     } finally {
+
       setLoading(false);
     }
   };
