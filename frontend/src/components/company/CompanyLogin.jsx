@@ -198,9 +198,7 @@ function Login() {
 
       if (res.ok) {
 
-        alert(
-          "✅ Login successful"
-        );
+        
 
         navigate(
           "/contractor/verify_otp",

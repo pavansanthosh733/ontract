@@ -758,18 +758,6 @@ if (!finalBilling.endsWith(billingPostalCode)) {
   )}
 </div>
 
-
-          {/* <div className="col-12">
-            <label className="form-label">mailingAddress<span className="required-asterisk">*</span></label>
-            <textarea name="mailing_address" className={`form-control ${errors.mailingAddress? 'is-invalid' : ''}`} value={formData.mailing_address} onChange={handleFormChange} rows="2" />
-            {errors.mailingAddress && <div className="invalid-feedback">{errors.mailingAddress}</div>}
-         
-          </div>
-           <div className="col-12">
-            <label className="form-label">billingAddress<span className="required-asterisk">*</span></label>
-            <textarea name="billing_address" className={`form-control ${errors.billingAddress ? 'is-invalid' : ''}`} value={formData.billing_address} onChange={handleFormChange} rows="2" />
-            {errors.billingAddress && <div className="invalid-feedback">{errors.billingAddress}</div>}
-          </div> */}
           {/* Mailing Postal Code + Address */}
             <div className="col-md-12">
               <label className="form-label">Mailing Postal Code <span className="required-asterisk">*</span></label>
