@@ -253,8 +253,6 @@ def build_admin_escalation_notification_html(wr,region_name,category_name):
                 category_name=category_name)
 
 def build_admin_notification_html(workorder, contractor_name, contractor_id, action, remark):
-    wo = get_workorder_details( workorder.workorder ) 
-    logging.info( f"FULL WO DETAILS: {wo}" )
     status_text = "ACCEPTED" if action == "accept" else "REJECTED"
     status_color = "#28a745" if action == "accept" else "#dc3545"
     html = render_template("admin_notification.html",
@@ -498,6 +496,33 @@ def get_workorder_details(workorder):
             LEFT JOIN state_master_t s ON w.state = s.state_id
             LEFT JOIN city_master_t ct ON w.city = ct.city_id
             WHERE w.workorder = :workorder
+        """)
+
+        result = db.session.execute(
+            query,
+            {"workorder": workorder}
+        ).mappings().fetchone()
+
+        return SimpleNamespace(**result) if result else None
+
+    except Exception as e:
+        logging.error(f"Error fetching workorder details: {str(e)}")
+        return None
+    
+
+def get_workorder_from_db_id(workorder):
+    try:
+        query = text("""
+            SELECT w.*,c.category_name,i.item_name,t.type_name,d.description_name,r.region_name,
+            s.state_name,ct.city_name FROM workorder_t w
+            LEFT JOIN category_master_t c ON w.category = c.category_id
+            LEFT JOIN item_master_t i ON w.item = i.item_id
+            LEFT JOIN type_master_t t ON w.type = t.type_id
+            LEFT JOIN description_master_t d ON w.description = d.description_id
+            LEFT JOIN region_master_t r ON w.region = r.region_id
+            LEFT JOIN state_master_t s ON w.state = s.state_id
+            LEFT JOIN city_master_t ct ON w.city = ct.city_id
+            WHERE w.id = :workorder
         """)
 
         result = db.session.execute(

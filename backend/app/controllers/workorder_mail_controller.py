@@ -10,6 +10,7 @@ from app.models.workorder_mail_model import (
     get_contractor_from_db,
     get_workorder_from_db_auto,
     get_workorder_from_db,
+    get_workorder_from_db_id,
     get_admin_email,
     get_expiry_minutes_from_db,
     build_assignment_email_html,
@@ -42,7 +43,8 @@ def handle_send_acceptance_mail(workorder_code, request_data, base_url):
         contractor_email=request_data['CONTRACTOR_EMAIL']
         contractor_name =request_data['CONTRACTOR_NAME']
         
-
+        wo = get_workorder_details(workorder_code)
+        
         expiry_minutes = get_expiry_minutes_from_db(request_data["region"])
 
         ts = int(time())
@@ -192,7 +194,8 @@ def handle_respond_workorder_get(workorder_id, contractor_id, contractor_name, t
 def handle_respond_workorder_post(workorder_id, contractor_id, contractor_name, timestamp, action, remark):
     logging.info(f"POST response for workorder {workorder_id} — Action: {action}, By: {contractor_name}")
 
-    wo = get_workorder_from_db(workorder_id)
+    #wo = get_workorder_from_db(workorder_id)
+    wo = get_workorder_from_db_id(workorder_id)
     workorder = wo.workorder
     logging.info(f"checktheinput:'{wo}'")
     admin_id = wo.created_by
