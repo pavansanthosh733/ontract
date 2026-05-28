@@ -108,15 +108,19 @@ const WorkOrders = () => {
   return Number.isNaN(d.getTime()) ? null : d;
 };
 
-const formatSlaDuration = (requestedTimeClose, createdAt) => {
+const formatSlaDuration = (requestedTimeClose) => {
   const requested = parseDateSafe(requestedTimeClose);
-  const created = parseDateSafe(createdAt);
 
-  if (!requested || !created) {
+  if (!requested) {
     return { text: "N/A", breached: false };
   }
 
-  const diffMs = requested.getTime() - created.getTime();
+  // current system/live time
+  const now = new Date();
+
+  // SLA = requested close time - current time
+  const diffMs = requested.getTime() - now.getTime();
+
   const breached = diffMs <= 0;
 
   let totalMinutes = Math.floor(Math.abs(diffMs) / 60000);
@@ -144,7 +148,6 @@ const formatSlaDuration = (requestedTimeClose, createdAt) => {
     breached,
   };
 };
-
   // -----------------------------------
   // FORMAT DATE
   // -----------------------------------
@@ -328,21 +331,23 @@ const formatSlaDuration = (requestedTimeClose, createdAt) => {
                   <tbody>
 {workorders.map((wo) => {
   const status = wo.status || "UNKNOWN";
+   const isClosed =
+    (status || "").toString().toUpperCase() === "CLOSED";
 
   // =====================================
   // SLA CALCULATION
   // =====================================
-const { text: slaText, breached: isSlaBreached } = formatSlaDuration(
-  wo.requested_time_close,
-  wo.created_t
-);
+const { text: slaText, breached: isSlaBreached } =
+  formatSlaDuration(wo.requested_time_close);
 
   return (
+
+
 <tr
   key={wo.id}
   className={`
     ${statusToClass(status)}
-    ${isSlaBreached ? "sla-breach-row" : ""}
+    ${!isClosed && isSlaBreached ? "sla-breach-row" : ""}
   `}
 >
                           <td
