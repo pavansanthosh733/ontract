@@ -33,6 +33,7 @@ function ProviderProfile({ user }) {
   const [bumiputera, setBumiputera] = useState("");
   const [regions, setRegions] = useState({});
   const [states, setStates] = useState([]);
+  const [sameAsMailing, setSameAsMailing] = useState(false);
 
 
   
@@ -52,6 +53,12 @@ function ProviderProfile({ user }) {
       })
       .catch(() => setIdTypes([]));
   }, []);
+  useEffect(() => {
+    if (sameAsMailing) {
+      setBillingAddress(mailingAddress);
+      setBillingPostalCode(mailingPostalCode);
+    }
+  }, [sameAsMailing, mailingAddress, mailingPostalCode]);
 
   const [servicesList, setServicesList] = useState([]);
 
@@ -899,37 +906,134 @@ try {
 
 
           <div className="col-12">
-            <label className="form-label">Mailing Postal Code </label>
-            <input type="text" className={`form-control ${errors.mailingPostalCode ? 'is-invalid' : ''}`} 
-              value={mailingPostalCode} 
-              onChange={e => setMailingPostalCode(e.target.value.replace(/\D/g, ''))} 
+            <label className="form-label">Mailing Postal Code</label>
+
+            <input
+              type="text"
+              className={`form-control ${errors.mailingPostalCode ? 'is-invalid' : ''}`}
+              value={mailingPostalCode}
+              onChange={e => {
+                const value = e.target.value.replace(/\D/g, '');
+
+                setMailingPostalCode(value);
+
+                // AUTO FILL IF CHECKBOX ENABLED
+                if (sameAsMailing) {
+                  setBillingPostalCode(value);
+                }
+              }}
               onBlur={() => fetchAndAppend('mailing', mailingPostalCode)}
               placeholder="e.g., 50450"
-              maxLength={5} />
-            {errors.mailingPostalCode && <div className="invalid-feedback d-block">{errors.mailingPostalCode}</div>}
+              maxLength={5}
+            />
+
+            {errors.mailingPostalCode && (
+              <div className="invalid-feedback d-block">
+                {errors.mailingPostalCode}
+              </div>
+            )}
           </div>
 
           <div className="col-12">
-            <label className="form-label">Mailing Address <span className="required-asterisk">*</span></label>
-            <textarea className={`form-control ${errors.mailingAddress ? 'is-invalid' : ''}`} rows="2" value={mailingAddress} onChange={e => setMailingAddress(e.target.value)} placeholder="Enter street address, etc. City/State will be auto-appended after postal code." />
-            {errors.mailingAddress && <div className="invalid-feedback">{errors.mailingAddress}</div>}
+            <label className="form-label">
+              Mailing Address <span className="required-asterisk">*</span>
+            </label>
+
+            <textarea
+              className={`form-control ${errors.mailingAddress ? 'is-invalid' : ''}`}
+              rows="2"
+              value={mailingAddress}
+              onChange={e => {
+                const value = e.target.value;
+
+                setMailingAddress(value);
+
+                // AUTO FILL IF CHECKBOX ENABLED
+                if (sameAsMailing) {
+                  setBillingAddress(value);
+                }
+              }}
+              placeholder="Enter street address, etc. City/State will be auto-appended after postal code."
+            />
+
+            {errors.mailingAddress && (
+              <div className="invalid-feedback">
+                {errors.mailingAddress}
+              </div>
+            )}
+          </div>
+
+          {/* SAME AS MAILING CHECKBOX */}
+          <div className="col-12">
+            <div className="form-check mb-2">
+
+              <input
+                className="form-check-input"
+                type="checkbox"
+                id="sameAddress"
+                checked={sameAsMailing}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+
+                  setSameAsMailing(checked);
+
+                  if (checked) {
+                    setBillingAddress(mailingAddress);
+                    setBillingPostalCode(mailingPostalCode);
+                  } else {
+                    setBillingAddress(billingAddress);
+                    setBillingPostalCode(billingPostalCode);
+                  }
+                }}
+              />
+
+              <label className="form-check-label" htmlFor="sameAddress">
+                Billing Address same as Mailing Address
+              </label>
+
+            </div>
           </div>
 
           <div className="col-12">
             <label className="form-label">Billing Postal Code</label>
-            <input type="text" className={`form-control ${errors.billingPostalCode ? 'is-invalid' : ''}`} 
-              value={billingPostalCode} 
-              onChange={e => setBillingPostalCode(e.target.value.replace(/\D/g, ''))} 
+
+            <input
+              type="text"
+              className={`form-control ${errors.billingPostalCode ? 'is-invalid' : ''}`}
+              value={billingPostalCode}
+              disabled={sameAsMailing}
+              onChange={e => setBillingPostalCode(e.target.value.replace(/\D/g, ''))}
               onBlur={() => fetchAndAppend('billing', billingPostalCode)}
               placeholder="e.g., 50450"
-              maxLength={5} />
-            {errors.billingPostalCode && <div className="invalid-feedback d-block">{errors.billingPostalCode}</div>}
+              maxLength={5}
+            />
+
+            {errors.billingPostalCode && (
+              <div className="invalid-feedback d-block">
+                {errors.billingPostalCode}
+              </div>
+            )}
           </div>
 
           <div className="col-12">
-            <label className="form-label">Billing Address <span className="required-asterisk">*</span></label>
-            <textarea className={`form-control ${errors.billingAddress ? 'is-invalid' : ''}`} rows="2" value={billingAddress} onChange={e => setBillingAddress(e.target.value)} placeholder="Enter street address, etc. City/State will be auto-appended after postal code." />
-            {errors.billingAddress && <div className="invalid-feedback">{errors.billingAddress}</div>}
+            <label className="form-label">
+              Billing Address <span className="required-asterisk">*</span>
+            </label>
+
+            <textarea
+              className={`form-control ${errors.billingAddress ? 'is-invalid' : ''}`}
+              rows="2"
+              value={billingAddress}
+              disabled={sameAsMailing}
+              onChange={e => setBillingAddress(e.target.value)}
+              placeholder="Enter street address, etc. City/State will be auto-appended after postal code."
+            />
+
+            {errors.billingAddress && (
+              <div className="invalid-feedback">
+                {errors.billingAddress}
+              </div>
+            )}
           </div>
 
 
