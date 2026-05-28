@@ -893,7 +893,6 @@ class WorkOrder(db.Model):
             sql = text("""
                 SELECT 
                     w.*,
-    
                     c.category_name,
                     i.item_name,
                     t.type_name,
