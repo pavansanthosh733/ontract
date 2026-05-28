@@ -53,7 +53,7 @@ const Sidebar = () => {
               <NavLink to="/admin/workorder/create-workorder" onClick={handleLinkClick}>
                 Create Work Order
               </NavLink>
-              <NavLink to="/admin/workorder/list" onClick={handleLinkClick}>
+              <NavLink to="/admin/workorder/workorder" onClick={handleLinkClick}>
                 List Work Orders
               </NavLink>
               <NavLink to="/admin/workorder/contractor" onClick={handleLinkClick}>

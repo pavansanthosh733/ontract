@@ -32,7 +32,7 @@ function WorkOrderLayout() {
           <Route path="/mapping-workorder" element={<MappingPage />} />
           <Route path="/workorder-type" element={<WorkOrderTypePage />} />
           <Route path="/workorder-area" element={<WorkOrderAreaPage />} />                 
-          <Route path="/list" element={<WorkOrders/>} />
+          <Route path="/workorder" element={<WorkOrders/>} />
           <Route path="/search-workorder" element={<SearchWorkOrder/>} />  
           <Route path="/contractor" element={<Contractor />} />
           <Route path="/contractor/workorderdetails/:workorder" element={<WorkOrderDetails />} />

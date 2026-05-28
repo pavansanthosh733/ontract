@@ -463,3 +463,23 @@ FILE: workorders.css
 .workorders-table th:nth-child(7) {
   min-width: 170px;
 }
+
+/* =======================================
+   SLA BREACH ROW
+======================================= */
+
+/* =======================================
+   SLA BREACH ROW
+======================================= */
+
+.sla-breach-row,
+.sla-breach-row td {
+  background-color: #7a0000 !important;
+  color: #ffffff !important;
+}
+
+.sla-breach-row:hover,
+.sla-breach-row:hover td {
+  background-color: #7a0000 !important;
+  color: #ffffff !important;
+}

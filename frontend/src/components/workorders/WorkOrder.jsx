@@ -3,9 +3,10 @@
 // FULL UPDATED CODE
 // ==============================================
 
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import "./css/workorders.css";
 import { apiGet, apiPost, BASE_URL } from "../../api";
+
 
 const WorkOrders = () => {
   const [workorders, setWorkorders] = useState([]);
@@ -26,49 +27,58 @@ const WorkOrders = () => {
 
   const [previewMedia, setPreviewMedia] = useState(null);
 
+
+
+
   // -----------------------------------
   // FETCH FILTERED WORKORDERS
   // -----------------------------------
-  const fetchFilteredWorkOrders = async () => {
-    if (!fromDate || !toDate) {
-      setModalMessage("⚠️ Please select both From Date and To Date.");
+ const fetchFilteredWorkOrders = useCallback(async () => {
+  if (!fromDate || !toDate) {
+    setModalMessage("⚠️ Please select both From Date and To Date.");
+    setShowModal(true);
+    return;
+  }
+
+  try {
+    setLoading(true);
+    setError(null);
+
+    const params = new URLSearchParams();
+    params.append("from", fromDate);
+    params.append("to", toDate);
+
+    if (statusFilter !== "All") {
+      params.append("status", statusFilter);
+    }
+
+    const data = await apiGet(`/api/workorders/filter?${params.toString()}`);
+
+    if (!Array.isArray(data) || data.length === 0) {
+      setModalMessage("📭 No workorders found for the selected filters.");
       setShowModal(true);
-      return;
+      setShowResults(false);
+      setWorkorders([]);
+    } else {
+      setWorkorders(data);
+      setShowResults(true);
     }
+  } catch (err) {
+    setError(err.message || String(err));
+  } finally {
+    setLoading(false);
+  }
+}, [fromDate, toDate, statusFilter]);
 
-    try {
-      setLoading(true);
-      setError(null);
+  useEffect(() => {
+  if (!showResults || !fromDate || !toDate) return;
 
-      const params = new URLSearchParams();
-      params.append("from", fromDate);
-      params.append("to", toDate);
+  const intervalId = setInterval(() => {
+    fetchFilteredWorkOrders();
+  }, 60000); // refresh every 60 seconds
 
-      if (statusFilter !== "All") {
-        params.append("status", statusFilter);
-      }
-
-      const data = await apiGet(
-        `/api/workorders/filter?${params.toString()}`
-      );
-
-      if (!Array.isArray(data) || data.length === 0) {
-        setModalMessage(
-          "📭 No workorders found for the selected filters."
-        );
-        setShowModal(true);
-        setShowResults(false);
-        setWorkorders([]);
-      } else {
-        setWorkorders(data);
-        setShowResults(true);
-      }
-    } catch (err) {
-      setError(err.message || String(err));
-    } finally {
-      setLoading(false);
-    }
-  };
+  return () => clearInterval(intervalId);
+}, [showResults, fromDate, toDate, statusFilter, fetchFilteredWorkOrders]);
 
   // -----------------------------------
   // RESET
@@ -88,6 +98,52 @@ const WorkOrders = () => {
     const s = (status || "UNKNOWN").toString();
     return `status-${s.toLowerCase().replace(/\s+/g, "-")}`;
   };
+
+
+
+
+  const parseDateSafe = (value) => {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+};
+
+const formatSlaDuration = (requestedTimeClose, createdAt) => {
+  const requested = parseDateSafe(requestedTimeClose);
+  const created = parseDateSafe(createdAt);
+
+  if (!requested || !created) {
+    return { text: "N/A", breached: false };
+  }
+
+  const diffMs = requested.getTime() - created.getTime();
+  const breached = diffMs <= 0;
+
+  let totalMinutes = Math.floor(Math.abs(diffMs) / 60000);
+
+  const days = Math.floor(totalMinutes / 1440);
+  totalMinutes %= 1440;
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  const parts = [];
+
+  if (days > 0) {
+    parts.push(`${days} day${days !== 1 ? "s" : ""}`);
+  }
+
+  if (days > 0 || hours > 0) {
+    parts.push(`${hours} hr${hours !== 1 ? "s" : ""}`);
+  }
+
+  parts.push(`${minutes} min${minutes !== 1 ? "s" : ""}`);
+
+  return {
+    text: `${breached ? "-" : ""}${parts.join(" ")}`,
+    breached,
+  };
+};
 
   // -----------------------------------
   // FORMAT DATE
@@ -261,24 +317,34 @@ const WorkOrders = () => {
                       <th>Region</th>
                       <th>Status</th>
                       <th>Requested Time</th>
-                      <th>Assignment Type</th>
+                    
                       <th>Created At</th>
+                      <th>SLA (Hours)</th>
+                        <th>Assignment Type</th>
                       <th>Contractor_Name</th>
                     </tr>
                   </thead>
 
                   <tbody>
-                    {workorders.map((wo) => {
-                      const status =
-                        wo.status || "UNKNOWN";
+{workorders.map((wo) => {
+  const status = wo.status || "UNKNOWN";
 
-                      return (
-                        <tr
-                          key={wo.id}
-                          className={statusToClass(
-                            status
-                          )}
-                        >
+  // =====================================
+  // SLA CALCULATION
+  // =====================================
+const { text: slaText, breached: isSlaBreached } = formatSlaDuration(
+  wo.requested_time_close,
+  wo.created_t
+);
+
+  return (
+<tr
+  key={wo.id}
+  className={`
+    ${statusToClass(status)}
+    ${isSlaBreached ? "sla-breach-row" : ""}
+  `}
+>
                           <td
                             className="workorder-link"
                             onClick={() =>
@@ -312,14 +378,19 @@ const WorkOrders = () => {
                             )}
                           </td>
 
-                          <td>
-                            {wo.ticket_assignment_type|| "N/A"}
-                          </td>
+                         
 
                           <td>
                             {formatDate(
                               wo.created_t
                             )}
+                          </td>
+
+                          <td>
+  {slaText}
+</td>
+                           <td>
+                            {wo.ticket_assignment_type|| "N/A"}
                           </td>
                           <td>{wo.contractor_name || "Not Assigned"}</td>
                         </tr>
