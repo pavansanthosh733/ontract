@@ -11,7 +11,7 @@ EMAIL = Config.EMAIL_CONFIG
 def send_email(to_email, subject, body, attachment=None):
     msg = MIMEMultipart()
     msg['Subject'] = subject
-    msg['From'] = EMAIL['sender_email']
+    msg['From'] = f"Ontract <{EMAIL['sender_email']}>"
     msg['To'] = to_email
     msg.attach(MIMEText(body))
 
