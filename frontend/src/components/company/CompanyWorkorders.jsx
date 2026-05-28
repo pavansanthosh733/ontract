@@ -218,11 +218,32 @@ useEffect(() => {
       );
 
       if (result?.success) {
-        closeModal();
-        fetchWorkorders(activeTab);
-      } else {
-        alert(result?.message || "Action failed");
-      }
+
+  closeModal();
+
+  // -----------------------------------------
+  // SHOW POPUP ONLY FOR ACCEPT
+  // -----------------------------------------
+
+  if (status === "ACCEPTED") {
+
+    alert(
+      `Work Order Accepted Successfully
+
+PO No: ${result.po_number}
+
+Purchase Order sent to contractor email`
+    );
+
+  }
+
+  await fetchWorkorders(activeTab);
+
+} else {
+
+  alert(result?.message || "Action failed");
+
+} 
     } catch (err) {
       console.error("Action error:", err);
     } finally {

@@ -10,7 +10,9 @@ import os
 import logging
 from app.utils.current_admin import get_admin
 from werkzeug.utils import secure_filename
-
+from app.controllers.purchase_order_controller import (
+    create_purchase_order
+)
 
 workorder_bp = Blueprint("workorder", __name__)
 view = WorkOrderView()

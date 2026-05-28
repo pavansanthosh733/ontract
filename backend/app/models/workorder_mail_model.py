@@ -12,6 +12,12 @@ from types import SimpleNamespace
 # ✅ Gmail credentials from .env
 EMAIL_USER = os.getenv("SMTP_USER")
 EMAIL_PASS = os.getenv("SMTP_PASSWORD")
+SMTP_HOST = os.getenv("SMTP_HOST")
+SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
+SMTP_USE_TLS = os.getenv(
+    "SMTP_USE_TLS",
+    "true"
+).lower() == "true"
 
 # ✅ Define IST timezone (UTC + 5:30)
 IST = timezone(timedelta(hours=5, minutes=30))
@@ -282,9 +288,16 @@ def send_email_with_attachments(workorder, recipient, name, html_body):
 
     try:
         logging.info(f"Connecting to Gmail SMTP as {EMAIL_USER} ...")
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
-            s.login(EMAIL_USER, EMAIL_PASS)
-            s.send_message(msg)
+        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
+
+        if SMTP_USE_TLS:
+         server.starttls()
+
+        server.login(EMAIL_USER, EMAIL_PASS)
+
+        server.send_message(msg)
+
+        server.quit()
         logging.info(f"Email successfully sent to {recipient}")
         return "SENT", 0, 0
     except Exception as e:
@@ -310,9 +323,16 @@ def send_email_with_attachments_auto(wr, recipient, name, html_body):
 
     try:
         logging.info(f"Connecting to Gmail SMTP as {EMAIL_USER} ...")
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
-            s.login(EMAIL_USER, EMAIL_PASS)
-            s.send_message(msg)
+        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
+
+        if SMTP_USE_TLS:
+            server.starttls()
+
+        server.login(EMAIL_USER, EMAIL_PASS)
+
+        server.send_message(msg)
+
+        server.quit()
         logging.info(f"Email successfully sent to {recipient}")
         return "SENT", 0, 0
     except Exception as e:
@@ -333,14 +353,28 @@ def send_email_with_attachments_manual(request_data, recipient, name, html_body)
     alt.attach(MIMEText(html_body, "html"))
     related.attach(alt)
 
-    attach_workorder_images(msg, related, request_data['workorder'])
+    wo = get_workorder_details(request_data['workorder'])
+
+    if wo:
+        attach_workorder_images(msg, related, wo)
     msg.attach(related)
+
+    
+
+    
 
     try:
         logging.info(f"Connecting to Gmail SMTP as {EMAIL_USER} ...")
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
-            s.login(EMAIL_USER, EMAIL_PASS)
-            s.send_message(msg)
+        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
+
+        if SMTP_USE_TLS:
+            server.starttls()
+
+        server.login(EMAIL_USER, EMAIL_PASS)
+
+        server.send_message(msg)
+
+        server.quit()
         logging.info(f"Email successfully sent to {recipient}")
         return "SENT", 0, 0
     except Exception as e:
@@ -431,9 +465,16 @@ def send_email_with_attachments_creation(workorder, recipient, name, html_body):
 
     try:
         logging.info(f"Connecting to Gmail SMTP as {EMAIL_USER} ...")
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
-            s.login(EMAIL_USER, EMAIL_PASS)
-            s.send_message(msg)
+        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
+
+        if SMTP_USE_TLS:
+            server.starttls()
+
+        server.login(EMAIL_USER, EMAIL_PASS)
+
+        server.send_message(msg)
+
+        server.quit()   
         logging.info(f"Email successfully sent to {recipient}")
         return "SENT", 0, 0
     except Exception as e:
@@ -444,13 +485,28 @@ def send_email_with_attachments_creation(workorder, recipient, name, html_body):
     
 def get_workorder_details(workorder):
     try:
+        query = text("""
+            SELECT w.*,c.category_name,i.item_name,t.type_name,d.description_name,r.region_name,
+            s.state_name,ct.city_name FROM workorder_t w
+            LEFT JOIN category_master_t c ON w.category = c.category_id
+            LEFT JOIN item_master_t i ON w.item = i.item_id
+            LEFT JOIN type_master_t t ON w.type = t.type_id
+            LEFT JOIN description_master_t d ON w.description = d.description_id
+            LEFT JOIN region_master_t r ON w.region = r.region_id
+            LEFT JOIN state_master_t s ON w.state = s.state_id
+            LEFT JOIN city_master_t ct ON w.city = ct.city_id
+            WHERE w.workorder = :workorder
+        """)
+
         result = db.session.execute(
-            text("SELECT * FROM workorder_t WHERE workorder = :workorder"),
+            query,
             {"workorder": workorder}
         ).mappings().fetchone()
+
         return SimpleNamespace(**result) if result else None
+
     except Exception as e:
-        logging.error(f"Error fetching workorder details: {e}")
+        logging.error(f"Error fetching workorder details: {str(e)}")
         return None
     
     
