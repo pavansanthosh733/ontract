@@ -253,6 +253,8 @@ def build_admin_escalation_notification_html(wr,region_name,category_name):
                 category_name=category_name)
 
 def build_admin_notification_html(workorder, contractor_name, contractor_id, action, remark):
+    wo = get_workorder_details( workorder.workorder ) 
+    logging.info( f"FULL WO DETAILS: {wo}" )
     status_text = "ACCEPTED" if action == "accept" else "REJECTED"
     status_color = "#28a745" if action == "accept" else "#dc3545"
     html = render_template("admin_notification.html",
