@@ -679,3 +679,46 @@ def is_workorder_already_responded(workorder_id, contractor_id):
             exc_info=True
         )
         return False
+    
+def build_withdraw_notification_html(
+    workorder,
+    reason,
+    withdrawn_by
+):
+    return render_template(
+        "withdraw_notification.html",
+        workorder=workorder,
+        reason=reason,
+        withdrawn_by=withdrawn_by
+    )
+
+def get_accepted_contractor(workorder):
+
+    try:
+
+        result = db.session.execute(
+            text("""
+                SELECT
+                    p.provider_id,
+                    p.full_name,
+                    p.email_id
+                FROM workorder_assignment_t w
+                JOIN providers_t p
+                    ON p.provider_id = w.provider_id
+                WHERE w."WORKORDER_ID" = :wo
+                LIMIT 1
+            """),
+            {
+                "wo": workorder
+            }
+        ).fetchone()
+
+        return result
+
+    except Exception as e:
+
+        logging.error(
+            f"Failed to fetch contractor: {e}"
+        )
+
+        return None

@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
 from ..models.workorder import WorkOrder
+from sqlalchemy import text
 from app.models.database import db
 from ..models.contractor import Contractor
 from ..views.workorder_view import WorkOrderView
@@ -10,6 +11,15 @@ import os
 import logging
 from app.utils.current_admin import get_admin
 from werkzeug.utils import secure_filename
+from app.models.workorder_mail_model import (
+    get_workorder_details,
+    build_withdraw_notification_html,
+    send_email_with_attachments,
+    get_admin_email,
+    get_contractor_from_db,
+    insert_workorder_lifecycle_log,
+    get_accepted_contractor
+)
 from app.controllers.purchase_order_controller import (
     create_purchase_order
 )
@@ -1112,3 +1122,138 @@ def update_admin():
             "success": False,
             "message": str(e)
         }), 500
+@workorder_bp.route("/withdraw/<workorder>", methods=["POST"])
+def withdraw_workorder(workorder):
+
+    try:
+
+        data = request.get_json()
+
+        reason = data.get("reason")
+
+        if not reason:
+            return {
+                "success": False,
+                "message": "Withdraw reason is required"
+            }, 400
+
+        # ====================================
+        # UPDATE STATUS
+        # ====================================
+
+        WorkOrder.withdraw_workorder(
+            workorder,
+            reason
+        )
+
+        # ====================================
+        # GET UPDATED WO
+        # ====================================
+
+        wo = get_workorder_details(workorder)
+
+        if not wo:
+            return {
+                "success": False,
+                "message": "Workorder not found"
+            }, 404
+
+        # ====================================
+        # LIFE CYCLE LOG
+        # ====================================
+
+        insert_workorder_lifecycle_log(
+            wo,
+            "ADMIN",
+            "ADMIN",
+            f"Workorder Withdrawn. Reason: {reason}"
+        )
+
+        # ====================================
+        # EMAIL HTML
+        # ====================================
+
+        html = build_withdraw_notification_html(
+            wo,
+            reason,
+            "Admin"
+        )
+
+        # ====================================
+        # ADMIN EMAIL
+        # ====================================
+
+        admin_email = get_admin_email(
+            wo.created_by
+        )
+
+        if admin_email:
+
+            send_email_with_attachments(
+                wo,
+                admin_email,
+                "Admin",
+                html
+            )
+
+            logging.info(
+                f"Withdraw mail sent to Admin: {admin_email}"
+            )
+
+        # ====================================
+        # CONTRACTOR EMAIL
+        # ====================================
+
+        assignment = db.session.execute(
+            text("""
+                SELECT provider_id
+                FROM workorder_assignment_t
+                WHERE "WORKORDER_ID" = :wo
+                AND assignment_status = 'ACCEPTED'
+                LIMIT 1
+            """),
+            {"wo": workorder}
+        ).fetchone()
+
+        if assignment:
+
+            contractor = get_contractor_from_db(
+                assignment.provider_id
+            )
+
+            if contractor:
+
+                contractor_email = contractor.email_id
+                contractor_name = contractor.full_name
+
+                send_email_with_attachments(
+                    wo,
+                    contractor_email,
+                    contractor_name,
+                    html
+                )
+
+                logging.info(
+                    f"Withdraw mail sent to Contractor: "
+                    f"{contractor_email}"
+                )
+
+        # ====================================
+        # SUCCESS
+        # ====================================
+
+        return {
+            "success": True,
+            "message": "Workorder withdrawn successfully"
+        }, 200
+
+    except Exception as e:
+
+        logging.exception(
+            "Withdraw workorder failed"
+        )
+
+        return {
+            "success": False,
+            "message": str(e)
+        }, 500

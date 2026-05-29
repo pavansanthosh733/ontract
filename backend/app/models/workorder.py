@@ -2464,3 +2464,38 @@ class WorkOrder(db.Model):
                 "success": False,
                 "message": str(e)
             }
+    @staticmethod
+    def withdraw_workorder(workorder, reason):
+
+        try:
+
+            query = text("""
+                UPDATE workorder_t
+                SET
+                    status = 'WITHDRAW',
+                    withdraw_reason = :reason,
+                    withdrawn_at = NOW()
+                WHERE workorder = :workorder
+            """)
+
+            db.session.execute(
+                query,
+                {
+                    "reason": reason,
+                    "workorder": workorder
+                }
+            )
+
+            db.session.commit()
+
+            return True
+
+        except Exception as e:
+
+            db.session.rollback()
+
+            logging.error(
+                f"Withdraw workorder error: {e}"
+            )
+
+            raise
