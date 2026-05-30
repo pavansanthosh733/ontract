@@ -18,6 +18,9 @@ from app.utils.file_utils import save_uploaded_file
 from app.models.contractor_model import ContractorModel
 from app.models.provider_model import ProviderModel 
 from app.utils.encrypt_utils import cipher
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy import text
+from app import db
 from app.utils.email_utils import (
     send_email,
     send_contractor_activation_email,
@@ -51,23 +54,58 @@ class ContractorController:
     # ---------------- Signup ----------------
     @staticmethod
     def signup(data):
-        #brn = data.get('business_registration_number')
-        #company_name = data.get('company_name')
-        email = data.get('email_id')
+
+        email = data.get('email_id', '').strip().lower()
         phone = data.get('phone_number')
         password = data.get('password')
 
         if not all([email, phone, password]):
             return {"error": "All fields are required"}, 400
 
-        hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-        token = str(uuid.uuid4())
+        try:
 
-        # creates users_t + company_details_t
-        ContractorModel.create_company(hashed, phone, email, token)
-        send_contractor_activation_email(email, token)
+            # CHECK EXISTING EMAIL
+            existing_user = db.session.execute(
+                text("""
+                    SELECT user_uid FROM users_t WHERE email_id = :email
+                """),
+                {"email": email}
+            ).fetchone()
 
-        return {"message": "Signup successful. Activation link sent to your email."}, 200
+            if existing_user:
+                return {
+                    "status": "exists",
+                    "message": "User already exists with this email."
+                }, 409
+
+            hashed = bcrypt.hashpw(password.encode(),bcrypt.gensalt()).decode()
+
+            token = str(uuid.uuid4())
+
+            ContractorModel.create_company(hashed,phone,email,token)
+
+            send_contractor_activation_email(email,token)
+
+            return {
+                "status": "ok",
+                "message": "Signup successful. Activation link sent to your email."
+            }, 201
+
+        except IntegrityError as e:
+
+            return {
+                "status": "error",
+                "message": "Database constraint error",
+                "details": str(e.orig)
+            }, 400
+
+        except Exception as e:
+
+            return {
+                "status": "error",
+                "message": "Something went wrong",
+                "details": str(e)
+            }, 500
 
     # ---------------- Activate ----------------
     @staticmethod
