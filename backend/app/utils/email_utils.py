@@ -186,3 +186,101 @@ def send_workorder_closure_email(email, workorder_no, remarks, pdf_path):
 
     return send_email(email, subject, body, attachment=pdf_path)
 
+
+def send_workorder_completed_admin_review_email(admin_email, workorder_data, contractor_message, saved_images):
+    """
+    Email contractor's admin when a workorder is marked completed.
+    Sends all available workorder details for review.
+    """
+
+    workorder_no = workorder_data.get("workorder", "N/A")
+    subject = f"Workorder Completed by Contractor - {workorder_no}"
+
+    def fmt(key, label=None):
+        value = workorder_data.get(key)
+        if value is None or value == "":
+            return None
+        return f"{label or key}: {value}"
+
+    # Add whichever fields exist in your workorder_t row
+    detail_fields = [
+        ("workorder", "Workorder"),
+        ("status", "Status"),
+        ("created_by", "Created By"),
+        ("assigned_to", "Assigned To"),
+        ("contractor_id", "Contractor ID"),
+        ("site_id", "Site ID"),
+        ("customer_name", "Customer Name"),
+        ("customer_mobile", "Customer Mobile"),
+        ("customer_email", "Customer Email"),
+        ("priority", "Priority"),
+        ("subcategory", "Sub Category"),
+        ("requested_date", "Requested Date"),
+        ("requested_time", "Requested Time"),
+        ("created_at", "Created At"),
+        ("updated_at", "Updated At"),
+    ]
+
+    details_text = []
+    for key, label in detail_fields:
+        line = fmt(key, label)
+        if line:
+            details_text.append(line)
+
+    images_text = "\n".join([f"- {img}" for img in (saved_images or [])]) or "No images uploaded."
+
+    body = f"""
+Dear Admin,
+
+A contractor has marked the following workorder as completed.
+
+Please review the details below and decide whether to close or reopen it on under your completed notificatons.
+
+Workorder Details:
+{chr(10).join('- ' + line for line in details_text) if details_text else '- No details found'}
+
+Contractor Message:
+{contractor_message or 'No message provided.'}
+
+
+
+Regards,
+Ontract Team
+""".strip()
+
+    return send_email(admin_email, subject, body)
+
+
+
+def send_workorder_reopened_contractor_email(contractor_email, workorder_data, admin_remarks=""):
+    """
+    Send email to contractor when admin reopens a completed workorder.
+    """
+
+    workorder_no = workorder_data.get("workorder", "N/A")
+    subject = f"Workorder Reopened - {workorder_no}"
+
+    def safe(key, default="N/A"):
+        value = workorder_data.get(key)
+        return value if value not in [None, ""] else default
+
+    body = f"""
+Dear Contractor,
+
+Your completed workorder has been reopened by the admin.
+
+Please work again and complete it as soon as possible.
+
+Workorder Details:
+- Workorder: {safe("workorder")}
+- Status: {safe("status")}
+
+
+Admin Remarks:
+{admin_remarks if admin_remarks else 'No remarks provided.'}
+
+Regards,
+Ontract Team
+""".strip()
+
+    return send_email(contractor_email, subject, body)

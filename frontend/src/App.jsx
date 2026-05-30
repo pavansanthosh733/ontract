@@ -205,7 +205,7 @@ const isApk = params.get("source") === "apk";
                 <CompanyNotifications contractor={contractor} />
               }
             />
-            <Route path="workorders" element={<CompanyWorkorders />} />
+            <Route path="companyworkorders" element={<CompanyWorkorders />} />
             <Route path="invoice" element={<CompanyInvoice />} />
             <Route
               path="updatecompanyprofile"

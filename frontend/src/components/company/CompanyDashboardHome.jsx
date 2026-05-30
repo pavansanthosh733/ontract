@@ -143,7 +143,7 @@ const { contractor, loading } = useContractor();
           Invoice
         </Link>  */ }
 
-        <Link to="/contractor/dashboard/workorders" className="workorder-pill">
+        <Link to="/contractor/dashboard/companyworkorders" className="workorder-pill">
           <FaClipboardList className="me-2" />
           WorkOrders
         </Link>

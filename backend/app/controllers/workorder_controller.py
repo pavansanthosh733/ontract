@@ -20,6 +20,10 @@ from app.models.workorder_mail_model import (
     insert_workorder_lifecycle_log,
     get_accepted_contractor
 )
+
+from app.utils.email_utils import send_workorder_completed_admin_review_email,send_workorder_reopened_contractor_email
+
+
 from app.controllers.purchase_order_controller import (
     create_purchase_order
 )
@@ -743,7 +747,25 @@ def workorder_insert_admin_notification_close():
             saved_images.append(db_path)
             logging.info(f"✅ {file_type.upper()} saved: {save_path}")
 
-        WorkOrder.workorder_insert_admin_notification_close(workorder,message,saved_images,provider_id)
+        workorder_data, admin_email, err =WorkOrder.workorder_insert_admin_notification_close(workorder,message,saved_images,provider_id)
+        
+        
+        if err:
+            return jsonify({"success": False, "message": err}), 400
+
+        # Send email after DB commit
+        if admin_email:
+            try:
+                send_workorder_completed_admin_review_email(
+                    admin_email=admin_email,
+                    workorder_data=workorder_data,
+                    contractor_message=message,
+                    saved_images=saved_images
+                )
+            except Exception:
+                logging.exception("Failed to send workorder completion email to admin")
+        
+        
 
         return jsonify({
             "success": True,
@@ -787,6 +809,26 @@ def admin_reopen_workorder():
 
         if error:
             return jsonify({"success": False,"message": error}), 400
+        
+        
+        
+        
+        contractor_email, email_err = WorkOrder.get_contractor_email_for_reopen(workorder)
+
+        if contractor_email:
+            try:
+                send_workorder_reopened_contractor_email(
+                    contractor_email,
+                    updated,
+                    admin_remarks
+                )
+            except Exception:
+                logging.exception("❌ Failed to send reopen email to contractor")
+        else:
+            logging.warning(f"Contractor email not found: {email_err}")
+
+        
+        
 
         return jsonify({"success": True,"message": "Workorder reopened successfully",
             "data": updated}), 200

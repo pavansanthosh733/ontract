@@ -1584,10 +1584,20 @@ class WorkOrder(db.Model):
                 "workorder": workorder,
                 "provider_id": provider_id
             })
+            
+
+
+
+
 
             db.session.commit()
 
-            return dict(row), None
+            # get admin email after successful DB commit
+            admin_email, email_err = cls.get_admin_email_by_workorder(workorder)
+            if email_err:
+                logging.warning(f"Admin email fetch warning: {email_err}")
+    
+            return dict(row), admin_email, None
 
         except Exception as e:
             db.session.rollback()
@@ -2499,3 +2509,62 @@ class WorkOrder(db.Model):
             )
 
             raise
+        
+
+
+    @classmethod
+    def get_admin_email_by_workorder(cls, workorder):
+        try:
+            sql = text("""
+                SELECT a.email
+                FROM workorder_t w
+                JOIN admins_t a
+                    ON a.admin_id = CAST(w.created_by AS BIGINT)
+                WHERE w.workorder = :workorder
+                LIMIT 1;
+            """)
+
+            row = db.session.execute(
+                sql,
+                {"workorder": workorder}
+            ).fetchone()
+
+            if not row:
+                return None, "Admin email not found for this workorder"
+
+            return row[0], None
+
+        except Exception as e:
+            logging.exception("Error while fetching admin email by workorder")
+            return None, str(e)
+        
+        
+        
+        
+        
+    @classmethod
+    def get_contractor_email_for_reopen(cls, workorder):
+        try:
+            sql = text("""
+                SELECT u.email_id
+                FROM workorder_assignment_t wa
+                JOIN users_t u
+                    ON u.user_uid = wa.provider_id
+                WHERE wa."WORKORDER_ID" = :workorder
+                ORDER BY wa.assigned_at DESC
+                LIMIT 1;
+            """)
+    
+            row = db.session.execute(
+                sql,
+                {"workorder": workorder}
+            ).fetchone()
+    
+            if not row:
+                return None, "Contractor email not found for this workorder"
+    
+            return row[0], None
+    
+        except Exception as e:
+            logging.exception("Error while fetching contractor email by workorder")
+            return None, str(e)
