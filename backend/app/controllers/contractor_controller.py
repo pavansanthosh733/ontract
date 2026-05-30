@@ -18,6 +18,9 @@ from app.utils.file_utils import save_uploaded_file
 from app.models.contractor_model import ContractorModel
 from app.models.provider_model import ProviderModel 
 from app.utils.encrypt_utils import cipher
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy import text
+from app import db
 from app.utils.email_utils import (
     send_email,
     send_contractor_activation_email,
@@ -51,23 +54,58 @@ class ContractorController:
     # ---------------- Signup ----------------
     @staticmethod
     def signup(data):
-        #brn = data.get('business_registration_number')
-        #company_name = data.get('company_name')
-        email = data.get('email_id')
+
+        email = data.get('email_id', '').strip().lower()
         phone = data.get('phone_number')
         password = data.get('password')
 
         if not all([email, phone, password]):
             return {"error": "All fields are required"}, 400
 
-        hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-        token = str(uuid.uuid4())
+        try:
 
-        # creates users_t + company_details_t
-        ContractorModel.create_company(hashed, phone, email, token)
-        send_contractor_activation_email(email, token)
+            # CHECK EXISTING EMAIL
+            existing_user = db.session.execute(
+                text("""
+                    SELECT user_uid FROM users_t WHERE email_id = :email
+                """),
+                {"email": email}
+            ).fetchone()
 
-        return {"message": "Signup successful. Activation link sent to your email."}, 200
+            if existing_user:
+                return {
+                    "status": "exists",
+                    "message": "User already exists with this email."
+                }, 409
+
+            hashed = bcrypt.hashpw(password.encode(),bcrypt.gensalt()).decode()
+
+            token = str(uuid.uuid4())
+
+            ContractorModel.create_company(hashed,phone,email,token)
+
+            send_contractor_activation_email(email,token)
+
+            return {
+                "status": "ok",
+                "message": "Signup successful. Activation link sent to your email."
+            }, 201
+
+        except IntegrityError as e:
+
+            return {
+                "status": "error",
+                "message": "Database constraint error",
+                "details": str(e.orig)
+            }, 400
+
+        except Exception as e:
+
+            return {
+                "status": "error",
+                "message": "Something went wrong",
+                "details": str(e)
+            }, 500
 
     # ---------------- Activate ----------------
     @staticmethod
@@ -143,36 +181,40 @@ class ContractorController:
 # ---------------- Verify OTP ----------------
     @staticmethod
     def verify_otp(data):
-       
-    
+
         email = data.get("email")
         otp = data.get("otp")
-    
-   
-    
+
         if not email or not otp:
-         
-            return {"error": "Email and OTP required"}, 400
-    
+
+            return {
+                "error": "Email and OTP required"
+            }, 400
+
         record = ContractorModel.validate_otp(email)
-        print(f"🧾 OTP DB Record     : {record}")
-    
+
+        print(f"🧾 OTP DB Record : {record}")
+
+        # =====================================================
+        # VALID OTP
+        # =====================================================
+
         if record and record["otp_code"] == otp:
-            
-    
+
             ContractorModel.delete_otp(email)
-            
-    
+
             contractor = ContractorModel.get_basic_info(email)
-         
-    
+
             if not contractor:
-       
-                return {"error": "Contractor not found"}, 404
-            
+
+                return {
+                    "error": "Contractor not found"
+                }, 404
+
             family_id = str(uuid.uuid4())
-            print(f"🧬 Token Family ID  : {family_id}")
-    
+
+            print(f"🧬 Token Family ID : {family_id}")
+
             refresh_token = jwt.encode(
                 {
                     "contractor_id": contractor["user_uid"],
@@ -181,14 +223,12 @@ class ContractorController:
                 current_app.config["SECRET_KEY"],
                 algorithm="HS256",
             )
-    
-        
-            
+
             ip_address = request.headers.get(
                 "X-Forwarded-For",
                 request.remote_addr
             )
-    
+
             ContractorModel.create_session(
                 contractor["user_uid"],
                 refresh_token,
@@ -198,17 +238,20 @@ class ContractorController:
                 token_family=family_id,
                 rotated_from=None
             )
-            
 
-            
             return {
                 "message": "OTP verified successfully",
                 "contractor": contractor,
                 "refresh_token": refresh_token,
             }, 200
-            
-         
-            return {"error": "Invalid or expired OTP"}, 400
+
+        # =====================================================
+        # INVALID OTP
+        # =====================================================
+
+        return {
+            "error": "Invalid or expired OTP"
+        }, 400
 
     @staticmethod
     def refresh_token(refresh_token):
