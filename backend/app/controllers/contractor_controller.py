@@ -181,36 +181,40 @@ class ContractorController:
 # ---------------- Verify OTP ----------------
     @staticmethod
     def verify_otp(data):
-       
-    
+
         email = data.get("email")
         otp = data.get("otp")
-    
-   
-    
+
         if not email or not otp:
-         
-            return {"error": "Email and OTP required"}, 400
-    
+
+            return {
+                "error": "Email and OTP required"
+            }, 400
+
         record = ContractorModel.validate_otp(email)
-        print(f"🧾 OTP DB Record     : {record}")
-    
+
+        print(f"🧾 OTP DB Record : {record}")
+
+        # =====================================================
+        # VALID OTP
+        # =====================================================
+
         if record and record["otp_code"] == otp:
-            
-    
+
             ContractorModel.delete_otp(email)
-            
-    
+
             contractor = ContractorModel.get_basic_info(email)
-         
-    
+
             if not contractor:
-       
-                return {"error": "Contractor not found"}, 404
-            
+
+                return {
+                    "error": "Contractor not found"
+                }, 404
+
             family_id = str(uuid.uuid4())
-            print(f"🧬 Token Family ID  : {family_id}")
-    
+
+            print(f"🧬 Token Family ID : {family_id}")
+
             refresh_token = jwt.encode(
                 {
                     "contractor_id": contractor["user_uid"],
@@ -219,14 +223,12 @@ class ContractorController:
                 current_app.config["SECRET_KEY"],
                 algorithm="HS256",
             )
-    
-        
-            
+
             ip_address = request.headers.get(
                 "X-Forwarded-For",
                 request.remote_addr
             )
-    
+
             ContractorModel.create_session(
                 contractor["user_uid"],
                 refresh_token,
@@ -236,17 +238,20 @@ class ContractorController:
                 token_family=family_id,
                 rotated_from=None
             )
-            
 
-            
             return {
                 "message": "OTP verified successfully",
                 "contractor": contractor,
                 "refresh_token": refresh_token,
             }, 200
-            
-         
-            return {"error": "Invalid or expired OTP"}, 400
+
+        # =====================================================
+        # INVALID OTP
+        # =====================================================
+
+        return {
+            "error": "Invalid or expired OTP"
+        }, 400
 
     @staticmethod
     def refresh_token(refresh_token):

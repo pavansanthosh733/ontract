@@ -310,7 +310,7 @@ function CompanyOTPVerification() {
 
       localStorage.removeItem("refresh_token");
 
-      setError(data?.error || "Invalid OTP");
+      alert(data?.error || "Invalid OTP");
     }
   } catch (err) {
     // =====================================================
@@ -330,7 +330,7 @@ function CompanyOTPVerification() {
 
     localStorage.removeItem("refresh_token");
 
-    setError(err.message || "Verification failed");
+    alert(err.message || "Verification failed");
   } finally {
     console.log("🏁 VERIFY FLOW FINISHED");
 
@@ -355,10 +355,10 @@ function CompanyOTPVerification() {
       });
 
       console.log("RESEND RESPONSE:", data);
-      setMessage(data?.message || "OTP resent successfully!");
+      alert(data?.message || "OTP resent successfully!");
     } catch (err) {
       console.error("🚨 RESEND OTP ERROR:", err);
-      setError(err.message || "Failed to resend OTP.");
+      alert(err.message || "Failed to resend OTP.");
     } finally {
       console.groupEnd();
       setResendLoading(false);
@@ -373,9 +373,6 @@ function CompanyOTPVerification() {
         <p>
           We’ve sent an OTP to <strong>{email}</strong>
         </p>
-
-        {message && <p className="success-text">{message}</p>}
-        {error && <p className="error-text">{error}</p>}
 
         <form onSubmit={handleVerify}>
           <input

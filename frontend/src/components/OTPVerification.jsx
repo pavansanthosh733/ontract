@@ -116,11 +116,11 @@ function OTPVerification() {
         navigate("/provider_home", { replace: true });
 
       } else {
-        setError(data?.error || "OTP verification failed");
+        alert(data?.error || "OTP verification failed");
       }
     } catch (err) {
-      console.error("❌ OTP VERIFY ERROR:", err);
-      setError("An error occurred. Please try again.");
+      console.error("OTP VERIFY ERROR:", err);
+      alert("An error occurred. Please try again.");
     }
   };
 
@@ -156,9 +156,6 @@ function OTPVerification() {
       <div className="otpverification-card">
         <h2 className="otpverification-title">Verify OTP</h2>
         <p className="otpverification-text">An OTP has been sent to {email}</p>
-
-        {error && <p className="otpverification-error">{error}</p>}
-        {success && <p className="otpverification-success">{success}</p>}
 
         <form onSubmit={handleSubmit} className="otpverification-form">
           <div className="otpverification-input-group">
