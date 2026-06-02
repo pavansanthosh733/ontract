@@ -2474,39 +2474,68 @@ class WorkOrder(db.Model):
                 "success": False,
                 "message": str(e)
             }
-    @staticmethod
-    def withdraw_workorder(workorder, reason):
+    @classmethod
+    def withdraw_workorder(cls, workorder, reason):
 
         try:
 
-            query = text("""
+            sql = text("""
                 UPDATE workorder_t
                 SET
                     status = 'WITHDRAW',
                     withdraw_reason = :reason,
-                    withdrawn_at = NOW()
+                    withdrawn_at = CURRENT_TIMESTAMP,
+                    ticket_assignment_type = 'manual'
                 WHERE workorder = :workorder
+                RETURNING *;
             """)
 
-            db.session.execute(
-                query,
+            row = db.session.execute(
+                sql,
                 {
-                    "reason": reason,
+                    "workorder": workorder,
+                    "reason": reason
+                }
+            ).mappings().fetchone()
+
+            if not row:
+                db.session.rollback()
+                return False, "Workorder not found"
+
+            # Optional:
+            # expire existing assignments
+            db.session.execute(
+                text("""
+                    UPDATE workorder_assignment_t
+                    SET assignment_status = 'WITHDRAW'
+                    WHERE "WORKORDER_ID" = :workorder
+                    AND assignment_status IN (
+                        'PENDING',
+                        'ACCEPTED'
+                    )
+                """),
+                {
                     "workorder": workorder
                 }
             )
 
             db.session.commit()
 
-            return True
+            logging.info(
+                f"Workorder {workorder} withdrawn successfully "
+                f"and moved to MANUAL assignment"
+            )
+
+            return True, None
 
         except Exception as e:
 
             db.session.rollback()
 
-            logging.error(
-                f"Withdraw workorder error: {e}"
+            logging.exception(
+                "Withdraw Workorder Error"
             )
+
 
             raise
         
@@ -2568,3 +2597,6 @@ class WorkOrder(db.Model):
         except Exception as e:
             logging.exception("Error while fetching contractor email by workorder")
             return None, str(e)
+
+            return False, str(e)
+

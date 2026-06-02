@@ -111,19 +111,37 @@ def get_workorder_from_db(workorder_id):
         return None
 
 
+
+
 def get_contractor_from_db(provider_id):
+
     try:
+
         result = db.session.execute(
-            text("SELECT full_name, email_id FROM providers_t WHERE provider_id=:pid"),
-            {"pid": provider_id}
-        ).fetchone()
-        if result:
-            logging.info(f"Contractor {provider_id} found: {result.full_name}")
-        else:
-            logging.warning(f"Contractor {provider_id} not found.")
-        return result
+            text("""
+                SELECT
+                    provider_id,
+                    full_name,
+                    email_id
+                FROM providers_t
+                WHERE provider_id = :pid
+            """),
+            {
+                "pid": provider_id
+            }
+        ).mappings().fetchone()
+
+        return (
+            SimpleNamespace(**result)
+            if result else None
+        )
+
     except Exception as e:
-        logging.error(f"Error fetching contractor {provider_id}: {e}")
+
+        logging.error(
+            f"Failed to fetch contractor: {e}"
+        )
+
         return None
 
 
@@ -680,44 +698,43 @@ def is_workorder_already_responded(workorder_id, contractor_id):
         )
         return False
     
-def build_withdraw_notification_html(
-    workorder,
-    reason,
-    withdrawn_by
-):
+def build_withdraw_notification_html(workorder,reason,withdrawn_by):
     return render_template(
         "withdraw_notification.html",
         workorder=workorder,
         reason=reason,
         withdrawn_by=withdrawn_by
     )
-
 def get_accepted_contractor(workorder):
 
     try:
 
-        result = db.session.execute(
-            text("""
-                SELECT
-                    p.provider_id,
-                    p.full_name,
-                    p.email_id
-                FROM workorder_assignment_t w
-                JOIN providers_t p
-                    ON p.provider_id = w.provider_id
-                WHERE w."WORKORDER_ID" = :wo
-                LIMIT 1
-            """),
-            {
-                "wo": workorder
-            }
-        ).fetchone()
+        query = text("""
+            SELECT
+                u.user_uid,
+                u.name,
+                u.email_id
+            FROM workorder_assignment_t w
+            JOIN users_t u
+                ON u.user_uid = w.provider_id
+            WHERE w."WORKORDER_ID" = :workorder
+            LIMIT 1
+        """)
 
-        return result
+        result = db.session.execute(
+            query,
+            {"workorder": workorder}
+        ).mappings().fetchone()
+
+        logging.info(
+            f"Contractor Query Result: {result}"
+        )
+
+        return dict(result) if result else None
 
     except Exception as e:
 
-        logging.error(
+        logging.exception(
             f"Failed to fetch contractor: {e}"
         )
 

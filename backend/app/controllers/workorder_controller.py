@@ -1164,138 +1164,190 @@ def update_admin():
             "success": False,
             "message": str(e)
         }), 500
-@workorder_bp.route("/withdraw/<workorder>", methods=["POST"])
+@workorder_bp.route("/withdraw/<string:workorder>",methods=["POST"])
 def withdraw_workorder(workorder):
 
     try:
 
-        data = request.get_json()
+        data = request.get_json() or {}
 
         reason = data.get("reason")
 
         if not reason:
-            return {
+            return jsonify({
                 "success": False,
-                "message": "Withdraw reason is required"
-            }, 400
+                "message": "reason is required"
+            }), 400
 
-        # ====================================
-        # UPDATE STATUS
-        # ====================================
+        logging.info(
+            f"Withdraw request received. "
+            f"Workorder={workorder}, "
+            f"Reason={reason}"
+        )
 
-        WorkOrder.withdraw_workorder(
+        # -----------------------------------------
+        # Withdraw Workorder
+        # -----------------------------------------
+
+        success, error = WorkOrder.withdraw_workorder(
             workorder,
             reason
         )
 
-        # ====================================
-        # GET UPDATED WO
-        # ====================================
+        if not success:
+            return jsonify({
+                "success": False,
+                "message": error
+            }), 400
 
-        wo = get_workorder_details(workorder)
+        # -----------------------------------------
+        # Get Workorder Details
+        # -----------------------------------------
 
-        if not wo:
-            return {
+        workorder_details = get_workorder_details(
+            workorder
+        )
+
+        if not workorder_details:
+            return jsonify({
                 "success": False,
                 "message": "Workorder not found"
-            }, 404
+            }), 404
 
-        # ====================================
-        # LIFE CYCLE LOG
-        # ====================================
+        # -----------------------------------------
+        # Get Admin Email
+        # -----------------------------------------
 
-        insert_workorder_lifecycle_log(
-            wo,
-            "ADMIN",
-            "ADMIN",
-            f"Workorder Withdrawn. Reason: {reason}"
+        admin_email = None
+
+        if getattr(
+            workorder_details,
+            "created_by",
+            None
+        ):
+
+            admin_email = get_admin_email(
+                workorder_details.created_by
+            )
+
+        logging.info(
+            f"Admin Email: {admin_email}"
         )
 
-        # ====================================
-        # EMAIL HTML
-        # ====================================
+        # -----------------------------------------
+        # Get Contractor Details
+        # -----------------------------------------
 
-        html = build_withdraw_notification_html(
-            wo,
-            reason,
-            "Admin"
+        contractor_email = None
+        contractor_name = None
+
+        contractor = get_accepted_contractor(workorder)
+        logging.info(
+           f"Contractor Data: {contractor}"
+           )
+
+        logging.info(
+            f"Contractor Data: {contractor}"
         )
 
-        # ====================================
-        # ADMIN EMAIL
-        # ====================================
+        if contractor:
 
-        admin_email = get_admin_email(
-            wo.created_by
-        )
+            contractor_email = contractor.get(
+                "email_id"
+            )
 
-        if admin_email:
-
-            send_email_with_attachments(
-                wo,
-                admin_email,
-                "Admin",
-                html
+            contractor_name = contractor.get(
+                "name"
             )
 
             logging.info(
-                f"Withdraw mail sent to Admin: {admin_email}"
+                f"Contractor Name: {contractor_name}"
             )
 
-        # ====================================
-        # CONTRACTOR EMAIL
-        # ====================================
-
-        assignment = db.session.execute(
-            text("""
-                SELECT provider_id
-                FROM workorder_assignment_t
-                WHERE "WORKORDER_ID" = :wo
-                AND assignment_status = 'ACCEPTED'
-                LIMIT 1
-            """),
-            {"wo": workorder}
-        ).fetchone()
-
-        if assignment:
-
-            contractor = get_contractor_from_db(
-                assignment.provider_id
+            logging.info(
+                f"Contractor Email: {contractor_email}"
             )
 
-            if contractor:
+        # -----------------------------------------
+        # Build Recipient List
+        # -----------------------------------------
 
-                contractor_email = contractor.email_id
-                contractor_name = contractor.full_name
+        recipients = []
 
-                send_email_with_attachments(
-                    wo,
-                    contractor_email,
-                    contractor_name,
-                    html
+        if admin_email:
+            recipients.append(admin_email)
+
+        if contractor_email:
+            recipients.append(contractor_email)
+
+        logging.info(
+            f"Recipients: {recipients}"
+        )
+
+        # -----------------------------------------
+        # Send Email
+        # -----------------------------------------
+
+        if recipients:
+
+            html_body = (
+                build_withdraw_notification_html(
+                    workorder_details,
+                    reason,
+                    "Admin"
                 )
+            )
+
+            for email in recipients:
 
                 logging.info(
-                    f"Withdraw mail sent to Contractor: "
-                    f"{contractor_email}"
+                    f"Sending withdrawal mail to {email}"
                 )
 
-        # ====================================
-        # SUCCESS
-        # ====================================
+                send_email_with_attachments(
+                    workorder_details,
+                    email,
+                    "Admin",
+                    html_body
+                )
 
-        return {
+        # -----------------------------------------
+        # Lifecycle Log
+        # -----------------------------------------
+
+        try:
+
+            insert_workorder_lifecycle_log(
+                workorder_details,
+                None,
+                None,
+                reason
+            )
+
+        except Exception as log_error:
+
+            logging.error(
+                f"Failed to insert lifecycle log: "
+                f"{log_error}"
+            )
+
+        # -----------------------------------------
+        # Success Response
+        # -----------------------------------------
+
+        return jsonify({
             "success": True,
-            "message": "Workorder withdrawn successfully"
-        }, 200
+            "message":
+                "Workorder withdrawn successfully"
+        }), 200
 
     except Exception as e:
 
         logging.exception(
-            "Withdraw workorder failed"
+            "Withdraw Controller Error"
         )
 
-        return {
+        return jsonify({
             "success": False,
             "message": str(e)
-        }, 500
+        }), 500

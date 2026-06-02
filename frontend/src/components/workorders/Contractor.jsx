@@ -18,60 +18,75 @@ const WorkOrders = () => {
 
   /* ================= FETCH WORKORDERS ================= */
   const fetchWorkOrders = async () => {
-    try {
-      const data = await apiGet("/api/workorders/");
+  try {
 
-      const filtered = data.filter(
-        (wo) => (wo.STATUS || wo.status || "").toLowerCase() !== "accepted"
-      );
+    const data = await apiGet(
+      "/api/workorders/"
+    );
 
-      setWorkorders(filtered);
-      setFilteredOrders(filtered);
-      setLoading(false);
-    } catch (err) {
-      setError(err.message);
-      setLoading(false);
-    }
-  };
+    setWorkorders(data || []);
+    setFilteredOrders(data || []);
 
-  useEffect(() => {
-    fetchWorkOrders();
-  }, []);
+    setLoading(false);
+
+  } catch (err) {
+
+    setError(err.message);
+    setLoading(false);
+
+  }
+};
+
+useEffect(() => {
+  fetchWorkOrders();
+}, []);
 
   /* ================= FILTER SUBMIT ================= */
-  const handleSubmit = () => {
-    let filtered = [...workorders];
+  const handleSubmit = async () => {
+  try {
 
-    if (fromDate) {
-      filtered = filtered.filter(
-        (wo) => new Date(wo.created_t) >= new Date(fromDate)
+    if (!fromDate || !toDate) {
+      alert(
+        "Please select From Date and To Date"
       );
+      return;
     }
 
-    if (toDate) {
-      filtered = filtered.filter(
-        (wo) => new Date(wo.created_t) <= new Date(toDate + "T23:59:59")
-      );
-    }
+    const params = new URLSearchParams();
 
-    if (status !== "All") {
-      filtered = filtered.filter(
-        (wo) =>
-          (wo.status || wo.STATUS || "").toLowerCase() ===
-          status.toLowerCase()
-      );
-    }
+    params.append("from", fromDate);
+    params.append("to", toDate);
 
-    setFilteredOrders(filtered);
-  };
+    params.append("status", status);
+
+    const data = await apiGet(
+      `/api/workorders/filter?${params.toString()}`
+    );
+
+    setFilteredOrders(data || []);
+
+  } catch (err) {
+
+    console.error(err);
+
+    alert(
+      err.message ||
+      "Failed to fetch workorders"
+    );
+
+  }
+};
 
   /* ================= RESET ================= */
-  const handleReset = () => {
-    setFromDate("");
-    setToDate("");
-    setStatus("All");
-    setFilteredOrders(workorders);
-  };
+  const handleReset = async () => {
+
+  setFromDate("");
+  setToDate("");
+  setStatus("All");
+
+  await fetchWorkOrders();
+
+};
 
   if (loading) return <div className="center">Loading...</div>;
   if (error) return <div className="center error">Error: {error}</div>;
@@ -104,15 +119,31 @@ const WorkOrders = () => {
           <div className="filter-group">
             <label>Status:</label>
             <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-            >
-             <option value="All">All</option>
-                <option value="OPEN">OPEN</option>
-                <option value="ACCEPTED">ACCEPTED</option>
-                <option value="REJECTED">REJECTED</option>
-                <option value="CLOSED">CLOSED</option>
-            </select>
+  value={status}
+  onChange={(e) =>
+    setStatus(e.target.value)
+  }
+>
+  <option value="All">
+    All
+  </option>
+
+  <option value="OPEN">
+    OPEN
+  </option>
+
+  <option value="ACCEPTED">
+    ACCEPTED
+  </option>
+
+  <option value="REJECTED">
+    REJECTED
+  </option>
+
+  <option value="WITHDRAW">
+    WITHDRAW
+  </option>
+</select>
           </div>
 
           <button className="submit-btn" onClick={handleSubmit}>

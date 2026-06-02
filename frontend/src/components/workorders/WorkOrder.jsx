@@ -26,6 +26,20 @@ const WorkOrders = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   const [previewMedia, setPreviewMedia] = useState(null);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [selectedWO, setSelectedWO] = useState(null);
+  const [withdrawReason, setWithdrawReason] = useState("");
+  
+const [customReason, setCustomReason] = useState("");
+const withdrawReasons = [
+  "Wrong Assignment",
+  "Contractor Not Available",
+  "Duplicate Work Order",
+  "Insufficient Resources",
+  "Customer Request",
+  "Location Too Far",
+  "Other"
+];
 
 
 
@@ -199,6 +213,45 @@ const formatSlaDuration = (requestedTimeClose) => {
       setDetailsLoading(false);
     }
   };
+  const openWithdrawPopup = (wo) => {
+  console.log("Withdraw clicked", wo);
+
+  setSelectedWO(wo);
+  setWithdrawReason("");
+  setShowWithdrawModal(true);
+};
+
+const submitWithdraw = async () => {
+  const finalReason =
+    withdrawReason === "Other"
+      ? customReason
+      : withdrawReason;
+
+  if (!finalReason.trim()) {
+    alert("Please select a reason");
+    return;
+  }
+
+  try {
+    await apiPost(
+      `/api/workorders/withdraw/${details.workorder}`,
+      {
+        reason: finalReason
+      }
+    );
+
+    alert(
+      "Workorder withdrawn successfully"
+    );
+
+    setShowDetailsModal(false);
+
+    fetchFilteredWorkOrders();
+
+  } catch (err) {
+    alert(err.message);
+  }
+};
 
   return (
     <div className="workorders-page">
@@ -325,6 +378,7 @@ const formatSlaDuration = (requestedTimeClose) => {
                       <th>SLA (Hours)</th>
                         <th>Assignment Type</th>
                       <th>Contractor_Name</th>
+                      
                     </tr>
                   </thead>
 
@@ -398,6 +452,7 @@ const { text: slaText, breached: isSlaBreached } =
                             {wo.ticket_assignment_type|| "N/A"}
                           </td>
                           <td>{wo.contractor_name || "Not Assigned"}</td>
+
                         </tr>
                       );
                     })}
@@ -557,6 +612,74 @@ const { text: slaText, breached: isSlaBreached } =
                     </span>
                   </div>
 
+                  
+    <div className="kv-row">
+  <span className="kv-label">
+    Withdraw Reason
+  </span>
+
+  <span className="kv-value">
+    <select
+      value={withdrawReason}
+      onChange={(e) =>
+        setWithdrawReason(e.target.value)
+      }
+      style={{
+        width: "100%",
+        padding: "8px"
+      }}
+    >
+      <option value="">
+        Select Reason
+      </option>
+
+      {withdrawReasons.map((reason) => (
+        <option
+          key={reason}
+          value={reason}
+        >
+          {reason}
+        </option>
+      ))}
+    </select>
+  </span>
+</div>
+
+{withdrawReason === "Other" && (
+  <div className="kv-row">
+    <span className="kv-label">
+      Remarks
+    </span>
+
+    <span className="kv-value">
+      <textarea
+        rows="3"
+        placeholder="Enter reason"
+        value={customReason}
+        onChange={(e) =>
+          setCustomReason(e.target.value)
+        }
+        style={{
+          width: "100%",
+          padding: "8px"
+        }}
+      />
+    </span>
+  </div>
+)}
+
+<div className="kv-row">
+  <span className="kv-label"></span>
+
+  <span className="kv-value">
+    <button
+      className="btn btn-danger"
+      onClick={submitWithdraw}
+    >
+      Withdraw Work Order
+    </button>
+  </span>
+</div>
                 </div>
               </>
             ) : (
@@ -565,6 +688,7 @@ const { text: slaText, breached: isSlaBreached } =
           </div>
         </div>
       )}
+  
     </div>
   );
 };

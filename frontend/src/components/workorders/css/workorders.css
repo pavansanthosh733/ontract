@@ -483,3 +483,8 @@ FILE: workorders.css
   background-color: #7a0000 !important;
   color: #ffffff !important;
 }
+
+.large-modal {
+    max-height: 85vh;
+    overflow-y: auto;
+}
