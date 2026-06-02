@@ -1,12 +1,13 @@
 // src/pages/CompanyApp.jsx
 import React, { useEffect, useState, useRef } from "react";
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import { Link, Outlet, useNavigate,useLocation } from "react-router-dom";
 import { FaUserCircle, FaBell, FaClipboardList } from "react-icons/fa";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./css/CompanyApp.css";
 
 import { BASE_URLS ,apiGet} from "../../api";
 import { useContractor } from "../../context/ContractorContext";
+
 
 
 function CompanyApp() {
@@ -20,15 +21,69 @@ function CompanyApp() {
   const { contractor, logoutContractor, loading } = useContractor();
 
 
-  /* =========================
-     GLOBAL DEBUG LOGS
-     ========================= */
+  const [gate, setGate] = useState({
+  loading: true,
+  allowed: false,
+  reason_code: "",
+  reason_message: "",
+});
+const location = useLocation();
+
+const allowedWhenRestricted = [
+  "/contractor/dashboard/updatecompanyprofile",
+  "/contractor/dashboard/contractorbankdetails",
+  "/contractor/dashboard/contractor-personal-details",
+  "/contractor/dashboard/notifications",
+  "/contractor/dashboard/profile",
+  "/contractor/dashboard/services",
+];
+
+const isAllowedRouteWhenRestricted = allowedWhenRestricted.includes(
+  location.pathname
+);
+
+const shouldBlockMainContent = !gate.loading && !gate.allowed && !isAllowedRouteWhenRestricted;
+
   console.group("🏢 CompanyApp Render");
 //   console.log("Context loading:", loading);
 // console.log("Context contractor:", contractor);
 // console.log("LocalStorage contractor:", localStorage.getItem("contractor"));
 
   console.groupEnd();
+
+useEffect(() => {
+  const checkGate = async () => {
+    if (loading || !contractor?.user_uid) return;
+
+    try {
+      const data = await apiGet(
+        `/api/contractor/contractor_gate_status?user_uid=${contractor.user_uid}`
+      );
+
+      setGate({
+        loading: false,
+        allowed: !!data?.allowed,
+        reason_code: data?.reason_code || "",
+        reason_message: data?.reason_message || "",
+      });
+    } catch (err) {
+      setGate({
+        loading: false,
+        allowed: false,
+        reason_code: "GATE_CHECK_FAILED",
+        reason_message: "Unable to verify contractor access.",
+      });
+    }
+  };
+
+  checkGate();
+}, [contractor, loading]);
+
+
+  /* =========================
+     GLOBAL DEBUG LOGS
+     ========================= */
+
 
   /* =========================
      AUTH GUARD
@@ -239,10 +294,16 @@ if (!contractor) {
   </div>
 </nav>
 
-      {/* MAIN CONTENT */}
-      <div className="dashboard-content container-fluid mt-4 flex-grow-1">
-        <Outlet context={{ email, refreshNotifications: fetchUnreadCount }} />
-      </div>
+<div className="dashboard-content container-fluid mt-4 flex-grow-1">
+  {shouldBlockMainContent ? (
+    <div className="contractor-access-notice">
+      <h4>Access Restricted</h4>
+      <p>{gate.reason_message}</p>
+    </div>
+  ) : (
+    <Outlet context={{ email, refreshNotifications: fetchUnreadCount }} />
+  )}
+</div>
 
       {/* FOOTER */}
       <footer className="dashboard-footer">

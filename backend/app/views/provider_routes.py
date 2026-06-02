@@ -181,3 +181,10 @@ def update_profile():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+    
+@provider_bp.route("provider/provider_gate_status", methods=["GET"])
+def contractor_gate_status():
+    user_uid = request.args.get("user_uid")
+    result, status = ProviderController.get_contractor_gate_status(user_uid)
+    return jsonify(result), status

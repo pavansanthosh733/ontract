@@ -146,3 +146,10 @@ def mark_read():
     data = request.get_json()
     result, status = ContractorController.mark_as_read(data)
     return jsonify(result), status
+
+
+@contractor_bp.route("/contractor_gate_status", methods=["GET"])
+def contractor_gate_status():
+    user_uid = request.args.get("user_uid")
+    result, status = ContractorController.get_contractor_gate_status(user_uid)
+    return jsonify(result), status

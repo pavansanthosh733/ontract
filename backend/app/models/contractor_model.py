@@ -620,3 +620,46 @@ class ContractorModel:
             db.session.rollback()
             print(f"❌ SESSION INSERT ERROR: {str(e)}")
             raise
+        
+        
+
+    @staticmethod
+    def get_contractor_gate_profile(user_uid):
+        sql = text("""
+            SELECT
+                u.user_uid,
+                u.email_id,
+                u.name,
+                u.contact_number,
+                u.alternate_contact_number,
+                u.mailing_address,
+                u.billing_address,
+                u.tin_number,
+                u.status,
+                u.active_status,
+                u.service_type,
+                u.created_at,
+                u.updated_at,
+                u.bumiputra_status,
+
+                b.company_bank_id,
+                b.company_id,
+                b.swift_code,
+                b.holder_name,
+                b.bank_name,
+                b.account_number,
+                b.bank_statement,
+                b.bank_statement_path,
+                b.created_at AS bank_created_at,
+                b.updated_at AS bank_updated_at
+
+            FROM users_t u
+            LEFT JOIN company_bank_details_t b
+                ON b.company_id = u.user_uid
+            WHERE u.user_uid = :user_uid
+              AND u.service_type = 1
+            LIMIT 1
+        """)
+
+        row = db.session.execute(sql, {"user_uid": user_uid}).fetchone()
+        return dict(row._mapping) if row else None

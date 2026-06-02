@@ -43,6 +43,7 @@ import ContractorPersonalDetails from "./components/company/ContractorPersonalDe
 import ContractorBankDetails from "./components/company/ContractorBankDetails";
 import CompanyInvoice from "./components/company/CompanyInvoice";
 import RateComparisonReport from "./components/RateComparisonReport";
+import ProviderDashboardHome from "./components/ProviderDashboardHome";
 
 function PublicCompanyProfileRoute() {
   const location = useLocation();
@@ -130,8 +131,9 @@ const isApk = params.get("source") === "apk";
               path="personal-details"
               element={<ProviderPersonalDetails user={user} />}
             />
+            <Route index element={<ProviderDashboardHome />} />
             <Route
-              path="/provider_home/providerbankdetails"
+              path="providerbankdetails"
               element={<ProviderBankDetails />}
             />
           </Route>
@@ -205,7 +207,7 @@ const isApk = params.get("source") === "apk";
                 <CompanyNotifications contractor={contractor} />
               }
             />
-            <Route path="companyworkorders" element={<CompanyWorkorders />} />
+            <Route path="companyworkorders " element={<CompanyWorkorders />} />
             <Route path="invoice" element={<CompanyInvoice />} />
             <Route
               path="updatecompanyprofile"
@@ -284,4 +286,4 @@ export default function App() {
       contractorLoading={contractorLoading}
     />
   );
-}
+}    

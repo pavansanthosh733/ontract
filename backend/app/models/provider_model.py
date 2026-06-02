@@ -662,4 +662,46 @@ class ProviderModel:
             db.session.rollback()
             logging.error(f"Token save error: {e}")
             return False, str(e)
+        
+        
+
+    @staticmethod
+    def get_contractor_gate_profile(user_uid):
+        sql = text("""
+            SELECT
+                u.user_uid,
+                u.email_id,
+                u.name,
+                u.contact_number,
+                u.alternate_contact_number,
+                u.mailing_address,
+                u.billing_address,
+                u.tin_number,
+                u.status,
+                u.active_status,
+                u.service_type,
+                u.created_at,
+                u.updated_at,
+                u.bumiputra_status,
+
+                b.provider_bank_id,
+                b.provider_id,
+                b.swift_code,
+                b.account_holder_name,
+                b.bank_name,
+                b.bank_account_number,
+                b.bank_statement,
+                b.created_at AS bank_created_at
+               
+
+            FROM users_t u
+            LEFT JOIN providers_bank_details_t b
+                ON b.provider_id = u.user_uid
+            WHERE u.user_uid = :user_uid
+              AND u.service_type = 0
+            LIMIT 1
+        """)
+
+        row = db.session.execute(sql, {"user_uid": user_uid}).fetchone()
+        return dict(row._mapping) if row else None
     

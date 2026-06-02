@@ -531,3 +531,122 @@ class ProviderController:
         }
 
         return response, 200
+    
+    
+
+    @staticmethod
+    def get_contractor_gate_status(user_uid):
+        if not user_uid:
+            return {
+                "success": False,
+                "allowed": False,
+                "reason_code": "MISSING_UID",
+                "reason_message": "user_uid is required."
+            }, 400
+
+        try:
+            profile = ProviderModel.get_contractor_gate_profile(user_uid)
+
+            if not profile:
+                return {
+                    "success": False,
+                    "allowed": False,
+                    "reason_code": "NOT_FOUND",
+                    "reason_message": "Contractor account not found."
+                }, 404
+
+            def is_true(value):
+                if isinstance(value, bool):
+                    return value
+                return str(value).strip().lower() in ("t", "true", "1", "yes", "y", "on")
+
+            status = str(profile.get("status", "")).strip().lower()
+            active_status = profile.get("active_status")
+
+            # 1) inactive/deactivated first
+            if not is_true(active_status):
+                return {
+                    "success": True,
+                    "allowed": False,
+                    "reason_code": "DEACTIVATED",
+                    "reason_message": "Your profile is deactivated. Please contact admin."
+                }, 200
+
+            # 2) pending / not approved
+            if status in ("pending", "registered", "incomplete"):
+                return {
+                    "success": True,
+                    "allowed": False,
+                    "reason_code": "PENDING_APPROVAL",
+                    "reason_message": "Your profile is pending admin approval. Please wait for approval."
+                }, 200
+
+            if status != "approved":
+                return {
+                    "success": True,
+                    "allowed": False,
+                    "reason_code": "NOT_APPROVED",
+                    "reason_message": "Your profile is not approved yet."
+                }, 200
+
+            # 3) profile completeness check
+            missing_profile_fields = []
+            profile_fields = [
+                "name",
+                "email_id",
+                "contact_number",
+                "mailing_address",
+                "billing_address",
+                "tin_number",
+            ]
+
+            for field in profile_fields:
+                if not profile.get(field) or str(profile.get(field)).strip() == "":
+                    missing_profile_fields.append(field)
+
+            if missing_profile_fields:
+                return {
+                    "success": True,
+                    "allowed": False,
+                    "reason_code": "PROFILE_INCOMPLETE",
+                    "reason_message": "Please complete your profile details before accessing the dashboard.",
+                    "missing_fields": missing_profile_fields
+                }, 200
+
+            # 4) bank details check
+            missing_bank_fields = []
+            bank_fields = [
+                "swift_code",
+                "holder_name",
+                "bank_name",
+                "account_number",
+            ]
+
+            for field in bank_fields:
+                if not profile.get(field) or str(profile.get(field)).strip() == "":
+                    missing_bank_fields.append(field)
+
+            if missing_bank_fields:
+                return {
+                    "success": True,
+                    "allowed": False,
+                    "reason_code": "BANK_DETAILS_MISSING",
+                    "reason_message": "Please fill bank details before accessing the dashboard.",
+                    "missing_fields": missing_bank_fields
+                }, 200
+
+            # 5) allowed
+            return {
+                "success": True,
+                "allowed": True,
+                "reason_code": "ALLOWED",
+                "reason_message": "Access granted."
+            }, 200
+
+        except Exception as e:
+            return {
+                "success": False,
+                "allowed": False,
+                "reason_code": "SERVER_ERROR",
+                "reason_message": f"Failed to check contractor status: {str(e)}"
+            }, 500
