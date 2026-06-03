@@ -617,9 +617,9 @@ class ProviderController:
             missing_bank_fields = []
             bank_fields = [
                 "swift_code",
-                "holder_name",
+                "account_holder_name",
                 "bank_name",
-                "account_number",
+                "bank_account_number",
             ]
 
             for field in bank_fields:
