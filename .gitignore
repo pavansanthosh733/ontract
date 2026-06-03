@@ -62,4 +62,4 @@ rontend/public/firebase-messaging-sw.js
 frontend/.env.local
 frontend/.env.*.local
 
- backend/.env
+#  backend/.env

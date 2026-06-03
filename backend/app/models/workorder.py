@@ -132,7 +132,7 @@ class WorkOrder(db.Model):
 
             wo = dict(row._mapping)
 
-            # ---------------------------
+            # ----------------------------
             # SEND MAIL ONLY IF AUTO
             # ---------------------------
             if wo.get("ticket_assignment_type") == "auto":
