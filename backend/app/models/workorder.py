@@ -2,7 +2,8 @@
 from .database import db
 from flask_bcrypt import Bcrypt
 from sqlalchemy import text, func, LargeBinary
-from datetime import datetime, timedelta,timezone
+from datetime import datetime, timedelta
+from decimal import Decimal
 from sqlalchemy.dialects.postgresql import JSON
 import json
 import base64
@@ -14,12 +15,9 @@ from time import time
 from urllib.parse import quote
 from sqlalchemy.dialects.postgresql import JSON, JSONB
 from flask import current_app
-import pytz
 from app.utils.workorder_certificate import generate_workorder_completion_certificate
 from app.utils.email_utils import send_workorder_closure_email
-
-
-IST = timezone(timedelta(hours=5, minutes=30))
+from app.utils.datetime_utils import format_datetime, now_local
 
 
 from .workorder_mail_model import (
@@ -43,23 +41,12 @@ def run_inside_app(func, app, *args, **kwargs):
 
 EMAIL_ASYNC = os.getenv("EMAIL_ASYNC", "true").lower() in ("1", "true", "yes")
 
-# === ADD THIS FUNCTION ===
 def now_ist():
-    return datetime.utcnow() + timedelta(hours=5, minutes=30)
+    return now_local()
+
 
 def to_ist_safe(value):
-    if value is None:
-        return None
-
-    # Already string → return as-is
-    if isinstance(value, str):
-        return value
-
-    # datetime → convert
-    if isinstance(value, datetime):
-        return value.astimezone(IST).strftime("%Y-%m-%d %H:%M:%S")
-
-    return value
+    return format_datetime(value)
 
 
 
@@ -1082,18 +1069,10 @@ class WorkOrder(db.Model):
                 r = dict(row)
     
                 if r.get("assigned_at"):
-                    r["assigned_at"] = (
-                        r["assigned_at"]
-                        .astimezone(IST)
-                        .strftime("%Y-%m-%d %H:%M:%S")
-                    )
-    
+                    r["assigned_at"] = format_datetime(r["assigned_at"])
+
                 if r.get("expiry_time"):
-                    r["expiry_time"] = (
-                        r["expiry_time"]
-                        .astimezone(IST)
-                        .strftime("%Y-%m-%d %H:%M:%S")
-                    )
+                    r["expiry_time"] = format_datetime(r["expiry_time"])
     
                 rows.append(r)
     
@@ -1127,13 +1106,8 @@ class WorkOrder(db.Model):
             for r in result:
                 r = dict(r)
 
-                # 🔥 FIX: Convert requested_time_close to IST
                 if r.get("requested_time_close"):
-                    r["requested_time_close"] = (
-                        r["requested_time_close"]
-                        .astimezone(IST)
-                        .strftime("%Y-%m-%d %H:%M:%S")
-                    )
+                    r["requested_time_close"] = format_datetime(r["requested_time_close"])
 
                 rows.append(r)
 
@@ -2187,11 +2161,7 @@ class WorkOrder(db.Model):
             row = dict(result)
 
             if row.get("requested_time_close"):
-                row["requested_time_close"] = (
-                    row["requested_time_close"]
-                    .astimezone(IST)
-                    .strftime("%Y-%m-%d %H:%M:%S")
-                )
+                row["requested_time_close"] = format_datetime(row["requested_time_close"])
 
             return row
 

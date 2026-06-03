@@ -1,5 +1,5 @@
 import os, json, base64, traceback, smtplib, logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
@@ -19,12 +19,12 @@ SMTP_USE_TLS = os.getenv(
     "true"
 ).lower() == "true"
 
-# ✅ Define IST timezone (UTC + 5:30)
-IST = timezone(timedelta(hours=5, minutes=30))
+from app.utils.datetime_utils import now_local
+
 
 def now_ist():
-    """Return current IST time."""
-    return datetime.now(IST)
+    """Return current app-local time based on .env."""
+    return now_local()
 
 # ----------------------------------------------------------------------
 # 🧩 Image Helpers

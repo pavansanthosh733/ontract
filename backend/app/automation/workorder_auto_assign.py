@@ -1,6 +1,6 @@
 import os
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from dotenv import load_dotenv
 from apscheduler.schedulers.background import BackgroundScheduler
 from sqlalchemy import text
@@ -10,13 +10,11 @@ from app.controllers.workorder_mail_controller import (
     handle_send_admin_no_acceptance_mail
 )
 
-# -------------------------------
-# IST TIMEZONE CONFIG
-# -------------------------------
-IST = timezone(timedelta(hours=5, minutes=30))
+from app.utils.datetime_utils import now_local
+
 
 def now_ist():
-    return datetime.now(IST)
+    return now_local()
 
 scheduler = None
 
