@@ -932,7 +932,6 @@ class WorkOrder(db.Model):
             return None, str(e)
     
 
-
     @classmethod
     def get_contractors_by_region_category_name(cls, region_name, category_name):
         try:
@@ -944,24 +943,42 @@ class WorkOrder(db.Model):
                     b.service_rate AS rate,
                     c.region_name,
                     d.category_name,
-                    b.region AS service_locations
+                    b.region AS service_locations,
+    
+                    cd.company_id,
+                    cd.company_name,
+                    cd.brn_number,
+                    cd.logo_path,
+                    cd.certificate_path,
+                    cd.updated_at
                 FROM users_t a
-                JOIN services_t b ON a.user_uid = b.user_uid
-                JOIN region_master_t c ON b.region = c.region_name
-                JOIN category_master_t d ON d.category_name = b.category_name
+                INNER JOIN services_t b 
+                    ON a.user_uid = b.user_uid
+                INNER JOIN region_master_t c 
+                    ON b.region = c.region_name
+                INNER JOIN category_master_t d 
+                    ON d.category_name = b.category_name
+                LEFT JOIN company_details_t cd
+                    ON cd.user_uid = a.user_uid
                 WHERE c.region_name = :region_name
-                AND d.category_name = :category_name
+                  AND d.category_name = :category_name
             """)
-
-            rows = db.session.execute(sql, {
-                "region_name": region_name,
-                "category_name": category_name
-            }).mappings().all()
-
-            return [dict(r) for r in rows], None
-
+    
+            rows = db.session.execute(
+                sql,
+                {
+                    "region_name": region_name,
+                    "category_name": category_name
+                }
+            ).mappings().all()
+    
+            return [dict(row) for row in rows], None
+    
         except Exception as e:
-            return None, str(e)
+            return None, str(e)   
+        
+        
+        
     @classmethod
     def close_workorder(cls, workorder_code, images):
         try:

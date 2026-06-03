@@ -162,7 +162,7 @@ const WorkOrderDetails = () => {
 
           <div className="contractor-section">
             <div className="wo-header-row">
-              <div>Contractors</div>
+              <div>Providers</div>
             </div>
 
             <div className="contractor-filters">
@@ -171,7 +171,7 @@ const WorkOrderDetails = () => {
                 name="name"
                 value={filters.name}
                 onChange={handleFilterChange}
-                placeholder="filter bu contractor name"
+                placeholder="filter by provider name"
                 className="contractor-filter-input"
               />
 
@@ -190,7 +190,7 @@ const WorkOrderDetails = () => {
               <table className="contractor-table">
                 <thead>
                   <tr>
-                    <th>Contractor Name</th>
+                    <th>Provider Name</th>
                   
                     <th>Price</th>
                     <th>Action</th>
@@ -200,7 +200,7 @@ const WorkOrderDetails = () => {
                   {filteredContractors.length > 0 ? (
                     filteredContractors.map((c) => (
                       <tr key={c.provider_id}>
-                        <td>{c.full_name}</td>
+                        <td>{c.company_name ||c.full_name}</td>
                        
                         <td>
                           ₹ {Number.parseFloat(c.rate || 0).toFixed(2)}
