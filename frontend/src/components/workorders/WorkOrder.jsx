@@ -1,99 +1,108 @@
-// ==============================================
-// src/pages/admin/WorkOrders.jsx
-// FULL UPDATED CODE
-// ==============================================
-
 import React, { useCallback, useEffect, useState } from "react";
 import "./css/workorders.css";
 import { apiGet, apiPost, BASE_URL } from "../../api";
-
-
+ 
+ 
 const WorkOrders = () => {
   const [workorders, setWorkorders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
+ 
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [showResults, setShowResults] = useState(false);
-
+ 
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
-
+ 
   const [details, setDetails] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-
+ 
   const [previewMedia, setPreviewMedia] = useState(null);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [selectedWO, setSelectedWO] = useState(null);
   const [withdrawReason, setWithdrawReason] = useState("");
-  
-const [customReason, setCustomReason] = useState("");
-const withdrawReasons = [
-  "Wrong Assignment",
-  "Contractor Not Available",
-  "Duplicate Work Order",
-  "Insufficient Resources",
-  "Customer Request",
-  "Location Too Far",
-  "Other"
-];
-
-
-
-
+ 
+  const [customReason, setCustomReason] = useState("");
+ 
+  // -----------------------------------
+  // PAGINATION STATE
+  // -----------------------------------
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+ 
+  const withdrawReasons = [
+    "Wrong Assignment",
+    "Contractor Not Available",
+    "Duplicate Work Order",
+    "Insufficient Resources",
+    "Customer Request",
+    "Location Too Far",
+    "Other"
+  ];
+ 
+  // -----------------------------------
+  // PAGINATION DERIVED DATA
+  // -----------------------------------
+  const totalPages = Math.ceil(workorders.length / itemsPerPage);
+  const paginatedWorkorders = workorders.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+ 
   // -----------------------------------
   // FETCH FILTERED WORKORDERS
   // -----------------------------------
- const fetchFilteredWorkOrders = useCallback(async () => {
-  if (!fromDate || !toDate) {
-    setModalMessage("⚠️ Please select both From Date and To Date.");
-    setShowModal(true);
-    return;
-  }
-
-  try {
-    setLoading(true);
-    setError(null);
-
-    const params = new URLSearchParams();
-    params.append("from", fromDate);
-    params.append("to", toDate);
-
-    if (statusFilter !== "All") {
-      params.append("status", statusFilter);
-    }
-
-    const data = await apiGet(`/api/workorders/filter?${params.toString()}`);
-
-    if (!Array.isArray(data) || data.length === 0) {
-      setModalMessage("📭 No workorders found for the selected filters.");
+  const fetchFilteredWorkOrders = useCallback(async () => {
+    if (!fromDate || !toDate) {
+      setModalMessage("⚠️ Please select both From Date and To Date.");
       setShowModal(true);
-      setShowResults(false);
-      setWorkorders([]);
-    } else {
-      setWorkorders(data);
-      setShowResults(true);
+      return;
     }
-  } catch (err) {
-    setError(err.message || String(err));
-  } finally {
-    setLoading(false);
-  }
-}, [fromDate, toDate, statusFilter]);
-
+ 
+    try {
+      setLoading(true);
+      setError(null);
+ 
+      const params = new URLSearchParams();
+      params.append("from", fromDate);
+      params.append("to", toDate);
+ 
+      if (statusFilter !== "All") {
+        params.append("status", statusFilter);
+      }
+ 
+      const data = await apiGet(`/api/workorders/filter?${params.toString()}`);
+ 
+      if (!Array.isArray(data) || data.length === 0) {
+        setModalMessage("📭 No workorders found for the selected filters.");
+        setShowModal(true);
+        setShowResults(false);
+        setWorkorders([]);
+      } else {
+        setWorkorders(data);
+        setCurrentPage(1); // reset to page 1 on new fetch
+        setShowResults(true);
+      }
+    } catch (err) {
+      setError(err.message || String(err));
+    } finally {
+      setLoading(false);
+    }
+  }, [fromDate, toDate, statusFilter]);
+ 
   useEffect(() => {
-  if (!showResults || !fromDate || !toDate) return;
-
-  const intervalId = setInterval(() => {
-    fetchFilteredWorkOrders();
-  }, 60000); // refresh every 60 seconds
-
-  return () => clearInterval(intervalId);
-}, [showResults, fromDate, toDate, statusFilter, fetchFilteredWorkOrders]);
-
+    if (!showResults || !fromDate || !toDate) return;
+ 
+    const intervalId = setInterval(() => {
+      fetchFilteredWorkOrders();
+    }, 60000); // refresh every 60 seconds
+ 
+    return () => clearInterval(intervalId);
+  }, [showResults, fromDate, toDate, statusFilter, fetchFilteredWorkOrders]);
+ 
   // -----------------------------------
   // RESET
   // -----------------------------------
@@ -103,8 +112,9 @@ const withdrawReasons = [
     setStatusFilter("All");
     setWorkorders([]);
     setShowResults(false);
+    setCurrentPage(1); // reset page on filter reset
   };
-
+ 
   // -----------------------------------
   // STATUS CLASS
   // -----------------------------------
@@ -112,147 +122,138 @@ const withdrawReasons = [
     const s = (status || "UNKNOWN").toString();
     return `status-${s.toLowerCase().replace(/\s+/g, "-")}`;
   };
-
-
-
-
+ 
   const parseDateSafe = (value) => {
-  if (!value) return null;
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? null : d;
-};
-
-const formatSlaDuration = (requestedTimeClose) => {
-  const requested = parseDateSafe(requestedTimeClose);
-
-  if (!requested) {
-    return { text: "N/A", breached: false };
-  }
-
-  // current system/live time
-  const now = new Date();
-
-  // SLA = requested close time - current time
-  const diffMs = requested.getTime() - now.getTime();
-
-  const breached = diffMs <= 0;
-
-  let totalMinutes = Math.floor(Math.abs(diffMs) / 60000);
-
-  const days = Math.floor(totalMinutes / 1440);
-  totalMinutes %= 1440;
-
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-
-  const parts = [];
-
-  if (days > 0) {
-    parts.push(`${days} day${days !== 1 ? "s" : ""}`);
-  }
-
-  if (days > 0 || hours > 0) {
-    parts.push(`${hours} hr${hours !== 1 ? "s" : ""}`);
-  }
-
-  parts.push(`${minutes} min${minutes !== 1 ? "s" : ""}`);
-
-  return {
-    text: `${breached ? "-" : ""}${parts.join(" ")}`,
-    breached,
+    if (!value) return null;
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d;
   };
-};
+ 
+  const formatSlaDuration = (requestedTimeClose) => {
+    const requested = parseDateSafe(requestedTimeClose);
+ 
+    if (!requested) {
+      return { text: "N/A", breached: false };
+    }
+ 
+    const now = new Date();
+    const diffMs = requested.getTime() - now.getTime();
+    const breached = diffMs <= 0;
+ 
+    let totalMinutes = Math.floor(Math.abs(diffMs) / 60000);
+ 
+    const days = Math.floor(totalMinutes / 1440);
+    totalMinutes %= 1440;
+ 
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+ 
+    const parts = [];
+ 
+    if (days > 0) {
+      parts.push(`${days} day${days !== 1 ? "s" : ""}`);
+    }
+ 
+    if (days > 0 || hours > 0) {
+      parts.push(`${hours} hr${hours !== 1 ? "s" : ""}`);
+    }
+ 
+    parts.push(`${minutes} min${minutes !== 1 ? "s" : ""}`);
+ 
+    return {
+      text: `${breached ? "-" : ""}${parts.join(" ")}`,
+      breached,
+    };
+  };
+ 
   // -----------------------------------
   // FORMAT DATE
   // -----------------------------------
   const formatDate = (val) => {
-  if (!val) return "N/A";
-
-  try {
-    const d = new Date(val);
-
-    if (isNaN(d)) return val;
-
-    return d.toLocaleString("en-GB", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: true,
-    });
-
-  } catch {
-    return val;
-  }
-};
-
+    if (!val) return "N/A";
+ 
+    try {
+      const d = new Date(val);
+ 
+      if (isNaN(d)) return val;
+ 
+      return d.toLocaleString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      });
+    } catch {
+      return val;
+    }
+  };
+ 
   // -----------------------------------
   // FETCH SINGLE WORKORDER DETAILS
   // -----------------------------------
   const handleWorkorderClick = async (wo) => {
     try {
       setDetailsLoading(true);
-
+ 
       const res = await apiPost(
         "/api/workorders/provider/workorders/assigned",
         {
           workorder_id: wo.workorder,
         }
       );
-
+ 
       setDetails(res?.[0] || null);
       setShowDetailsModal(true);
     } catch (err) {
       console.error("Failed to fetch details:", err);
-
+ 
       setModalMessage("❌ Failed to fetch workorder details.");
       setShowModal(true);
     } finally {
       setDetailsLoading(false);
     }
   };
+ 
   const openWithdrawPopup = (wo) => {
-  console.log("Withdraw clicked", wo);
-
-  setSelectedWO(wo);
-  setWithdrawReason("");
-  setShowWithdrawModal(true);
-};
-
-const submitWithdraw = async () => {
-  const finalReason =
-    withdrawReason === "Other"
-      ? customReason
-      : withdrawReason;
-
-  if (!finalReason.trim()) {
-    alert("Please select a reason");
-    return;
-  }
-
-  try {
-    await apiPost(
-      `/api/workorders/withdraw/${details.workorder}`,
-      {
-        reason: finalReason
-      }
-    );
-
-    alert(
-      "Workorder withdrawn successfully"
-    );
-
-    setShowDetailsModal(false);
-
-    fetchFilteredWorkOrders();
-
-  } catch (err) {
-    alert(err.message);
-  }
-};
-
+    console.log("Withdraw clicked", wo);
+ 
+    setSelectedWO(wo);
+    setWithdrawReason("");
+    setShowWithdrawModal(true);
+  };
+ 
+  const submitWithdraw = async () => {
+    const finalReason =
+      withdrawReason === "Other"
+        ? customReason
+        : withdrawReason;
+ 
+    if (!finalReason.trim()) {
+      alert("Please select a reason");
+      return;
+    }
+ 
+    try {
+      await apiPost(
+        `/api/workorders/withdraw/${details.workorder}`,
+        {
+          reason: finalReason
+        }
+      );
+ 
+      alert("Workorder withdrawn successfully");
+ 
+      setShowDetailsModal(false);
+ 
+      fetchFilteredWorkOrders();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+ 
   return (
     <div className="workorders-page">
       {/* ========================================= */}
@@ -262,10 +263,10 @@ const submitWithdraw = async () => {
         <div className="dashboard-header">
           WORK ORDERS DASHBOARD
         </div>
-
+ 
         <div className="dashboard-content">
           <div className="dashboard-filters">
-
+ 
             <div>
               <label>From Date:</label>
               <input
@@ -273,12 +274,10 @@ const submitWithdraw = async () => {
                 value={fromDate}
                 min="2000-01-01"
                 max="2099-12-31"
-                onChange={(e) =>
-                  setFromDate(e.target.value)
-                }
+                onChange={(e) => setFromDate(e.target.value)}
               />
             </div>
-
+ 
             <div>
               <label>To Date:</label>
               <input
@@ -286,19 +285,15 @@ const submitWithdraw = async () => {
                 value={toDate}
                 min="2000-01-01"
                 max="2099-12-31"
-                onChange={(e) =>
-                  setToDate(e.target.value)
-                }
+                onChange={(e) => setToDate(e.target.value)}
               />
             </div>
-
+ 
             <div>
               <label>Status:</label>
               <select
                 value={statusFilter}
-                onChange={(e) =>
-                  setStatusFilter(e.target.value)
-                }
+                onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="All">All</option>
                 <option value="OPEN">OPEN</option>
@@ -307,7 +302,7 @@ const submitWithdraw = async () => {
                 <option value="CLOSED">CLOSED</option>
               </select>
             </div>
-
+ 
             <div className="dashboard-btn-group">
               <button
                 className="btn btn-green"
@@ -315,7 +310,7 @@ const submitWithdraw = async () => {
               >
                 🔍 Submit
               </button>
-
+ 
               <button
                 className="btn btn-blue"
                 onClick={resetFilters}
@@ -324,19 +319,19 @@ const submitWithdraw = async () => {
               </button>
             </div>
           </div>
-
+ 
           {loading && (
             <div className="info-message">
               Loading workorders...
             </div>
           )}
-
+ 
           {error && (
             <div className="error-message">
               Error: {error}
             </div>
           )}
-
+ 
           {/* POPUP */}
           {showModal && (
             <div className="modal-overlay">
@@ -344,9 +339,7 @@ const submitWithdraw = async () => {
                 <p>{modalMessage}</p>
                 <button
                   className="modal-btn"
-                  onClick={() =>
-                    setShowModal(false)
-                  }
+                  onClick={() => setShowModal(false)}
                 >
                   OK
                 </button>
@@ -355,14 +348,14 @@ const submitWithdraw = async () => {
           )}
         </div>
       </div>
-
+ 
       {/* ========================================= */}
       {/* WORKORDER RESULTS TABLE */}
       {/* ========================================= */}
       {showResults && (
         <div className="results-main clean-results">
           <div className="results-content">
-
+ 
             {workorders.length > 0 ? (
               <div className="table-wrapper">
                 <table className="workorders-table">
@@ -373,91 +366,102 @@ const submitWithdraw = async () => {
                       <th>Region</th>
                       <th>Status</th>
                       <th>Requested Time</th>
-                    
                       <th>Created At</th>
                       <th>SLA (Hours)</th>
-                        <th>Assignment Type</th>
+                      <th>Assignment Type</th>
                       <th>Contractor_Name</th>
-                      
                     </tr>
                   </thead>
-
+ 
                   <tbody>
-{workorders.map((wo) => {
-  const status = wo.status || "UNKNOWN";
-   const isClosed =
-    (status || "").toString().toUpperCase() === "CLOSED";
-
-  // =====================================
-  // SLA CALCULATION
-  // =====================================
-const { text: slaText, breached: isSlaBreached } =
-  formatSlaDuration(wo.requested_time_close);
-
-  return (
-
-
-<tr
-  key={wo.id}
-  className={`
-    ${statusToClass(status)}
-    ${!isClosed && isSlaBreached ? "sla-breach-row" : ""}
-  `}
->
+                    {paginatedWorkorders.map((wo) => {
+                      const status = wo.status || "UNKNOWN";
+                      const isClosed =
+                        (status || "").toString().toUpperCase() === "CLOSED";
+ 
+                      const { text: slaText, breached: isSlaBreached } =
+                        formatSlaDuration(wo.requested_time_close);
+ 
+                      return (
+                        <tr
+                          key={wo.id}
+                          className={`
+                            ${statusToClass(status)}
+                            ${!isClosed && isSlaBreached ? "sla-breach-row" : ""}
+                          `}
+                        >
                           <td
                             className="workorder-link"
-                            onClick={() =>
-                              handleWorkorderClick(wo)
-                            }
+                            onClick={() => handleWorkorderClick(wo)}
                           >
                             {wo.workorder}
                           </td>
-
+ 
                           <td>
-                            {wo.category_name ||
-                              wo.category ||
-                              "—"}
+                            {wo.category_name || wo.category || "—"}
                           </td>
-
+ 
                           <td>
-                            {wo.region_name ||
-                              wo.region ||
-                              "—"}
+                            {wo.region_name || wo.region || "—"}
                           </td>
-
-                          <td
-                            className={`status ${status.toLowerCase()}`}
-                          >
+ 
+                          <td className={`status ${status.toLowerCase()}`}>
                             {status}
                           </td>
-
+ 
                           <td>
-                            {formatDate(
-                              wo.requested_time_close
-                            )}
+                            {formatDate(wo.requested_time_close)}
                           </td>
-
-                         
-
+ 
                           <td>
-                            {formatDate(
-                              wo.created_t
-                            )}
+                            {formatDate(wo.created_t)}
                           </td>
-
+ 
+                          <td>{slaText}</td>
+ 
                           <td>
-  {slaText}
-</td>
-                           <td>
-                            {wo.ticket_assignment_type|| "N/A"}
+                            {wo.ticket_assignment_type || "N/A"}
                           </td>
+ 
                           <td>{wo.contractor_name || "Not Assigned"}</td>
-
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
+ 
+                {/* ========================================= */}
+                {/* PAGINATION */}
+                {/* ========================================= */}
+                {totalPages > 1 && (
+                  <div className="d-flex justify-content-center mt-3">
+                    <ul className="pagination">
+                      {Array.from(
+                        { length: totalPages },
+                        (_, index) => {
+                          const pageNumber = index + 1;
+ 
+                          return (
+                            <li
+                              key={pageNumber}
+                              className={`page-item ${
+                                currentPage === pageNumber ? "active" : ""
+                              }`}
+                            >
+                              <button
+                                className="page-link"
+                                onClick={() => setCurrentPage(pageNumber)}
+                              >
+                                {pageNumber}
+                              </button>
+                            </li>
+                          );
+                        }
+                      )}
+                    </ul>
+                  </div>
+                )}
+ 
               </div>
             ) : (
               <div className="info-message">
@@ -467,14 +471,14 @@ const { text: slaText, breached: isSlaBreached } =
           </div>
         </div>
       )}
-
+ 
       {/* ========================================= */}
       {/* WORKORDER DETAILS MODAL */}
       {/* ========================================= */}
       {showDetailsModal && (
         <div className="modal-overlay">
           <div className="modal-content large-modal">
-
+ 
             <span
               className="modal-close-icon"
               onClick={() => {
@@ -484,202 +488,124 @@ const { text: slaText, breached: isSlaBreached } =
             >
               ×
             </span>
-
+ 
             <h2>Workorder Details</h2>
-
+ 
             {detailsLoading ? (
-              <p className="text-center">
-                Loading...
-              </p>
+              <p className="text-center">Loading...</p>
             ) : details ? (
               <>
                 <div className="kv-grid">
-
+ 
                   <div className="kv-row">
-                    <span className="kv-label">
-                      Work Order
-                    </span>
-                    <span className="kv-value">
-                      {details.workorder}
-                    </span>
+                    <span className="kv-label">Work Order</span>
+                    <span className="kv-value">{details.workorder}</span>
                   </div>
-
-                 
-                  
-
+ 
                   <div className="kv-row">
-                    <span className="kv-label">
-                      Region
-                    </span>
-                    <span className="kv-value">
-                      {details.region_name}
-                    </span>
+                    <span className="kv-label">Region</span>
+                    <span className="kv-value">{details.region_name}</span>
                   </div>
-
+ 
                   <div className="kv-row">
-                    <span className="kv-label">
-                      State
-                    </span>
-                    <span className="kv-value">
-                      {details.state_name}
-                    </span>
+                    <span className="kv-label">State</span>
+                    <span className="kv-value">{details.state_name}</span>
                   </div>
-
+ 
                   <div className="kv-row">
-                    <span className="kv-label">
-                      City
-                    </span>
-                    <span className="kv-value">
-                      {details.city_name}
-                    </span>
+                    <span className="kv-label">City</span>
+                    <span className="kv-value">{details.city_name}</span>
                   </div>
-
+ 
                   <div className="kv-row">
-                    <span className="kv-label">
-                      Client
-                    </span>
-                    <span className="kv-value">
-                      {details.client}
-                    </span>
+                    <span className="kv-label">Client</span>
+                    <span className="kv-value">{details.client}</span>
                   </div>
-
+ 
                   <div className="kv-row">
-                    <span className="kv-label">
-                      Work Category
-                    </span>
-                    <span className="kv-value">
-                      {details.category_name}
-                    </span>
+                    <span className="kv-label">Work Category</span>
+                    <span className="kv-value">{details.category_name}</span>
                   </div>
-
+ 
                   <div className="kv-row">
-                    <span className="kv-label">
-                      Work Item
-                    </span>
-                    <span className="kv-value">
-                      {details.item_name}
-                    </span>
+                    <span className="kv-label">Work Item</span>
+                    <span className="kv-value">{details.item_name}</span>
                   </div>
-
+ 
                   <div className="kv-row">
-                    <span className="kv-label">
-                      Work Type
-                    </span>
-                    <span className="kv-value">
-                      {details.type_name}
-                    </span>
+                    <span className="kv-label">Work Type</span>
+                    <span className="kv-value">{details.type_name}</span>
                   </div>
-
+ 
                   <div className="kv-row">
-                    <span className="kv-label">
-                      Work Description
-                    </span>
-                    <span className="kv-value">
-                      {details.description_name}
-                    </span>
+                    <span className="kv-label">Work Description</span>
+                    <span className="kv-value">{details.description_name}</span>
                   </div>
-
+ 
                   <div className="kv-row">
-                    <span className="kv-label">
-                      Remarks
-                    </span>
-                    <span className="kv-value">
-                      {details.remarks}
-                    </span>
+                    <span className="kv-label">Remarks</span>
+                    <span className="kv-value">{details.remarks}</span>
                   </div>
-
+ 
                   {details.detailed_description && (
                     <div className="kv-row">
-                      <span className="kv-label">
-                        Detailed Description
-                      </span>
+                      <span className="kv-label">Detailed Description</span>
+                      <span className="kv-value">{details.detailed_description}</span>
+                    </div>
+                  )}
+ 
+                  <div className="kv-row">
+                    <span className="kv-label">Requested Close</span>
+                    <span className="kv-value">
+                      {formatDate(details.requested_time_close)}
+                    </span>
+                  </div>
+ 
+                  <div className="kv-row">
+                    <span className="kv-label">Withdraw Reason</span>
+                    <span className="kv-value">
+                      <select
+                        value={withdrawReason}
+                        onChange={(e) => setWithdrawReason(e.target.value)}
+                        style={{ width: "100%", padding: "8px" }}
+                      >
+                        <option value="">Select Reason</option>
+                        {withdrawReasons.map((reason) => (
+                          <option key={reason} value={reason}>
+                            {reason}
+                          </option>
+                        ))}
+                      </select>
+                    </span>
+                  </div>
+ 
+                  {withdrawReason === "Other" && (
+                    <div className="kv-row">
+                      <span className="kv-label">Remarks</span>
                       <span className="kv-value">
-                        {
-                          details.detailed_description
-                        }
+                        <textarea
+                          rows="3"
+                          placeholder="Enter reason"
+                          value={customReason}
+                          onChange={(e) => setCustomReason(e.target.value)}
+                          style={{ width: "100%", padding: "8px" }}
+                        />
                       </span>
                     </div>
                   )}
-
+ 
                   <div className="kv-row">
-                    <span className="kv-label">
-                      Requested Close
-                    </span>
+                    <span className="kv-label"></span>
                     <span className="kv-value">
-                      {formatDate(
-                        details.requested_time_close
-                      )}
+                      <button
+                        className="btn btn-danger"
+                        onClick={submitWithdraw}
+                      >
+                        Withdraw Work Order
+                      </button>
                     </span>
                   </div>
-
-                  
-    <div className="kv-row">
-  <span className="kv-label">
-    Withdraw Reason
-  </span>
-
-  <span className="kv-value">
-    <select
-      value={withdrawReason}
-      onChange={(e) =>
-        setWithdrawReason(e.target.value)
-      }
-      style={{
-        width: "100%",
-        padding: "8px"
-      }}
-    >
-      <option value="">
-        Select Reason
-      </option>
-
-      {withdrawReasons.map((reason) => (
-        <option
-          key={reason}
-          value={reason}
-        >
-          {reason}
-        </option>
-      ))}
-    </select>
-  </span>
-</div>
-
-{withdrawReason === "Other" && (
-  <div className="kv-row">
-    <span className="kv-label">
-      Remarks
-    </span>
-
-    <span className="kv-value">
-      <textarea
-        rows="3"
-        placeholder="Enter reason"
-        value={customReason}
-        onChange={(e) =>
-          setCustomReason(e.target.value)
-        }
-        style={{
-          width: "100%",
-          padding: "8px"
-        }}
-      />
-    </span>
-  </div>
-)}
-
-<div className="kv-row">
-  <span className="kv-label"></span>
-
-  <span className="kv-value">
-    <button
-      className="btn btn-danger"
-      onClick={submitWithdraw}
-    >
-      Withdraw Work Order
-    </button>
-  </span>
-</div>
+ 
                 </div>
               </>
             ) : (
@@ -688,9 +614,9 @@ const { text: slaText, breached: isSlaBreached } =
           </div>
         </div>
       )}
-  
+ 
     </div>
   );
 };
-
+ 
 export default WorkOrders;

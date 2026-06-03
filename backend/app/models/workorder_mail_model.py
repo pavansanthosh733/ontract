@@ -698,13 +698,7 @@ def is_workorder_already_responded(workorder_id, contractor_id):
         )
         return False
     
-def build_withdraw_notification_html(workorder,reason,withdrawn_by):
-    return render_template(
-        "withdraw_notification.html",
-        workorder=workorder,
-        reason=reason,
-        withdrawn_by=withdrawn_by
-    )
+
 def get_accepted_contractor(workorder):
 
     try:
@@ -739,3 +733,18 @@ def get_accepted_contractor(workorder):
         )
 
         return None
+    
+def build_withdraw_notification_html_admin(workorder, reason, withdrawn_by):
+    return render_template(
+        "withdraw_notification_admin.html",
+        workorder=workorder,
+        reason=reason,
+        withdrawn_by=withdrawn_by
+    )
+ 
+def build_withdraw_notification_html_contractor(workorder, reason):
+    return render_template(
+        "withdraw_notification_contractor.html",
+        workorder=workorder,
+        reason=reason
+    )

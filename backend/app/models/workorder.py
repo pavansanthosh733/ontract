@@ -2496,6 +2496,9 @@ class WorkOrder(db.Model):
 
         try:
 
+            # -----------------------------------------
+            # STEP 1: Update workorder_t status
+            # -----------------------------------------
             sql = text("""
                 UPDATE workorder_t
                 SET
@@ -2519,14 +2522,17 @@ class WorkOrder(db.Model):
                 db.session.rollback()
                 return False, "Workorder not found"
 
-            # Optional:
-            # expire existing assignments
-            db.session.execute(
+            # -----------------------------------------
+            # STEP 2: Update workorder_assignment_t
+            # Use UPPER() to handle mixed-case values
+            # e.g. 'Accepted', 'ACCEPTED', 'accepted'
+            # -----------------------------------------
+            result = db.session.execute(
                 text("""
                     UPDATE workorder_assignment_t
                     SET assignment_status = 'WITHDRAW'
                     WHERE "WORKORDER_ID" = :workorder
-                    AND assignment_status IN (
+                    AND UPPER(assignment_status) IN (
                         'PENDING',
                         'ACCEPTED'
                     )
@@ -2536,6 +2542,14 @@ class WorkOrder(db.Model):
                 }
             )
 
+            logging.info(
+                f"Assignment rows updated to WITHDRAW: "
+                f"{result.rowcount}"
+            )
+
+            # -----------------------------------------
+            # STEP 3: Commit both updates together
+            # -----------------------------------------
             db.session.commit()
 
             logging.info(
@@ -2552,7 +2566,6 @@ class WorkOrder(db.Model):
             logging.exception(
                 "Withdraw Workorder Error"
             )
-
 
             raise
         

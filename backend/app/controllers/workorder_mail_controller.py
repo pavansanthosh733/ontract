@@ -6,6 +6,7 @@ from app.models.database import db
 from app.controllers.purchase_order_controller import (
     create_purchase_order
 )
+# AFTER
 from app.models.workorder_mail_model import (
     get_contractor_from_db,
     get_workorder_from_db_auto,
@@ -15,7 +16,6 @@ from app.models.workorder_mail_model import (
     get_expiry_minutes_from_db,
     build_assignment_email_html,
     build_assignment_email_html_manual,
-    build_withdraw_notification_html,
     send_email_with_attachments,
     send_email_with_attachments_auto,
     send_email_with_attachments_manual,
@@ -30,8 +30,6 @@ from app.models.workorder_mail_model import (
     get_expiry_minutes_from_region,
     build_assignment_email_html_manual_max,
     is_workorder_already_responded
-   
-    
 )
 
 
