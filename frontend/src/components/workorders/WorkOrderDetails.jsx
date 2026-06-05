@@ -49,11 +49,12 @@ const WorkOrderDetails = () => {
 
     return [...contractors]
       .filter((c) => {
-        const contractorName = (c.full_name || "").toLowerCase();
+       const searchableName = `${c.company_name || ""} ${c.full_name || ""}`.toLowerCase();
         // const serviceLocations = (c.service_locations || "").toLowerCase();
         const rateValue = parseFloat(c.rate ?? 0);
 
-        const nameOk = !nameFilter || contractorName.includes(nameFilter);
+        const nameOk =
+  !nameFilter || searchableName.includes(nameFilter);
         // const locationOk =
         //   !locationFilter || serviceLocations.includes(locationFilter);
         const priceOk =
