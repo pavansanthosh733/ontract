@@ -18,6 +18,7 @@ from flask import current_app
 from app.utils.workorder_certificate import generate_workorder_completion_certificate
 from app.utils.email_utils import send_workorder_closure_email
 from app.utils.datetime_utils import format_datetime, now_local
+from zoneinfo import ZoneInfo
 
 
 from .workorder_mail_model import (
@@ -47,6 +48,14 @@ def now_ist():
 
 def to_ist_safe(value):
     return format_datetime(value)
+
+# Check all times
+print("\n" + "=" * 80)
+print("SERVER LOCAL TIME  :", datetime.now())
+print("UTC TIME           :", datetime.utcnow())
+print("KUALA LUMPUR TIME  :", datetime.now(ZoneInfo("Asia/Kuala_Lumpur")))
+print("now_ist() VALUE    :", now_ist())
+print("=" * 80 + "\n")
 
 
 
@@ -91,6 +100,11 @@ class WorkOrder(db.Model):
     def create(cls, data):
         try:
             workorder_code = cls.generates_workorder_id()
+            created_time = now_ist()
+
+            print(f"[CREATE WO] Workorder: {workorder_code}")
+            print(f"[CREATE WO] created_t being inserted: {created_time}")
+            print(f"[CREATE WO] requested_time_close: {data.get('REQUESTED_TIME_CLOSING')}")
 
             sql = text("""
                 INSERT INTO workorder_t (workorder,created_t,status,category,item,type,description,region,
@@ -131,6 +145,12 @@ class WorkOrder(db.Model):
             db.session.commit()
 
             wo = dict(row._mapping)
+            
+            print("\n========== DB RETURN ==========")
+            print("WORKORDER :", wo.get("workorder"))
+            print("CREATED_T :", wo.get("created_t"))
+            print("STATUS    :", wo.get("status"))
+            print("================================\n")
 
             # ----------------------------
             # SEND MAIL ONLY IF AUTO
