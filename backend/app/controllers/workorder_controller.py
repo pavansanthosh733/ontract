@@ -11,6 +11,8 @@ import os
 import logging
 from app.utils.current_admin import get_admin
 from werkzeug.utils import secure_filename
+from app.models.provider_model import ProviderModel
+from app.utils.notification_service import send_notification_to_tokens
 from app.models.workorder_mail_model import (
     get_workorder_details,
     build_withdraw_notification_html_admin,      
@@ -748,7 +750,7 @@ def workorder_insert_admin_notification_close():
             saved_images.append(db_path)
             logging.info(f"✅ {file_type.upper()} saved: {save_path}")
 
-        workorder_data, admin_email, err =WorkOrder.workorder_insert_admin_notification_close(workorder,message,saved_images,provider_id)
+        workorder_data, admin_email, admin_id, err = (WorkOrder.workorder_insert_admin_notification_close(workorder,message,saved_images,provider_id))
         
         
         if err:
@@ -765,7 +767,65 @@ def workorder_insert_admin_notification_close():
                 )
             except Exception:
                 logging.exception("Failed to send workorder completion email to admin")
+                
+                
+        # =====================================================
+        # PUSH NOTIFICATION TO ADMIN
+        # =====================================================
         
+        try:
+        
+            if admin_id:
+        
+                tokens, token_error = (
+                    ProviderModel.get_active_token_user_id(
+                        admin_id
+                    )
+                )
+                
+                if token_error:
+                    logging.error(
+                        f"Token fetch error: {token_error}"
+                    )
+        
+                if tokens:
+        
+                    send_notification_to_tokens(
+        
+                        tokens,
+        
+                        "Workorder Completed",
+        
+                        f"Workorder #{workorder} has been completed and is awaiting your review"
+        
+                    )
+        
+                    logging.info(
+                        "✅ Admin push notification sent"
+                    )
+        
+                else:
+        
+                    logging.warning(
+                        f"⚠️ No active tokens found for admin "
+                        f"{admin_id}"
+                    )
+        
+            else:
+        
+                logging.warning(
+                    "⚠️ Admin ID not found"
+                )
+        
+        except Exception as notify_err:
+        
+            logging.error(
+        
+                f"❌ Admin push notification failed: "
+                f"{str(notify_err)}"
+        
+            )
+                
         
 
         return jsonify({
@@ -814,8 +874,8 @@ def admin_reopen_workorder():
         
         
         
-        contractor_email, email_err = WorkOrder.get_contractor_email_for_reopen(workorder)
-
+        contractor_id, contractor_email, email_err = (WorkOrder.get_contractor_details_for_reopen(workorder))
+        
         if contractor_email:
             try:
                 send_workorder_reopened_contractor_email(
@@ -827,7 +887,59 @@ def admin_reopen_workorder():
                 logging.exception("❌ Failed to send reopen email to contractor")
         else:
             logging.warning(f"Contractor email not found: {email_err}")
-
+            
+        # =====================================================
+        # PUSH NOTIFICATION TO CONTRACTOR
+        # =====================================================
+        
+        try:
+        
+            if contractor_id:
+        
+                tokens, token_error = (
+                    ProviderModel.get_active_token_user_id(
+                        contractor_id
+                    )
+                )
+        
+                if tokens:
+        
+                    send_notification_to_tokens(
+        
+                        tokens,
+        
+                        "Workorder Reopened",
+        
+                        f"Workorder #{workorder} has been reopened by Admin"
+        
+                    )
+        
+                    logging.info(
+                        "✅ Contractor push notification sent"
+                    )
+        
+                else:
+        
+                    logging.warning(
+                        f"⚠️ No active tokens found for contractor "
+                        f"{contractor_id}"
+                    )
+        
+            else:
+        
+                logging.warning(
+                    "⚠️ Contractor ID not found"
+                )
+        
+        except Exception as notify_err:
+        
+            logging.error(
+        
+                f"❌ Contractor push notification failed: "
+                f"{str(notify_err)}"
+        
+            )
+        
         
         
 
