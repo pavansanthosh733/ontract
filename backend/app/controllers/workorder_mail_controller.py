@@ -283,7 +283,6 @@ def handle_respond_workorder_api(data):
 
             return {
                 "success": False,
-
                 "message": "Missing required fields"
 
             }, 400
@@ -295,9 +294,7 @@ def handle_respond_workorder_api(data):
         if not wo:
 
             return {
-
                 "success": False,
-
                 "message": "Workorder not found"
 
             }, 404
@@ -309,12 +306,8 @@ def handle_respond_workorder_api(data):
 
         action = action.lower()
 
-        status = (
-
-            "ACCEPTED"
-
+        status = ("ACCEPTED"
             if action == "accept"
-
             else "REJECTED"
 
         )
@@ -323,35 +316,11 @@ def handle_respond_workorder_api(data):
         # UPDATE DB
         # =====================================================
 
-        update_workorder_status_in_db(
+        update_workorder_status_in_db(workorder,status)
 
-            workorder,
+        update_workorder_status_assignment(workorder,contractor_id,status)
 
-            status
-
-        )
-
-        update_workorder_status_assignment(
-
-            workorder,
-
-            contractor_id,
-
-            status
-
-        )
-
-        insert_workorder_lifecycle_log(
-
-            wo,
-
-            contractor_id,
-
-            contractor_name,
-
-            remark
-
-        )
+        insert_workorder_lifecycle_log(wo,contractor_id,contractor_name,remark)
 
         # =====================================================
         # CREATE PURCHASE ORDER
@@ -361,75 +330,26 @@ def handle_respond_workorder_api(data):
 
         if action == "accept":
 
-            po_result, po_error = create_purchase_order(
-
-                workorder_id=workorder,
-
-                contractor_id=contractor_id,
-
-                contractor_name=contractor_name
-
-            )
+            po_result, po_error = create_purchase_order(workorder_id=workorder,contractor_id=contractor_id,
+                                    contractor_name=contractor_name)
 
             if po_error:
 
-                logging.error(
-
-                    f"PO CREATION ERROR: {po_error}"
-
-                )
-
-                return {
-
-                    "success": False,
-
-                    "message": po_error
-
-                }, 500
+                logging.error(f"PO CREATION ERROR: {po_error}")
+                return {"success": False,"message": po_error}, 500
 
             po_number = po_result["po_number"]
-
-            logging.info(
-
-                f"PO GENERATED: {po_number}"
-
-            )
+            logging.info(f"PO GENERATED: {po_number}")
 
         # =====================================================
         # EMAIL TO ADMIN
         # =====================================================
 
-        admin_email = get_admin_email(
+        admin_email = get_admin_email(wo.created_by)
 
-            wo.created_by
+        html_admin, _ = build_admin_notification_html(wo,contractor_name,contractor_id,action,remark)
 
-        )
-
-        html_admin, _ = build_admin_notification_html(
-
-            wo,
-
-            contractor_name,
-
-            contractor_id,
-
-            action,
-
-            remark
-
-        )
-
-        send_email_with_attachments(
-
-            wo,
-
-            admin_email,
-
-            "Admin",
-
-            html_admin
-
-        )
+        send_email_with_attachments(wo,admin_email,"Admin",html_admin)
 
         # =====================================================
         # PUSH NOTIFICATION
@@ -437,97 +357,51 @@ def handle_respond_workorder_api(data):
 
         try:
 
-            logging.info(
+            logging.info("🔥 ENTERING ADMIN NOTIFICATION BLOCK")
 
-                "🔥 ENTERING ADMIN NOTIFICATION BLOCK"
+            from app.utils.notification_service import (send_notification_to_tokens)
 
-            )
-
-            from app.utils.notification_service import (
-                send_notification_to_tokens
-            )
-
-            from app.models.provider_model import (
-                ProviderModel
-            )
+            from app.models.provider_model import (ProviderModel)
 
             admin_id = wo.created_by
 
-            tokens, error = (
-
-                ProviderModel.get_active_token_user_id(
-
-                    admin_id
-
-                )
-
-            )
+            tokens, error = (ProviderModel.get_active_token_user_id(admin_id))
 
             if tokens:
 
-                send_notification_to_tokens(
-
-                    tokens,
-
-                    "Workorder Update",
-
+                send_notification_to_tokens(tokens,"Workorder Update",
                     f"{contractor_name} has "
                     f"{status.lower()} "
                     f"workorder #{workorder}"
-
                 )
-
-                logging.info(
-
-                    "✅ Admin push notification sent"
-
-                )
+                logging.info("Admin push notification sent")
 
             else:
-
-                logging.warning(
-
-                    "⚠️ No tokens found for admin"
-
-                )
+                logging.warning("No tokens found for admin")
 
         except Exception as notify_err:
 
-            logging.error(
-
-                f"❌ Admin notification failed: "
-                f"{str(notify_err)}"
-
-            )
+            logging.error(f"❌ Admin notification failed: " f"{str(notify_err)}")
 
         # =====================================================
         # SUCCESS RESPONSE
         # =====================================================
 
         return {
-
             "success": True,
-
             "message": f"Workorder {status.lower()} successfully",
-
             "po_number": po_number
 
         }, 200
 
     except Exception as e:
 
-        logging.exception(
-
-            "Respond workorder API failed"
-
-        )
+        logging.exception("Respond workorder API failed")
 
         db.session.rollback()
 
         return {
-
             "success": False,
-
             "message": str(e)
 
         }, 500
