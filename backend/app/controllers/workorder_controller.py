@@ -1339,7 +1339,111 @@ def withdraw_workorder(workorder):
             contractor_name = contractor.get("name")
             logging.info(f"Contractor Name: {contractor_name}")
             logging.info(f"Contractor Email: {contractor_email}")
- 
+        # =====================================================
+        # PUSH NOTIFICATION TO ADMIN
+        # =====================================================
+
+        try:
+            from app.models.provider_model import ProviderModel
+            from app.utils.notification_service import (
+            send_notification_to_tokens
+           )
+
+            admin_id = workorder_details.created_by
+
+            if admin_id:
+
+                tokens, token_error = (
+                    ProviderModel.get_active_token_user_id(
+                        admin_id
+                    )
+                )
+
+                if tokens:
+
+                    send_notification_to_tokens(
+
+                        tokens,
+
+                        "Workorder Withdrawn",
+
+                        f"Your workorder #{workorder} has been withdrawn."
+                        f"Reason: {reason}"
+
+                    )
+
+                    logging.info(
+                        "✅ Admin push notification sent"
+                    )
+
+                else:
+
+                    logging.warning(
+                        f"⚠️ No active tokens found for admin "
+                        f"{admin_id}"
+                    )
+
+            else:
+
+                logging.warning(
+                    "⚠️ Admin ID not found"
+                )
+
+        except Exception as notify_err:
+
+            logging.error(
+
+                f"❌ Admin push notification failed: "
+                f"{str(notify_err)}"
+
+            )
+        # =====================================================
+        # PUSH NOTIFICATION TO CONTRACTOR
+        # =====================================================
+
+        try:
+
+            contractor_id = contractor.get("user_uid") if contractor else None
+
+            if contractor_id:
+
+                tokens, token_error = (
+                    ProviderModel.get_active_token_user_id(
+                        contractor_id
+                    )
+                )
+
+                if tokens:
+
+                    send_notification_to_tokens(
+
+                        tokens,
+
+                        "Workorder Withdrawn",
+
+                        f"Workorder #{workorder} assigned to you has been withdrawn by Admin."
+
+                    )
+
+                    logging.info(
+                        "✅ Contractor push notification sent"
+                    )
+
+                else:
+
+                    logging.warning(
+                        f"⚠️ No active tokens found for contractor "
+                        f"{contractor_id}"
+                    )
+
+        except Exception as notify_err:
+
+            logging.error(
+
+                f"❌ Contractor push notification failed: "
+                f"{str(notify_err)}"
+
+            )
         # -----------------------------------------
         # Send ADMIN Email (separate template)
         # -----------------------------------------
