@@ -1718,10 +1718,18 @@ class WorkOrder(db.Model):
         try:
             sql_workorder = text("""
                 UPDATE workorder_t
-                SET status = 'CLOSED'
+                SET status = 'CLOSED',
+                    closed_by = (
+                        SELECT contractor_id
+                        FROM workorder_life_cycle_t
+                        WHERE workorder = :workorder
+                          AND status = 'COMPLETED'
+                        LIMIT 1
+                    )
                 WHERE workorder = :workorder
                 RETURNING *;
             """)
+
 
             row = db.session.execute(
                 sql_workorder,
@@ -2622,5 +2630,186 @@ class WorkOrder(db.Model):
                 "Error fetching contractor details"
             )
             return None, None, str(e)
+        
+        
+        
+        
+    @classmethod
+    def create_contractor_rating(
+        cls,
+        workorder,
+        rating,
+        feedback,
+        rated_by_admin_id
+    ):
+        try:
+            logging.info(
+                "Create contractor rating start: workorder=%s, rating=%s, feedback=%r, rated_by_admin_id=%s",
+                workorder,
+                rating,
+                feedback,
+                rated_by_admin_id,
+            )
     
-
+            workorder_row = db.session.execute(
+                text("""
+                    SELECT
+                        created_by,
+                        closed_by
+                    FROM workorder_t
+                    WHERE workorder = :workorder
+                    LIMIT 1
+                """),
+                {
+                    "workorder": workorder
+                }
+            ).mappings().first()
+    
+            logging.info(
+                "Workorder lookup result for contractor rating: %r",
+                dict(workorder_row) if workorder_row else None,
+            )
+    
+            if not workorder_row:
+                return None, "Workorder not found"
+    
+            workorder_created_by = workorder_row["created_by"]
+            contractor_id = workorder_row["closed_by"]
+    
+            if not contractor_id:
+                return None, "Contractor not found on workorder"
+    
+            existing_rating = db.session.execute(
+                text("""
+                    SELECT id
+                    FROM contractor_ratings
+                    WHERE workorder = :workorder
+                    LIMIT 1
+                """),
+                {
+                    "workorder": workorder
+                }
+            ).fetchone()
+    
+            if existing_rating:
+                return None, (
+                    "Contractor rating already exists "
+                    "for this workorder"
+                )
+    
+            db.session.execute(
+                text("""
+                    INSERT INTO contractor_ratings
+                    (
+                        workorder,
+                        contractor_id,
+                        workorder_created_by,
+                        rated_by_admin_id,
+                        rating,
+                        feedback,
+                        created_at
+                    )
+                    VALUES
+                    (
+                        :workorder,
+                        :contractor_id,
+                        :workorder_created_by,
+                        :rated_by_admin_id,
+                        :rating,
+                        :feedback,
+                        :created_at
+                    )
+                """),
+                {
+                    "workorder": workorder,
+                    "contractor_id": contractor_id,
+                    "workorder_created_by": workorder_created_by,
+                    "rated_by_admin_id": rated_by_admin_id,
+                    "rating": rating,
+                    "feedback": feedback,
+                    "created_at": now_ist()
+                }
+            )
+    
+            contractor_row = db.session.execute(
+                text("""
+                    SELECT
+                        average_rating,
+                        total_ratings,
+                        completed_workorders_count
+                    FROM users_t
+                    WHERE user_uid = :contractor_id
+                    LIMIT 1
+                """),
+                {
+                    "contractor_id": contractor_id
+                }
+            ).mappings().first()
+    
+            if not contractor_row:
+                db.session.rollback()
+                return None, "Contractor not found"
+    
+            current_average = float(
+                contractor_row["average_rating"] or 0
+            )
+    
+            total_ratings = int(
+                contractor_row["total_ratings"] or 0
+            )
+    
+            completed_workorders_count = int(
+                contractor_row["completed_workorders_count"] or 0
+            )
+    
+            new_total_ratings = total_ratings + 1
+    
+            new_average_rating = round(
+                (
+                    (current_average * total_ratings)
+                    + float(rating)
+                ) / new_total_ratings,
+                2
+            )
+    
+            db.session.execute(
+                text("""
+                    UPDATE users_t
+                    SET
+                        average_rating = :average_rating,
+                        total_ratings = :total_ratings,
+                        completed_workorders_count =
+                            :completed_workorders_count
+                    WHERE user_uid = :contractor_id
+                """),
+                {
+                    "average_rating": new_average_rating,
+                    "total_ratings": new_total_ratings,
+                    "completed_workorders_count":
+                        completed_workorders_count + 1,
+                    "contractor_id": contractor_id
+                }
+            )
+    
+            db.session.commit()
+    
+            return {
+                "workorder": workorder,
+                "contractor_id": contractor_id,
+                "workorder_created_by": workorder_created_by,
+                "rated_by_admin_id": rated_by_admin_id,
+                "rating": rating,
+                "average_rating": new_average_rating,
+                "total_ratings": new_total_ratings,
+                "completed_workorders_count":
+                    completed_workorders_count + 1
+            }, None
+    
+        except Exception as e:
+            db.session.rollback()
+    
+            logging.exception(
+                "Create Contractor Rating Error"
+            )
+    
+            return None, str(e)
