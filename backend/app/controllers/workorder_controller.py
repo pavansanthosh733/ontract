@@ -1630,3 +1630,35 @@ def create_contractor_rating():
             "success": False,
             "error": str(e)
         }), 500
+        
+        
+@workorder_bp.route("/contractor/ratings/dashboard", methods=["GET"])
+def contractor_ratings_dashboard():
+    try:
+        user_uid = request.args.get("user_uid", type=int)
+
+        if not user_uid:
+            return jsonify({
+                "success": False,
+                "message": "user_uid is required"
+            }), 400
+
+        summary = WorkOrder.get_contractor_rating_summary(user_uid)
+        ratings = WorkOrder.get_contractor_ratings(user_uid)
+        low_ratings = WorkOrder.get_low_ratings(user_uid)
+
+        return jsonify({
+            "success": True,
+            "summary": summary,
+            "ratings": ratings,
+            "low_ratings": low_ratings
+
+        })
+
+    except Exception as e:
+        logging.exception("Contractor ratings dashboard error")
+
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500

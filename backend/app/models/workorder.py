@@ -969,6 +969,7 @@ class WorkOrder(db.Model):
                     ON cd.user_uid = a.user_uid
                 WHERE c.region_name = :region_name
                   AND d.category_name = :category_name
+                  and a.active_status='t'
             """)
     
             rows = db.session.execute(
@@ -2813,3 +2814,110 @@ class WorkOrder(db.Model):
             )
     
             return None, str(e)
+        
+        
+    @staticmethod
+    def get_contractor_rating_summary(user_uid):
+    
+        sql = text("""
+            SELECT
+                COALESCE(u.average_rating, 0) AS average_rating,
+        
+                COALESCE((
+                    SELECT SUM(rating)
+                    FROM contractor_ratings cr
+                    WHERE cr.contractor_id = u.user_uid
+                ), 0) AS total_ratings,
+        
+                COALESCE(u.completed_workorders_count, 0)
+                    AS completed_workorders_count
+        
+            FROM users_t u
+            WHERE u.user_uid = :user_uid
+        """)
+    
+        row = db.session.execute(
+            sql,
+            {"user_uid": user_uid}
+        ).mappings().first()
+    
+        if not row:
+            return {
+                "average_rating": 0,
+                "total_ratings": 0,
+                "completed_workorders_count": 0,
+                "badge": "Bronze"
+            }
+    
+        avg = float(row["average_rating"] or 0)
+    
+        badge = "Bronze"
+    
+        if avg >= 4.5:
+            badge = "Gold"
+        elif avg >= 3.5:
+            badge = "Silver"
+    
+        return {
+            "average_rating": round(avg, 2),
+            "total_ratings": row["total_ratings"],
+            "completed_workorders_count":
+                row["completed_workorders_count"],
+            "badge": badge
+        }
+        
+        
+    @staticmethod
+    def get_contractor_ratings(user_uid):
+    
+        sql = text("""
+            SELECT
+                workorder,
+                rating,
+                feedback,
+                created_at
+            FROM contractor_ratings
+            WHERE contractor_id = :user_uid
+            ORDER BY created_at DESC
+        """)
+    
+        rows = db.session.execute(
+            sql,
+            {"user_uid": user_uid}
+        ).mappings().all()
+    
+        return [
+            {
+                "workorder": r["workorder"],
+                "rating": float(r["rating"]),
+                "feedback": r["feedback"],
+                "created_at":
+                    r["created_at"].strftime(
+                        "%d-%m-%Y %H:%M"
+                    ) if r["created_at"] else None
+            }
+            for r in rows
+        ]
+        
+        
+    @staticmethod
+    def get_low_ratings(user_uid):
+    
+        sql = text("""
+            SELECT
+                workorder,
+                rating,
+                feedback,
+                created_at
+            FROM contractor_ratings
+            WHERE contractor_id = :user_uid
+              AND rating < 4
+            ORDER BY rating ASC
+        """)
+    
+        rows = db.session.execute(
+            sql,
+            {"user_uid": user_uid}
+        ).mappings().all()
+    
+        return [dict(r) for r in rows]
