@@ -44,6 +44,8 @@ import ContractorBankDetails from "./components/company/ContractorBankDetails";
 import CompanyInvoice from "./components/company/CompanyInvoice";
 import RateComparisonReport from "./components/RateComparisonReport";
 import ProviderDashboardHome from "./components/ProviderDashboardHome";
+import CompanyRating from "./components/company/CompanyRating";
+import ProviderRating from "./components/ProviderRating";
 
 function PublicCompanyProfileRoute() {
   const location = useLocation();
@@ -121,6 +123,7 @@ const isApk = params.get("source") === "apk";
               path="notifications"
               element={<Notifications user={user} />}
             />
+            <Route path="providerrating" element={<ProviderRating />} />
             <Route path="workorders" element={<ProviderWorkOrders />} />
             <Route path="invoice" element={<ProviderInvoice />} />
             <Route
@@ -207,6 +210,7 @@ const isApk = params.get("source") === "apk";
                 <CompanyNotifications contractor={contractor} />
               }
             />
+            <Route path="rating" element={<CompanyRating />} />
             <Route path="companyworkorders" element={<CompanyWorkorders />} />
             <Route path="invoice" element={<CompanyInvoice />} />
             <Route

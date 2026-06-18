@@ -29,6 +29,7 @@ const WorkOrderDetails = () => {
           const cdata = await apiGet(
             `/api/workorders/contractors/by-region-category/${data.region_name}/${data.category_name}`
           );
+          console.log("Contractors fetched:", cdata);
           setContractors(cdata || []);
         }
 
@@ -76,6 +77,53 @@ const WorkOrderDetails = () => {
       [name]: value,
     }));
   };
+
+  const saveAssignmentAudit = async (selectedContractor, reason) => {
+  const payload = {
+    workorder: details.workorder,
+    category: details.category_name,
+    region: details.region_name,
+
+    suggested_contractors: contractors.map((c) => ({
+      contractor_id: c.provider_id,
+      contractor_name: c.company_name || c.full_name,
+      city: c.city,
+      rate: c.rate,
+      rating: c.average_rating,
+    })),
+
+    selected_contractor: {
+      contractor_id: selectedContractor.provider_id,
+      contractor_name:
+        selectedContractor.company_name ||
+        selectedContractor.full_name,
+      city: selectedContractor.city,
+      rate: selectedContractor.rate,
+      rating: selectedContractor.average_rating,
+    },
+
+    assignment_reason: reason,
+  };
+
+  await apiPost(
+    "/api/workorders/assignment-audit",
+    payload
+  );
+};
+
+  const handleAssignWithReason = async (contractor) => {
+  const reason = window.prompt(
+    "Please enter reason for assigning this contractor:"
+  );
+
+  if (!reason || !reason.trim()) {
+    return;
+  }
+
+  await saveAssignmentAudit(contractor, reason);
+
+  await handleAssignContractor(contractor);
+};
 
   const handleAssignContractor = async (contractor) => {
     if (!details) return;
@@ -194,6 +242,7 @@ const WorkOrderDetails = () => {
                     <th>Provider Name</th>
                   
                     <th>Price</th>
+                    <th>Rating</th>
                     <th>Action</th>
                   </tr>
                 </thead>
@@ -207,9 +256,13 @@ const WorkOrderDetails = () => {
                           ₹ {Number.parseFloat(c.rate || 0).toFixed(2)}
                         </td>
                         <td>
+                          ⭐ {Number.parseFloat(c.average_rating || 0).toFixed(1)}
+                          ({c.total_ratings || 0})
+                        </td>
+                        <td>
                           <button
                             className="blue-btn small-btn"
-                            onClick={() => handleAssignContractor(c)}
+                            onClick={() => handleAssignWithReason(c)}
                             disabled={savingId === c.provider_id}
                           >
                             {savingId === c.provider_id ? "Assigning..." : "Assign"}

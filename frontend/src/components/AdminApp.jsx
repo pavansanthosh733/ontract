@@ -17,6 +17,7 @@ import RateComparisonReport from './RateComparisonReport';
 import RegistrationPage from './AdminRegistration';
 import AdminUpdate from './AdminUpdate';
 import AIReport from './AiReport';
+import ManualAssignedWorkorders from './ManualAssignedWorkorders';
 
 function AdminApp({ admin, setAdmin }) {
   const { admin: ctxAdmin, loading } = useAdmin();
@@ -28,6 +29,7 @@ function AdminApp({ admin, setAdmin }) {
   const [reportsOpen, setReportsOpen] = useState(false);
   const [registrationOpen, setRegistrationOpen] = useState(false);
   const [workorderOpen, setWorkorderOpen] = useState(false);
+  const [auditOpen, setAuditOpen] = useState(false);
 
   // 🔥 Get assigned modules from DB
   const modules = ctxAdmin?.modules
@@ -52,6 +54,8 @@ function AdminApp({ admin, setAdmin }) {
       setRegistrationOpen(false);
       setReportsOpen(false);
       setWorkorderOpen(false);
+      setAuditOpen(false);
+
     };
 
     document.addEventListener('click', closeMenus);
@@ -74,6 +78,7 @@ function AdminApp({ admin, setAdmin }) {
     setRegistrationOpen(false);
     setReportsOpen(false);
     setWorkorderOpen(false);
+     setAuditOpen(false);
   };
 
   if (loading) return null;
@@ -232,6 +237,37 @@ function AdminApp({ admin, setAdmin }) {
     </li>
   )}
 
+  {/* Audit Dropdown */}
+<li className="nav-item audit-menu">
+  <div
+    className="nav-link-Home"
+    onClick={(e) => {
+      e.stopPropagation();
+
+      setRegistrationOpen(false);
+      setReportsOpen(false);
+      setWorkorderOpen(false);
+
+      setAuditOpen(!auditOpen);
+    }}
+  >
+    Audit
+  </div>
+
+  <ul className={`reports-dropdown ${auditOpen ? 'open' : ''}`}>
+    <li>
+      <Link
+        to="/admin/audit/manual-assigned-workorders"
+        onClick={() =>
+          handleLinkClick('manual_assigned_workorders')
+        }
+      >
+        Manual Assigned Workorders
+      </Link>
+    </li>
+  </ul>
+</li>
+
   {/* Reports Dropdown */}
   {hasModule('Reports') && (
     <li className="nav-item reports-menu">
@@ -349,6 +385,10 @@ function AdminApp({ admin, setAdmin }) {
             path="/adminnotifications"
             element={<AdminNotifications />}
           />
+<Route
+  path="audit/manual-assigned-workorders"
+  element={<ManualAssignedWorkorders />}
+/>
 
           <Route
             path="/reports/contractor"

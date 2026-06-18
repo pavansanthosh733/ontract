@@ -358,3 +358,19 @@
 .nav-link {
   color: white !important;
 }
+
+/* =========================================
+   AUDIT DROPDOWN
+========================================= */
+
+.audit-menu {
+  position: relative;
+  cursor: pointer;
+}
+
+/* Desktop hover */
+@media (min-width: 769px) {
+  .audit-menu:hover .reports-dropdown {
+    display: flex;
+  }
+}

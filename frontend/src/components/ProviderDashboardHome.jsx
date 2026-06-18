@@ -86,6 +86,9 @@ function ProviderDashboardHome() {
             <p className="welcome-subtitle">Here's what's happening with your business today</p>
           </div>
           <div className="quick-actions d-none d-md-flex gap-3">
+                        <Link to="/provider_home/providerrating" className="btn btn-primary btn-action">
+              <FaClipboardList className="me-2" />Rating Section
+            </Link>
             <Link to="/provider_home/workorders" className="btn btn-primary btn-action">
               <FaClipboardList className="me-2" /> WORK ORDERS
             </Link>

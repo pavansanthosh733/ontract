@@ -142,6 +142,10 @@ const { contractor, loading } = useContractor();
           <FaClipboardList className="me-2" />
           Invoice
         </Link>  */ }
+        <Link to="/contractor/dashboard/rating" className="workorder-pill">
+          <FaClipboardList className="me-2" />
+          Rating Section
+        </Link>
 
         <Link to="/contractor/dashboard/companyworkorders" className="workorder-pill">
           <FaClipboardList className="me-2" />
