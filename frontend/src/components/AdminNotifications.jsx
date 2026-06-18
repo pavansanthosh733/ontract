@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { apiGet, apiPost, BASE_URL } from "../api";
 import "./css/AdminNotification.css";
 import { useNavigate } from "react-router-dom";
-import ContractorRatingModal from "./modals/ContractorRatingModal";
 
 function AdminNotifications() {
   const navigate = useNavigate();
@@ -19,9 +18,6 @@ function AdminNotifications() {
 
   const [adminRemarks, setAdminRemarks] = useState("");
   const [adminSubmitting, setAdminSubmitting] = useState(false);
-  const [showRatingModal, setShowRatingModal] = useState(false);
-
-const [ratingWorkorderData, setRatingWorkorderData] =  useState(null);
 
   /* =========================================================
      TOGGLE CONTRACTOR
@@ -117,15 +113,6 @@ const [ratingWorkorderData, setRatingWorkorderData] =  useState(null);
     }
   };
 
-
-
-  const handleRatingSaved = () => {
-  setShowRatingModal(false);
-  setRatingWorkorderData(null);
-
-  fetchWorkorders(activeTab);
-};
-
   /* =========================================================
      CLOSE WORKORDER
   ========================================================= */
@@ -138,34 +125,14 @@ const [ratingWorkorderData, setRatingWorkorderData] =  useState(null);
     try {
       setAdminSubmitting(true);
 
-const response = await apiPost(
-  "/api/workorders/admin/close",
-  {
-    workorder: selectedWorkorder,
-    remarks: adminRemarks,
-  }
-);
+      await apiPost("/api/workorders/admin/close", {
+        workorder: selectedWorkorder,
+        remarks: adminRemarks,
+      });
 
-alert("✅ Workorder closed successfully");
-
-/*
-  Save workorder returned by backend
-*/
-setRatingWorkorderData(
-  response?.data || {
-    workorder: selectedWorkorder,
-  }
-);
-
-/*
-  Close current modal
-*/
-closeModal();
-
-/*
-  Open rating modal
-*/
-setShowRatingModal(true);
+      alert("✅ Workorder closed successfully");
+      closeModal();
+      fetchWorkorders(activeTab);
 
     } catch (err) {
       console.error(err);
@@ -548,17 +515,7 @@ setShowRatingModal(true);
 
           </div>
         </div>
-        
       )}
-      <ContractorRatingModal
-  show={showRatingModal}
-  workorderData={ratingWorkorderData}
-  onClose={() => {
-    setShowRatingModal(false);
-    setRatingWorkorderData(null);
-  }}
-  onRatingSaved={handleRatingSaved}
-/>
     </div>
   );
 }
