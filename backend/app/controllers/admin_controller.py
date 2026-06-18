@@ -3,8 +3,6 @@ import os, bcrypt, random, string
 import tempfile
 import logging
 import magic
-import jwt
-from datetime import datetime, timedelta
 from app.utils.current_admin import set_admin
 from app.utils.current_admin import set_admin, get_admin
 from flask import current_app
@@ -37,40 +35,19 @@ class AdminController:
             return {"error": "Email and OTP required"}, 400
 
         ok = AdminModel.verify_otp(email, otp)
-        ok = True
         if ok:
             admin = AdminModel.get_admin_by_email(email)
-
-            set_admin(admin)
+            set_admin(admin)   # ⭐ STORE ADMIN GLOBALLY
 
             AdminModel.delete_otp(email)
 
-            # Generate JWT Token
-            access_token = jwt.encode(
-                {
-                    "user_id": admin.get("admin_id"),
-                    "email": admin.get("email"),
-                    "role": "ADMIN",
-                    "exp": datetime.utcnow() + timedelta(hours=8)
-                },
-                current_app.config["SECRET_KEY"],
-                algorithm="HS256"
-            )
-
-            # SAVE TOKEN IN DATABASE
-            AdminModel.update_access_token(
-                admin.get("admin_id"),
-                access_token
-            )
-
             return {
                 "message": "OTP verified successfully",
-                "admin_email": admin,
-                "access_token": access_token
+                "admin_email": admin
             }, 200
 
         return {"error": "Invalid or expired OTP"}, 401
-        
+    
     
     
     @staticmethod

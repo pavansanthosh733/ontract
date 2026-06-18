@@ -258,7 +258,6 @@ const CreateWorkOrder = () => {
       const formDataToSend = new FormData();
 
       formDataToSend.append("ADMIN_ID", admin.admin_id);
-      
       formDataToSend.append("CATEGORY_ID", selectedCategoryId);
       formDataToSend.append("ITEM_ID", selectedItemId);
       formDataToSend.append("TYPE_ID", selectedTypeId);
@@ -293,18 +292,11 @@ const CreateWorkOrder = () => {
         formDataToSend.append("images[]", file);
       });
 
-      const token = localStorage.getItem("access_token");
-
-console.log("JWT Token:", token);
-
-const res = await fetch(`${BASE_URL}/api/workorders/`, {
-  method: "POST",
-  body: formDataToSend,
-  headers: {
-    Authorization: `Bearer ${token}`,
-    "ngrok-skip-browser-warning": "true",
-  },
-});
+      const res = await fetch(`${BASE_URL}/api/workorders/`, {
+        method: "POST",
+        body: formDataToSend,
+        headers: { "ngrok-skip-browser-warning": "true" },
+      });
 
       const data = await res.json();
 

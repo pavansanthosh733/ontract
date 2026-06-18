@@ -40,43 +40,30 @@ export const AdminProvider = ({ children }) => {
   /* -------------------------------------------
      LOGIN ADMIN
   -------------------------------------------- */
-  const loginAdmin = (adminData, token) => {
-  console.group("🔐 Admin Login");
+  const loginAdmin = (adminData) => {
+    console.group("🔐 Admin Login");
 
-  setAdmin(adminData);
+    console.log("Admin data received:", adminData);
 
-  localStorage.setItem(
-    "admin",
-    JSON.stringify(adminData)
-  );
+    setAdmin(adminData);
+    localStorage.setItem("admin", JSON.stringify(adminData));
 
-  localStorage.setItem(
-    "access_token",
-    token
-  );
-
-  console.log("✅ Admin stored");
-  console.log("✅ JWT stored");
-
-  console.groupEnd();
-};
+    console.log("✅ Admin stored in context & localStorage");
+    console.groupEnd();
+  };
 
   /* -------------------------------------------
      LOGOUT ADMIN
   -------------------------------------------- */
   const logoutAdmin = () => {
-  console.group("🚪 Admin Logout");
+    console.group("🚪 Admin Logout");
 
-  setAdmin(null);
+    setAdmin(null);
+    localStorage.removeItem("admin");
 
-  localStorage.removeItem("admin");
-  localStorage.removeItem("access_token");
-
-  console.log("✅ Admin cleared");
-  console.log("✅ JWT removed");
-
-  console.groupEnd();
-};
+    console.log("✅ Admin cleared from context & localStorage");
+    console.groupEnd();
+  };
 
   return (
     <AdminContext.Provider

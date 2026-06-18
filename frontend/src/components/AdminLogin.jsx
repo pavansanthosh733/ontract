@@ -206,15 +206,7 @@ function AdminLogin() {
       // =====================================================
       // SAVE ADMIN
       // =====================================================
-      console.log(
-  "JWT From Backend:",
-  data.access_token
-);
-      
-      loginAdmin(
-  adminData,
-  data.access_token
-)
+      loginAdmin(adminData);
 
       console.log(
         "Admin saved into context/localStorage"
