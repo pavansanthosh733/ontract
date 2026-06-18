@@ -1516,3 +1516,156 @@ def withdraw_workorder(workorder):
             "success": False,
             "message": str(e)
         }), 500
+        
+        
+        
+@workorder_bp.route(
+    "/contractor-ratings/create",
+    methods=["POST"]
+)
+def create_contractor_rating():
+    try:
+        data = request.get_json(silent=True)
+
+        logging.info(
+            "Contractor rating request received: content_type=%s, data=%r",
+            request.content_type,
+            data,
+        )
+
+        if not isinstance(data, dict):
+            logging.warning(
+                "Contractor rating request payload is invalid: %r",
+                data,
+            )
+            return jsonify({
+                "success": False,
+                "message": "Invalid JSON payload"
+            }), 400
+
+        workorder = (
+            data.get("workorder", "")
+            .strip()
+        )
+
+        rating = data.get("rating")
+
+        feedback = (
+            data.get("feedback", "")
+            .strip()
+        )
+        
+        rating_given_by = data.get("rating_given_by")
+
+        logging.info(
+            "Contractor rating input parsed: workorder=%r, rating=%r, feedback=%r",
+            workorder,
+            rating,
+            feedback,
+        )
+        
+        if not rating_given_by:
+            return jsonify({
+                "success": False,
+                "message": "rating_given_by is required"
+            }), 400
+
+        if not workorder:
+            return jsonify({
+                "success": False,
+                "message": "workorder is required"
+            }), 400
+
+        if rating is None:
+            return jsonify({
+                "success": False,
+                "message": "rating is required"
+            }), 400
+
+        try:
+            rating = float(rating)
+        except Exception:
+            return jsonify({
+                "success": False,
+                "message": "invalid rating"
+            }), 400
+
+        if rating < 1 or rating > 5:
+            return jsonify({
+                "success": False,
+                "message": "rating must be between 1 and 5"
+            }), 400
+
+        logging.info(
+            "Calling WorkOrder.create_contractor_rating with: workorder=%s, rating=%s, feedback=%r",
+            workorder,
+            rating,
+            feedback,
+        )
+
+        result, error = WorkOrder.create_contractor_rating(
+            workorder=workorder,
+            rating=rating,
+            feedback=feedback,
+            rated_by_admin_id=rating_given_by
+        )
+
+        logging.info(
+            "WorkOrder.create_contractor_rating response: result=%r, error=%r",
+            result,
+            error,
+        )
+
+        if error:
+            return jsonify({
+                "success": False,
+                "message": error
+            }), 400
+
+        return jsonify({
+            "success": True,
+            "message": "Contractor rating saved successfully",
+            "data": result
+        }), 200
+
+    except Exception as e:
+        logging.exception(
+            "Contractor Rating Controller Error"
+        )
+
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+        
+        
+@workorder_bp.route("/contractor/ratings/dashboard", methods=["GET"])
+def contractor_ratings_dashboard():
+    try:
+        user_uid = request.args.get("user_uid", type=int)
+
+        if not user_uid:
+            return jsonify({
+                "success": False,
+                "message": "user_uid is required"
+            }), 400
+
+        summary = WorkOrder.get_contractor_rating_summary(user_uid)
+        ratings = WorkOrder.get_contractor_ratings(user_uid)
+        low_ratings = WorkOrder.get_low_ratings(user_uid)
+
+        return jsonify({
+            "success": True,
+            "summary": summary,
+            "ratings": ratings,
+            "low_ratings": low_ratings
+
+        })
+
+    except Exception as e:
+        logging.exception("Contractor ratings dashboard error")
+
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500

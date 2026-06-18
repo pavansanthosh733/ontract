@@ -167,44 +167,19 @@ function AdminApp({ admin, setAdmin }) {
     </li>
   )}
 
-  {/* Work Orders Dropdown */}
+{/* Work Orders */}
   {hasModule('Work Orders') && (
-    <li className="nav-item workorder-menu">
-      <div
-        className="nav-link-Home"
-        onClick={(e) => {
-          e.stopPropagation();
-
-          setRegistrationOpen(false);
-          setReportsOpen(false);
-
-          setWorkorderOpen(!workorderOpen);
-        }}
-      >
-        Work Orders
-      </div>
-
-      <ul className={`reports-dropdown ${workorderOpen ? 'open' : ''}`}>
-        <li>
-          <Link
-            to="/admin/workorder"
-            onClick={() => handleLinkClick('service_workorder')}
-          >
-            Service Workorder
-          </Link>
-        </li>
-
-        <li>
-          <Link
-            to="/admin/workorder/product-workorder"
-            onClick={() => handleLinkClick('product_workorder')}
-          >
-            Product Workorder
-          </Link>
-        </li>
-      </ul>
+    <li>
+        <Link
+          to="/admin/workorder"
+          className={activeLink === 'workorders' ? 'active' : ''}
+          onClick={() => handleLinkClick('workorders')}
+        >
+          Work Orders
+        </Link>
     </li>
   )}
+
 
   {/* Invoice */}
   {hasModule('Invoice') && (
