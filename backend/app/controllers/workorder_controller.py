@@ -12,6 +12,7 @@ import logging
 from app.utils.current_admin import get_admin
 from werkzeug.utils import secure_filename
 from app.models.provider_model import ProviderModel
+from app.utils.auth import token_required
 from app.utils.notification_service import send_notification_to_tokens
 from app.models.workorder_mail_model import (
     get_workorder_details,
@@ -65,12 +66,17 @@ def get_file_category(filename):
 
     return None
 @workorder_bp.route("/", methods=["POST"])
+
+
 def create_workorder():
+    logging.info("✅ CREATE WORKORDER API HIT")
     try:
         if not request.content_type.startswith("multipart/form-data"):
             return jsonify({"error": "Content-Type must be multipart/form-data"}), 400
 
         form = request.form
+        logging.info(f"FORM DATA = {form.to_dict()}")
+
         files = request.files
 
         def get_int(name):
@@ -96,6 +102,7 @@ def create_workorder():
             "DETAILED_DESCRIPTION": form.get("DETAILED_DESCRIPTION", "").strip(),
             "STATUS": form.get("STATUS", "OPEN"),
             "created_by": form.get("ADMIN_ID", ""),
+            
             "ticket_assignment_type": form.get("ticket_assignment_type", "auto"),
         }
 
@@ -178,6 +185,7 @@ def create_workorder():
         
 
 @workorder_bp.route("/", methods=["GET"])
+
 def get_all():
     workorders, error = WorkOrder.get_all()
     if error:
@@ -352,6 +360,7 @@ def get_all_contractors():
 
 
 @workorder_bp.route("/filter", methods=["GET"])
+
 def filter_workorders():
     logging.info("Checking dashboard filter...")
 
