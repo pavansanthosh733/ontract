@@ -108,127 +108,117 @@ const SearchWorkOrder = () => {
               <div className="wo-header-row">
                 <div>WorkOrder</div>
                 <div>Region</div>
-                <div>Category</div>
+                <div>State</div>
               </div>
+
               <div className="wo-value-row">
                 <div>{workorder.workorder}</div>
-                <div>{workorder.region_name}</div>
-                <div>{workorder.category_name}</div>
+                <div>{workorder.region_name || "-"}</div>
+                <div>{workorder.state_name || "-"}</div>
               </div>
-            </div>
-
-            <div className="wo-header-row">
-              <div>Requested Time Closing</div>
-              <div>Remarks</div>
-              <div>Client</div>
-            </div>
-            <div className="wo-value-row">
-              <div>
-                {workorder.requested_time_close
-                  ? new Date(workorder.requested_time_close).toLocaleString()
-                  : "N/A"}
-              </div>
-              <div>{workorder.remarks || "—"}</div>
-              <div>{workorder.client || "—"}</div>
             </div>
 
             <div className="wo-row">
               <div className="wo-header-row">
-                <div>Created At</div>
-                <div>Status</div>
-                <div></div>
+                <div>City</div>
+                <div>Category</div>
+                <div>Item</div>
               </div>
+
               <div className="wo-value-row">
-                <div>
-                  {workorder.created_t
+                <div>{workorder.city_name || "-"}</div>
+                <div>{workorder.category_name || "-"}</div>
+                <div>{workorder.item_name || "-"}</div>
+              </div>
+            </div>
+
+            <div className="wo-row">
+              <div className="wo-header-row">
+                <div>Type</div>
+                <div>Description</div>
+                <div>Created At</div>
+              </div>
+
+              <div className="wo-value-row">
+                <div>{workorder.type_name || "-"}</div>
+                <div>{workorder.description_name || "-"}</div>
+                <div>{workorder.created_t
                     ? new Date(workorder.created_t).toLocaleString()
-                    : "N/A"}
-                </div>
-                <div>{workorder.status}</div>
-                <div></div>
+                    : "N/A"}</div>
               </div>
             </div>
 
-            {/* Contractor Info */}
+            <div className="wo-header-row">
+              <div>Remarks</div>
+              <div>Client</div>
+              <div>Status</div>
+            </div>
+            <div className="wo-value-row">
+              <div>{workorder.remarks || "—"}</div>
+              <div>{workorder.client || "—"}</div>
+              <div>{workorder.status}</div>
+            </div>
+
+            {/* WORKORDER LIFECYCLE */}
             <div className="section-card no-header">
-              <table className="child-table">
-                <thead>
-                  <tr>
-                    <th>Sl. No</th>
-                    <th>WorkOrder</th>
-                    <th>Contractor Name</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>1</td>
-                    <td>{workorder.workorder}</td>
-                    <td>{workorder.contractor_name || "—"}</td>
-                  </tr>
-                </tbody>
-              </table>
+              <h4 style={{ marginBottom: "15px" }}>
+                Workorder Lifecycle
+              </h4>
+             <div className="lifecycle-scroll">
+                <table className="child-table">
+                  <thead>
+                    <tr>
+                      <th>Sl. No</th>
+                      <th>Workorder</th>
+                      <th>Status</th>
+                      <th>Date & Time</th>
+                      <th>Contractor</th>
+                      <th>Remarks</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {workorder.timeline?.length > 0 ? (
+                      workorder.timeline.map((item, index) => (
+                        <tr key={index}>
+                          <td>{index + 1}</td>
+                          <td>
+                            <strong>{workorder.workorder}</strong>
+                          </td>
+                          <td>
+                            <strong>{item.status}</strong>
+                          </td>
+
+                          <td>
+                            {item.time
+                              ? new Date(item.time).toLocaleString()
+                              : "-"}
+                          </td>
+
+                          <td>
+                            {item.contractor_name || "-"}
+                          </td>
+
+                          <td>
+                            {item.admin_remarks ||
+                              item.contractor_remarks ||
+                              item.remarks ||
+                              "-"}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="5" style={{ textAlign: "center" }}>
+                          No lifecycle records found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
-            {/* CLOSE BUTTON + IMAGE UPLOAD */}
-            {["OPEN", "ACCEPTED"].includes(workorder.status?.toUpperCase()) && (
-              <div className="close-section">
-                <label>Upload Closing Image:</label>
-
-                <input
-  type="file"
-  accept="image/*"
-  multiple
-  onChange={(e) => {
-    const files = Array.from(e.target.files);
-
-    const onlyImages = files.filter((file) =>
-      file.type.startsWith("image/")
-    );
-
-    if (onlyImages.length !== files.length) {
-      alert("❌ ZIP or non-image files are not allowed.");
-    }
-
-    setClosingImages([
-      ...closingImages,
-      ...onlyImages,
-    ]);
-  }}
-/>
-
-                {/* Preview */}
-                {closingImages.length > 0 && (
-                  <div className="image-preview-list">
-                    {closingImages.map((file, idx) => (
-                      <div key={idx} className="image-preview-item">
-                        <img
-                          src={URL.createObjectURL(file)}
-                          alt={file.name}
-                          className="preview-thumbnail"
-                        />
-                        <div className="file-info">
-                          <span>{file.name}</span>
-                          <button
-                            className="remove-btn"
-                            onClick={() =>
-                              setClosingImages(
-                                closingImages.filter((_, i) => i !== idx)
-                              )
-                            }
-                          >
-                            ❌
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <button className="close-btn" onClick={handleCloseWorkorder}>
-                  Close Workorder
-                </button>
-              </div>
-            )}
           </div>
         </div>
       )}

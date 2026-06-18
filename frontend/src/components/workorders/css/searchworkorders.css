@@ -254,3 +254,15 @@
 .section-card.no-header .table-wrapper {
   margin-top: 0;
 }
+.lifecycle-scroll {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.lifecycle-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #0d7cc1;
+  color: white;
+}

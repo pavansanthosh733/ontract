@@ -42,10 +42,8 @@ def handle_send_acceptance_mail(workorder_code, request_data, base_url):
 
     try:
         contractor_email=request_data['CONTRACTOR_EMAIL']
-        contractor_name =request_data['CONTRACTOR_NAME']
-        
-        wo = get_workorder_details(workorder_code)
-        
+        contractor_name =request_data['CONTRACTOR_NAME']  
+        wo = get_workorder_details(workorder_code)  
         expiry_minutes = get_expiry_minutes_from_db(request_data["region"])
 
         ts = int(time())
@@ -217,7 +215,7 @@ def handle_respond_workorder_post(workorder_id, contractor_id, contractor_name, 
     update_workorder_status_assignment(workorder,contractor_id, status)
     logging.info(f"Workorder {workorder} updated → {status}")
 
-    insert_workorder_lifecycle_log(wo, contractor_id, contractor_name, remark)
+    insert_workorder_lifecycle_log(wo, status, contractor_id, contractor_name, remark)
     logging.info(f"Lifecycle log added for {contractor_name} — Action: {action}")
 
     # ✅ Notify Admin via email
@@ -309,18 +307,10 @@ def handle_respond_workorder_api(data):
         status = ("ACCEPTED"
             if action == "accept"
             else "REJECTED"
-
         )
-
-        # =====================================================
-        # UPDATE DB
-        # =====================================================
-
         update_workorder_status_in_db(workorder,status)
-
         update_workorder_status_assignment(workorder,contractor_id,status)
-
-        insert_workorder_lifecycle_log(wo,contractor_id,contractor_name,remark)
+        insert_workorder_lifecycle_log(wo,status,contractor_id,contractor_name,remark)
 
         # =====================================================
         # CREATE PURCHASE ORDER

@@ -634,55 +634,193 @@ class WorkOrder(db.Model):
 
     @classmethod
     def search_by_workorder_raw(cls, query):
-        """Raw SQL search with full debugging (fixed for dict conversion)"""
-        try:
-            print(f"[DEBUG] search_by_workorder_raw called with query: {query}")
+        logging.info(f"searchquery functionality bro:'{query}'")
 
-            sql = text("""
-                SELECT 
-                    a.*,b.contractor_id,b.contractor_name,b.contractor_remarks,
-                    b.status AS lifecycle_status,
-                    b.remarks AS lifecycle_remarks,
-                    b.created_t AS lifecycle_created_t,
-                    c.region_name,
-                    d.category_name
-                FROM public."workorder_t" a
-                LEFT JOIN public."workorder_life_cycle_t" b
-                    ON a."workorder" = b."workorder"
-                LEFT JOIN region_master_t c
-                    ON a.region = c.region_id
-                LEFT JOIN category_master_t d
-                   ON a.category = d.category_id
-                WHERE a."workorder" = :query
+        try:
+
+            workorder_sql = text("""
+                SELECT a.*,c.region_name,e.state_name,f.city_name,d.category_name,
+                g.item_name,h.type_name,i.description_name FROM workorder_t a
+                LEFT JOIN region_master_t c ON a.region = c.region_id
+                LEFT JOIN state_master_t e ON a.state = e.state_id
+                LEFT JOIN city_master_t f ON a.city = f.city_id
+                LEFT JOIN category_master_t d ON a.category = d.category_id
+                LEFT JOIN item_master_t g ON a.item = g.item_id
+                LEFT JOIN type_master_t h ON a.type = h.type_id
+                LEFT JOIN description_master_t i ON a.description = i.description_id
+                WHERE a.workorder = :query
             """)
 
+            # ==================================================
+            # ASSIGNMENT HISTORY
+            # ==================================================
+            assignment_sql = text("""
+                SELECT wa.*,u.name AS contractor_name FROM workorder_assignment_t wa
+                LEFT JOIN users_t u ON u.user_uid = wa.provider_id
+                WHERE wa."WORKORDER_ID" = :query ORDER BY wa.assigned_at
+            """)
 
-            # Use .mappings() to safely convert rows to dictionaries
-            results = db.session.execute(sql, {"query": query}).mappings().all()
-            print(f"[DEBUG] Number of rows returned: {len(results)}")
+            # ==================================================
+            # LIFECYCLE HISTORY
+            # ==================================================
+            lifecycle_sql = text("""
+                SELECT lc.*,u.name AS contractor_name FROM workorder_life_cycle_t lc
+                LEFT JOIN users_t u ON u.user_uid = lc.contractor_id
+                WHERE lc.workorder = :query ORDER BY lc.created_t
+            """)
 
-            combined = []
-            for idx, row in enumerate(results):
-                row_dict = dict(row)  # now safe
+            workorder = db.session.execute(workorder_sql,{"query": query}).mappings().first()
 
-                # Convert datetime columns to ISO format
-                for key in ['CREATED_T', 'created_t']:
-                    if key in row_dict and isinstance(row_dict[key], datetime):
-                        row_dict[key] = row_dict[key].isoformat()
+            if not workorder:
+                return [], None
 
-                # Encode IMAGE as base64 if exists and is bytes
-                if 'image' in row_dict and row_dict['image']:
-                    if isinstance(row_dict['image'], (bytes, bytearray)):
-                        row_dict['image'] = base64.b64encode(row_dict['image']).decode('utf-8')
-                    # if it's already dict/list (JSONB), leave it as is
+            assignments = db.session.execute(assignment_sql,{"query": query}).mappings().all()
+            lifecycles = db.session.execute(lifecycle_sql,{"query": query}).mappings().all()
+            response = dict(workorder)
 
-                combined.append(row_dict)
+            # ==================================================
+            # DATETIME CONVERSION
+            # ==================================================
+            for key, value in response.items():
+                if isinstance(value, datetime):
+                    response[key] = value.isoformat()
 
-                if idx == 0:
-                    print(f"[DEBUG] First row keys: {row_dict.keys()}")
+            # ==================================================
+            # IMAGE CONVERSION
+            # ==================================================
+            if (
+                "image" in response
+                and response["image"]
+                and isinstance(response["image"], (bytes, bytearray))
+            ):
+                response["image"] = base64.b64encode(
+                    response["image"]
+                ).decode("utf-8")
 
-            print(f"[DEBUG] Combined results: {combined}")
-            return combined, None
+            # ==================================================
+            # ASSIGNMENT HISTORY
+            # ==================================================
+            assignment_history = []
+
+            for row in assignments:
+
+                assignment_history.append({
+                    "contractor_id": row.get("provider_id"),
+                    "contractor_name": row.get("contractor_name"),
+                    "assigned_at": (
+                        row.get("assigned_at").isoformat()
+                        if row.get("assigned_at")
+                        else None
+                    ),
+                    "expiry_time": (
+                        row.get("expiry_time").isoformat()
+                        if row.get("expiry_time")
+                        else None
+                    ),
+                    "assignment_status": row.get("assignment_status")
+                })
+
+            # ==================================================
+            # TIMELINE
+            # ==================================================
+            timeline = []
+
+            # ASSIGNMENT EVENTS
+            for row in assignments:
+
+                assignment_status = row.get("assignment_status")
+
+                if assignment_status not in ["REJECTED", "EXPIRED"]:
+                    continue
+
+                remarks = None
+
+                matching_lifecycle = next(
+                    (
+                        lc for lc in lifecycles
+                        if lc.get("status") == assignment_status
+                        and str(lc.get("contractor_id")) == str(row.get("provider_id"))
+                    ),
+                    None
+                )
+
+                if matching_lifecycle:
+                    remarks = (
+                        matching_lifecycle.get("contractor_remarks")
+                        or matching_lifecycle.get("remarks")
+                    )
+
+                timeline.append({
+                    "status": assignment_status,
+                    "time": (
+                        row.get("assigned_at").isoformat()
+                        if row.get("assigned_at")
+                        else None
+                    ),
+                    "expiry_time": (
+                        row.get("expiry_time").isoformat()
+                        if row.get("expiry_time")
+                        else None
+                    ),
+                    "contractor_id": row.get("provider_id"),
+                    "contractor_name": row.get("contractor_name"),
+                    "remarks": remarks
+                })
+                
+            # LIFECYCLE EVENTS
+            for row in lifecycles:
+
+                lifecycle_status = row.get("status")
+
+                # Skip statuses already represented by assignment table
+                if lifecycle_status in [
+                    "REJECTED",
+                    "EXPIRED",
+                ]:
+                    continue
+
+                event_time = (
+                    row.get("workorder_close_time")
+                    or row.get("workorder_reopen_time")
+                    or row.get("workorder_completed_time")
+                    or row.get("created_t")
+                )
+
+                print(
+                    lifecycle_status,
+                    row.get("remarks"),
+                    row.get("contractor_remarks"),
+                    row.get("admin_remarks")
+                )
+
+                timeline.append({
+                    "status": lifecycle_status,
+                    "time": (
+                        event_time.isoformat()
+                        if event_time
+                        else None
+                    ),
+                    "remarks": (
+                        row.get("admin_remarks")
+                        or row.get("contractor_remarks")
+                        or row.get("remarks")
+                    ),
+                    "contractor_name": row.get("contractor_name"),
+                    "contractor_id": row.get("contractor_id")
+                })
+
+            # ==================================================
+            # SORT TIMELINE
+            # ==================================================
+            timeline = sorted(
+                timeline,
+                key=lambda x: x["time"] if x["time"] else ""
+            )
+
+            response["assignment_history"] = assignment_history
+            response["timeline"] = timeline
+
+            return [response], None
 
         except Exception as e:
             print(f"[ERROR] search_by_workorder_raw exception: {e}")
@@ -695,17 +833,10 @@ class WorkOrder(db.Model):
     @staticmethod
     def get_child_workorders_with_contractor(parent_wo):
         query = text("""
-            SELECT 
-                a.*,
-                b.contractor_id,
-                b.contractor_name,
-                b.contractor_remarks,
-                b.status AS lifecycle_status,
-                b.remarks AS lifecycle_remarks,
-                b.created_t AS lifecycle_created_t
-            FROM public.workorder_t a
-            LEFT JOIN public.workorder_life_cycle_t b
-                ON a."workorder" = b."workorder"
+            SELECT a.*,b.contractor_id,b.contractor_name,b.contractor_remarks,
+            b.status AS lifecycle_status,b.remarks AS lifecycle_remarks,
+            b.created_t AS lifecycle_created_t FROM public.workorder_t a
+            LEFT JOIN public.workorder_life_cycle_t b ON a."workorder" = b."workorder"
             WHERE a.parent_workorder = :parent_wo
         """)
 
@@ -747,42 +878,16 @@ class WorkOrder(db.Model):
             logging.info("Dashboard Filter Query Triggered")
 
             sql = text("""
-                SELECT DISTINCT ON (w.workorder)
-                    w.*,
-                    c.category_name,
-                    r.region_name,
-
-                    -- Contractor details
-                    u.name AS contractor_name,
-                    u.user_uid AS contractor_id,
-                    wa.assignment_status,
-                    wa.assigned_at
-
-                FROM workorder_t w
-
-                LEFT JOIN category_master_t c
-                    ON w.category = c.category_id
-
-                LEFT JOIN region_master_t r
-                    ON w.region = r.region_id
-
-                -- Get latest assignment
-                LEFT JOIN workorder_assignment_t wa
-                    ON wa."WORKORDER_ID" = w.workorder
-
-                LEFT JOIN users_t u
-                   ON wa.provider_id = u.user_uid
-
+                SELECT DISTINCT ON (w.workorder) w.*,c.category_name,r.region_name,
+                u.name AS contractor_name,u.user_uid AS contractor_id,wa.assignment_status,
+                wa.assigned_at FROM workorder_t w
+                LEFT JOIN category_master_t c ON w.category = c.category_id
+                LEFT JOIN region_master_t r ON w.region = r.region_id
+                LEFT JOIN workorder_assignment_t wa ON wa."WORKORDER_ID" = w.workorder
+                LEFT JOIN users_t u ON wa.provider_id = u.user_uid
                 WHERE w.created_t BETWEEN :from_dt AND :to_dt
-                AND (
-                        :status = 'All'
-                        OR LOWER(w.status) = LOWER(:status)
-                    )
-
-                ORDER BY
-                    w.workorder,
-                    wa.assigned_at DESC NULLS LAST,
-                    w.id DESC
+                AND (:status = 'All' OR LOWER(w.status) = LOWER(:status))
+                ORDER BY w.workorder,wa.assigned_at DESC NULLS LAST,w.id DESC
             """)
 
             rows = db.session.execute(
@@ -819,21 +924,18 @@ class WorkOrder(db.Model):
     def count_today(cls):
         try:
             sql = text("""
-                SELECT COUNT(*) 
-                FROM workorder_t 
-                WHERE DATE(created_t) = CURRENT_DATE
+                SELECT COUNT(*) FROM workorder_t WHERE DATE(created_t) = CURRENT_DATE
             """)
             result = db.session.execute(sql).scalar()
             return result, None
         except Exception as e:
             return None, str(e)
+        
     @classmethod
     def count_open(cls):
         try:
             sql = text("""
-                SELECT COUNT(*) 
-                FROM workorder_t 
-                WHERE LOWER(status) IN ('open', 'accepted')
+                SELECT COUNT(*) FROM workorder_t WHERE LOWER(status) IN ('open', 'accepted')
             """)
             result = db.session.execute(sql).scalar()
             return result, None
@@ -898,34 +1000,16 @@ class WorkOrder(db.Model):
     def get_by_workorder_code(cls, workorder):
         try:
             sql = text("""
-                SELECT 
-                    w.*,
-                    c.category_name,
-                    i.item_name,
-                    t.type_name,
-                    d.description_name,
-                    r.region_name,
-                    s.state_name,
-                    ci.city_name
-    
-                FROM workorder_t w
-                LEFT JOIN category_master_t c
-                    ON w.category = c.category_id
-                LEFT JOIN item_master_t i
-                    ON w.item = i.item_id
-                LEFT JOIN type_master_t t
-                    ON w.type = t.type_id
-                LEFT JOIN description_master_t d
-                    ON w.description = d.description_id
-                LEFT JOIN region_master_t r
-                    ON w.region = r.region_id
-                LEFT JOIN state_master_t s
-                    ON w.state = s.state_id
-                LEFT JOIN city_master_t ci
-                    ON w.city = ci.city_id
-    
-                WHERE w.workorder = :workorder
-                LIMIT 1
+                SELECT w.*,c.category_name,i.item_name,t.type_name,d.description_name,
+                r.region_name,s.state_name,ci.city_name FROM workorder_t w
+                LEFT JOIN category_master_t c ON w.category = c.category_id
+                LEFT JOIN item_master_t i ON w.item = i.item_id
+                LEFT JOIN type_master_t t ON w.type = t.type_id
+                LEFT JOIN description_master_t d ON w.description = d.description_id
+                LEFT JOIN region_master_t r ON w.region = r.region_id
+                LEFT JOIN state_master_t s ON w.state = s.state_id
+                LEFT JOIN city_master_t ci ON w.city = ci.city_id
+                WHERE w.workorder = :workorder LIMIT 1
             """)
     
             row = db.session.execute(sql, {"workorder": workorder}).mappings().fetchone()
@@ -993,11 +1077,8 @@ class WorkOrder(db.Model):
     
             # 🔹 1. Update main workorder table
             sql_workorder = text("""
-                UPDATE workorder_t
-                SET 
-                    status = 'CLOSED',
-                    closing_images = CAST(:images AS JSONB)
-                WHERE workorder = :workorder
+                UPDATE workorder_t SET status = 'CLOSED',
+                closing_images = CAST(:images AS JSONB) WHERE workorder = :workorder
                 RETURNING *;
             """)
     
@@ -1012,39 +1093,23 @@ class WorkOrder(db.Model):
     
             # 🔹 2. Update lifecycle table
             sql_lifecycle = text("""
-                UPDATE workorder_life_cycle_t
-                SET 
-                    status = 'CLOSED',
-                    workorder_close_time = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')
-                WHERE id = (
-                    SELECT id
-                    FROM workorder_life_cycle_t
-                    WHERE workorder = :workorder
-                    ORDER BY created_t DESC
-                    LIMIT 1
-                );
+                UPDATE workorder_life_cycle_t SET status = 'CLOSED',
+                workorder_close_time = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')
+                WHERE id = (SELECT id FROM workorder_life_cycle_t
+                WHERE workorder = :workorder ORDER BY created_t DESC LIMIT 1);
 
             """)
     
-            db.session.execute(sql_lifecycle, {
-                "workorder": workorder_code
-            })
+            db.session.execute(sql_lifecycle, {"workorder": workorder_code})
     
             # 🔹 3. Update assignment table (ONLY ACCEPTED → CLOSED)
             sql_assignment = text("""
-                UPDATE workorder_assignment_t
-                SET assignment_status = 'CLOSED'
-                WHERE "WORKORDER_ID" = :workorder
-                  AND assignment_status = 'ACCEPTED';
+                UPDATE workorder_assignment_t SET assignment_status = 'CLOSED'
+                WHERE "WORKORDER_ID" = :workorder AND assignment_status = 'ACCEPTED';
             """)
     
-            db.session.execute(sql_assignment, {
-                "workorder": workorder_code
-            })
-    
-            # 🔹 4. Commit all updates together
+            db.session.execute(sql_assignment, {"workorder": workorder_code})
             db.session.commit()
-    
             return dict(row), None
     
         except Exception as e:
@@ -1059,6 +1124,7 @@ class WorkOrder(db.Model):
             return result, None
         except Exception as e:
             return None, str(e)
+        
     @staticmethod
     def count_company():
         try:
@@ -1073,16 +1139,11 @@ class WorkOrder(db.Model):
     def get_pending_workorders_by_provider(provider_id):
         try:
             sql = text("""
-                SELECT * 
-                FROM workorder_assignment_t 
-                WHERE provider_id = :provider_id
-                  AND assignment_status = 'PENDING'
-                  ORDER BY assigned_at DESC
+                SELECT * FROM workorder_assignment_t WHERE provider_id = :provider_id
+                AND assignment_status = 'PENDING' ORDER BY assigned_at DESC
             """)
     
-            result = db.session.execute(
-                sql, {"provider_id": provider_id}
-            ).mappings().all()
+            result = db.session.execute(sql, {"provider_id": provider_id}).mappings().all()
     
             rows = []
             for row in result:
@@ -1341,7 +1402,7 @@ class WorkOrder(db.Model):
             SELECT workorder FROM workorder_t WHERE category = :CATEGORY_ID AND item = :ITEM_ID
             AND type = :TYPE_ID AND description = :DESCRIPTION_ID AND region = :REGION_ID
             AND state = :STATE_ID AND city = :CITY_ID AND client = :CLIENT AND status = 'OPEN'
-            AND ticket_assignment_type = 'auto' ORDER BY created_t ASC
+            ORDER BY created_t ASC
         """)
 
         result = db.session.execute(sql, {
@@ -1485,29 +1546,18 @@ class WorkOrder(db.Model):
     @classmethod
     def workorder_insert_admin_notification_close(cls, workorder, message, saved_images, provider_id):
         logging.info(f"admin_ → workorder: {workorder}, images: {saved_images}")
-        logging.info(f"checking by gopi reopen")
-
         try:
-            # -----------------------------------
-            # Check existing notification
             sql_check = text("""
-                SELECT id
-                FROM admin_notifications_t
-                WHERE workorder = :workorder
+                SELECT id FROM admin_notifications_t WHERE workorder = :workorder
                 LIMIT 1;
             """)
 
-            existing = db.session.execute(
-                sql_check,
-                {"workorder": workorder}
-            ).fetchone()
+            existing = db.session.execute(sql_check,{"workorder": workorder}).fetchone()
 
             if existing:
                 sql_notification = text("""
-                    UPDATE admin_notifications_t
-                    SET notification_type = 'WORKORDER_CLOSE',
-                        message = :message,
-                        updated_at = CURRENT_TIMESTAMP
+                    UPDATE admin_notifications_t SET notification_type = 'WORKORDER_CLOSE',
+                    message = :message,updated_at = CURRENT_TIMESTAMP
                     WHERE workorder = :workorder;
                 """)
 
@@ -1518,21 +1568,9 @@ class WorkOrder(db.Model):
 
             else:
                 sql_notification = text("""
-                    INSERT INTO admin_notifications_t
-                    (
-                        workorder,
-                        notification_type,
-                        message,
-                        created_by,
-                        created_at
-                    )
-                    VALUES (
-                        :workorder,
-                        'WORKORDER_CLOSE',
-                        :message,
-                        :provider_id,
-                        CURRENT_TIMESTAMP
-                    );
+                    INSERT INTO admin_notifications_t(workorder,notification_type,message,
+                    created_by,created_at) VALUES (:workorder,'WORKORDER_CLOSE',:message,
+                        :provider_id,CURRENT_TIMESTAMP);
                 """)
 
                 db.session.execute(sql_notification, {
@@ -1546,10 +1584,8 @@ class WorkOrder(db.Model):
             images_json = json.dumps(saved_images)
 
             sql_workorder = text("""
-                UPDATE workorder_t
-                SET status = 'COMPLETED',
-                    closing_images = CAST(:images AS JSONB)
-                WHERE workorder = :workorder
+                UPDATE workorder_t SET status = 'COMPLETED',
+                closing_images = CAST(:images AS JSONB) WHERE workorder = :workorder
                 RETURNING *;
             """)
 
@@ -1568,26 +1604,21 @@ class WorkOrder(db.Model):
             # -----------------------------------
             # Update lifecycle
             sql_lifecycle = text("""
-                UPDATE workorder_life_cycle_t
-                SET status = 'COMPLETED',
-                    workorder_completed_time =
-                    (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')
-                WHERE workorder = :workorder
-                AND contractor_id = :provider_id;
+                INSERT INTO workorder_life_cycle_t (workorder,created_t,status,contractor_id,
+                contractor_remarks,workorder_completed_time) VALUES (:workorder,
+                CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata','COMPLETED',
+                :provider_id,:message,(CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata'));
             """)
 
-            db.session.execute(sql_lifecycle, {
-                "workorder": workorder,
-                "provider_id": provider_id
+            db.session.execute(sql_lifecycle, {"workorder": workorder,"provider_id": provider_id,
+                "message": message
             })
 
             # -----------------------------------
             # ACCEPTED / REOPEN → COMPLETED
             sql_assignment = text("""
-                UPDATE workorder_assignment_t
-                SET assignment_status = 'COMPLETED'
-                WHERE "WORKORDER_ID" = :workorder
-                AND provider_id = :provider_id
+                UPDATE workorder_assignment_t SET assignment_status = 'COMPLETED'
+                WHERE "WORKORDER_ID" = :workorder AND provider_id = :provider_id
                 AND assignment_status IN ('ACCEPTED', 'REOPEN')
             """)
 
@@ -1595,15 +1626,9 @@ class WorkOrder(db.Model):
                 "workorder": workorder,
                 "provider_id": provider_id
             })
-            
-
-
-
-
 
             db.session.commit()
 
-            # get admin email after successful DB commit
             admin_email,admin_id, email_err = cls.get_admin_email_by_workorder(workorder)
             if email_err:
                 logging.warning(f"Admin email fetch warning: {email_err}")
@@ -1621,85 +1646,73 @@ class WorkOrder(db.Model):
     # COMPLETED → REOPEN
     # =========================================================
     @classmethod
-    def workorder_insert_admin_notification_reopen(
-        cls,
-        workorder,
-        admin_remarks
-    ):
+    def workorder_insert_admin_notification_reopen(cls,workorder,admin_remarks):
         logging.info(f"🔁 Admin Reopen → workorder={workorder}")
 
         try:
             sql_workorder = text("""
-                UPDATE workorder_t
-                SET status = 'REOPEN'
-                WHERE workorder = :workorder
+                UPDATE workorder_t SET status = 'REOPEN'WHERE workorder = :workorder
                 RETURNING *;
             """)
 
-            row = db.session.execute(
-                sql_workorder,
-                {"workorder": workorder}
-            ).mappings().fetchone()
+            row = db.session.execute(sql_workorder,{"workorder": workorder}).mappings().fetchone()
 
             if not row:
                 db.session.rollback()
                 return None, "Workorder not found"
 
             # -----------------------------------
-            # Lifecycle update
-            sql_lifecycle = text("""
-                UPDATE workorder_life_cycle_t
-                SET status = 'REOPEN',
-                    workorder_reopen_time =
-                    (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata'),
-                    admin_remarks = :admin_remarks
-                WHERE workorder = :workorder;
+            # Lifecycle insert
+            sql_fetch = text("""
+                SELECT * FROM workorder_life_cycle_t WHERE workorder = :workorder
+                AND status = 'COMPLETED' ORDER BY id DESC LIMIT 1;
             """)
 
-            db.session.execute(
-                sql_lifecycle,
-                {
-                    "workorder": workorder,
+            completed_row = db.session.execute(sql_fetch,{"workorder": workorder}).mappings().fetchone()
+
+            if completed_row:
+
+                sql_insert = text("""
+                    INSERT INTO workorder_life_cycle_t (workorder,created_t,requested_time_close,
+                    remarks,status,contractor_name,contractor_id,contractor_remarks,
+                    workorder_reopen_time,admin_remarks) VALUES (:workorder,
+                    (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata'),:requested_time_close,
+                    :remarks,'REOPEN',:contractor_name,:contractor_id,:contractor_remarks,
+                    (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata'),:admin_remarks);
+                """)
+
+                db.session.execute(sql_insert, {
+                    "workorder": completed_row["workorder"],
+                    "requested_time_close": completed_row["requested_time_close"],
+                    "remarks": completed_row["remarks"],
+                    "contractor_name": completed_row["contractor_name"],
+                    "contractor_id": completed_row["contractor_id"],
+                    "contractor_remarks": completed_row["contractor_remarks"],
                     "admin_remarks": admin_remarks
-                }
-            )
+                })
 
             # -----------------------------------
             # COMPLETED → REOPEN
             sql_assignment = text("""
-                UPDATE workorder_assignment_t
-                SET assignment_status = 'REOPEN'
-                WHERE "WORKORDER_ID" = :workorder
-                AND assignment_status = 'COMPLETED'
+                UPDATE workorder_assignment_t SET assignment_status = 'REOPEN'
+                WHERE "WORKORDER_ID" = :workorder AND assignment_status = 'COMPLETED'
             """)
 
-            db.session.execute(
-                sql_assignment,
-                {"workorder": workorder}
-            )
+            db.session.execute(sql_assignment,{"workorder": workorder})
 
-            # -----------------------------------
-            # Notification update
             sql_admin_notification = text("""
-                UPDATE admin_notifications_t
-                SET notification_type = 'REOPEN'
+                UPDATE admin_notifications_t SET notification_type = 'REOPEN'
                 WHERE workorder = :workorder;
             """)
 
-            db.session.execute(
-                sql_admin_notification,
-                {"workorder": workorder}
-            )
-
+            db.session.execute(sql_admin_notification,{"workorder": workorder})
             db.session.commit()
 
             return dict(row), None
 
         except Exception as e:
             db.session.rollback()
-            logging.exception(
-                "❌ Admin Notification Reopen DB Error"
-            )
+            logging.exception("Admin Notification Reopen DB Error")
             return None, str(e)
 
 
@@ -1708,11 +1721,7 @@ class WorkOrder(db.Model):
     # ONLY COMPLETED → CLOSED
     # =========================================================
     @classmethod
-    def workorder_update_admin_notification_close(
-        cls,
-        workorder,
-        admin_remarks
-    ):
+    def workorder_update_admin_notification_close(cls,workorder,admin_remarks):
         logging.info(f"🔒 Admin Close → workorder={workorder}")
 
         try:
@@ -1734,19 +1743,25 @@ class WorkOrder(db.Model):
 
             # -----------------------------------
             # Lifecycle update
-            sql_lifecycle = text("""
-                UPDATE workorder_life_cycle_t
-                SET status = 'CLOSED',
-                    workorder_close_time =
-                    (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata'),
-                    admin_remarks = :admin_remarks
-                WHERE workorder = :workorder;
-            """)
+            completed_row = db.session.execute(
+                text("""
+                    SELECT * FROM workorder_life_cycle_t WHERE workorder = :workorder
+                    AND status = 'COMPLETED' ORDER BY id DESC LIMIT 1
+                """),
+                {"workorder": workorder}).mappings().fetchone()
+
+            if not completed_row:
+                return None, "Completed lifecycle record not found"
 
             db.session.execute(
-                sql_lifecycle,
+                text("""
+                    INSERT INTO workorder_life_cycle_t (workorder,contractor_id,status,
+                    workorder_close_time,admin_remarks) VALUES (:workorder,:contractor_id,
+                    'CLOSED',(CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata'),:admin_remarks)
+                """),
                 {
                     "workorder": workorder,
+                    "contractor_id": completed_row["contractor_id"],
                     "admin_remarks": admin_remarks
                 }
             )
@@ -1754,54 +1769,42 @@ class WorkOrder(db.Model):
             # -----------------------------------
             # ONLY COMPLETED → CLOSED
             sql_assignment = text("""
-                UPDATE workorder_assignment_t
-                SET assignment_status = 'CLOSED'
-                WHERE "WORKORDER_ID" = :workorder
-                AND assignment_status = 'COMPLETED'
+                UPDATE workorder_assignment_t SET assignment_status = 'CLOSED'
+                WHERE "WORKORDER_ID" = :workorder AND assignment_status = 'COMPLETED'
             """)
 
-            db.session.execute(
-                sql_assignment,
-                {"workorder": workorder}
-            )
+            db.session.execute(sql_assignment,{"workorder": workorder})
 
             # -----------------------------------
             # Notification update
             sql_admin_notification = text("""
-                UPDATE admin_notifications_t
-                SET notification_type = 'CLOSED'
+                UPDATE admin_notifications_t SET notification_type = 'CLOSED'
                 WHERE workorder = :workorder;
             """)
 
-            db.session.execute(
-                sql_admin_notification,
-                {"workorder": workorder}
-            )
-
+            db.session.execute(sql_admin_notification,{"workorder": workorder})
             db.session.commit()
-
             return dict(row), None
 
         except Exception as e:
             db.session.rollback()
-            logging.exception(
-                "❌ Admin Notification Close DB Error"
-            )
+            logging.exception("Admin Notification Close DB Error")
             return None, str(e)       
- 
- 
- 
- 
- 
+
         
     @staticmethod
     def get_completed_workorders_by_provider(provider_id):
         logging.info(f"get_completed_workorders_by_provider: '{provider_id}'")
         try:
             sql = text("""
-                SELECT a.*,b.*,c.region_name,d.category_name,e.item_name,f.type_name,
-                g.description_name,h.state_name,i.city_name
-                FROM workorder_life_cycle_t a JOIN workorder_t b ON a.workorder = b.workorder
+                SELECT a.*,b.*,j.status AS lifecycle_status,j.created_t AS lifecycle_created_t,
+                j.contractor_remarks,j.admin_remarks,j.workorder_completed_time,
+                j.workorder_reopen_time,c.region_name,d.category_name,e.item_name,
+                f.type_name,g.description_name,h.state_name,i.city_name
+                FROM workorder_assignment_t a
+                JOIN workorder_t b ON a."WORKORDER_ID" = b.workorder
+                JOIN workorder_life_cycle_t j ON j.id = (SELECT MAX(wl.id) FROM workorder_life_cycle_t wl
+                WHERE wl.workorder = b.workorder AND wl.status = 'COMPLETED')
                 JOIN region_master_t c ON c.region_id = b.region
                 JOIN category_master_t d ON d.category_id = b.category
                 JOIN item_master_t e ON b.item = e.item_id
@@ -1809,7 +1812,7 @@ class WorkOrder(db.Model):
                 JOIN description_master_t g ON b.description = g.description_id
                 JOIN state_master_t h ON b.state = h.state_id
                 JOIN city_master_t i ON b.city = i.city_id
-                WHERE a.contractor_id = :provider_id AND a.status = 'COMPLETED';                
+                WHERE a.provider_id = :provider_id AND b.status = 'COMPLETED';
             """) 
             result = db.session.execute(
                 sql, {"provider_id": provider_id}
@@ -1886,9 +1889,12 @@ class WorkOrder(db.Model):
         logging.info(f"get_reopen_workorders_for_provider: '{provider_id}'")
         try:
             sql = text("""
-                SELECT a.*,b.*,c.region_name,d.category_name,e.item_name,f.type_name,
+                SELECT a.*,b.*,j.*,c.region_name,d.category_name,e.item_name,f.type_name,
                 g.description_name,h.state_name,i.city_name
-                FROM workorder_life_cycle_t a JOIN workorder_t b ON a.workorder = b.workorder
+                FROM workorder_assignment_t a
+                JOIN workorder_t b ON a."WORKORDER_ID" = b.workorder
+                JOIN workorder_life_cycle_t j ON j.id = (SELECT MAX(wl.id) FROM workorder_life_cycle_t wl
+                WHERE wl.workorder = b.workorder AND wl.status = 'REOPEN')
                 JOIN region_master_t c ON c.region_id = b.region
                 JOIN category_master_t d ON d.category_id = b.category
                 JOIN item_master_t e ON b.item = e.item_id
@@ -1896,8 +1902,8 @@ class WorkOrder(db.Model):
                 JOIN description_master_t g ON b.description = g.description_id
                 JOIN state_master_t h ON b.state = h.state_id
                 JOIN city_master_t i ON b.city = i.city_id
-                WHERE a.contractor_id = :provider_id AND a.status = 'REOPEN';                
-            """) 
+                WHERE a.provider_id = :provider_id AND b.status = 'REOPEN';
+            """)
             result = db.session.execute(
                 sql, {"provider_id": provider_id}
             ).mappings().all()
@@ -2300,9 +2306,7 @@ class WorkOrder(db.Model):
 
             # Check if email already exists
             check_sql = text("""
-                SELECT admin_id
-                FROM admins_t
-                WHERE LOWER(email) = LOWER(:email)
+                SELECT admin_id FROM admins_t WHERE LOWER(email) = LOWER(:email)
             """)
 
             existing_admin = db.session.execute(
@@ -2332,20 +2336,8 @@ class WorkOrder(db.Model):
 
             # Insert admin
             insert_sql = text("""
-                INSERT INTO admins_t (
-                    name,
-                    email,
-                    password_hash,
-                    mobile,
-                    modules
-                )
-                VALUES (
-                    :name,
-                    :email,
-                    :password_hash,
-                    :mobile,
-                    :modules
-                )
+                INSERT INTO admins_t (name,email,password_hash,mobile,modules)
+                VALUES (:name,:email,:password_hash,:mobile,:modules)
                 RETURNING admin_id
             """)
 
@@ -2383,14 +2375,8 @@ class WorkOrder(db.Model):
     def get_admin_by_email(email):
         try:
             sql = text("""
-                SELECT
-                    admin_id,
-                    name,
-                    email,
-                    mobile,
-                    modules
-                FROM admins_t
-                WHERE LOWER(email) = LOWER(:email)
+                SELECT admin_id,name,email,mobile,modules
+                FROM admins_t WHERE LOWER(email) = LOWER(:email)
             """)
 
             admin = db.session.execute(
@@ -2451,11 +2437,7 @@ class WorkOrder(db.Model):
             modules = req_data.get("modules", [])
 
             sql = text("""
-                UPDATE admins_t
-                SET
-                    name = :name,
-                    mobile = :mobile,
-                    modules = :modules
+                UPDATE admins_t SET name = :name,mobile = :mobile,modules = :modules
                 WHERE LOWER(email) = LOWER(:email)
             """)
 
@@ -2486,16 +2468,9 @@ class WorkOrder(db.Model):
 
         try:
 
-            # -----------------------------------------
-            # STEP 1: Update workorder_t status
-            # -----------------------------------------
             sql = text("""
-                UPDATE workorder_t
-                SET
-                    status = 'WITHDRAW',
-                    withdraw_reason = :reason,
-                    withdrawn_at = CURRENT_TIMESTAMP,
-                    ticket_assignment_type = 'manual'
+                UPDATE workorder_t SET status = 'WITHDRAW',withdraw_reason = :reason,
+                withdrawn_at = CURRENT_TIMESTAMP, ticket_assignment_type = 'manual'
                 WHERE workorder = :workorder
                 RETURNING *;
             """)
@@ -2512,38 +2487,24 @@ class WorkOrder(db.Model):
                 db.session.rollback()
                 return False, "Workorder not found"
 
-            # -----------------------------------------
-            # STEP 2: Update workorder_assignment_t
-            # Use UPPER() to handle mixed-case values
-            # e.g. 'Accepted', 'ACCEPTED', 'accepted'
-            # -----------------------------------------
             result = db.session.execute(
                 text("""
-                    UPDATE workorder_assignment_t
-                    SET assignment_status = 'WITHDRAW'
-                    WHERE "WORKORDER_ID" = :workorder
-                    AND UPPER(assignment_status) IN (
-                        'PENDING',
-                        'ACCEPTED'
-                    )
+                    UPDATE workorder_assignment_t SET assignment_status = 'WITHDRAW'
+                    WHERE "WORKORDER_ID" = :workorder AND UPPER(assignment_status)
+                      IN ('PENDING','ACCEPTED')
                 """),
                 {
                     "workorder": workorder
                 }
             )
 
-            logging.info(
-                f"Assignment rows updated to WITHDRAW: "
+            logging.info(f"Assignment rows updated to WITHDRAW: "
                 f"{result.rowcount}"
             )
 
-            # -----------------------------------------
-            # STEP 3: Commit both updates together
-            # -----------------------------------------
             db.session.commit()
 
-            logging.info(
-                f"Workorder {workorder} withdrawn successfully "
+            logging.info(f"Workorder {workorder} withdrawn successfully "
                 f"and moved to MANUAL assignment"
             )
 
@@ -2553,9 +2514,7 @@ class WorkOrder(db.Model):
 
             db.session.rollback()
 
-            logging.exception(
-                "Withdraw Workorder Error"
-            )
+            logging.exception("Withdraw Workorder Error")
 
             raise
         
@@ -2565,21 +2524,19 @@ class WorkOrder(db.Model):
     def get_admin_email_by_workorder(cls, workorder):
         try:
             sql = text("""
-                SELECT
-                    a.email,
-                    a.admin_id
+                SELECT a.email
                 FROM workorder_t w
                 JOIN admins_t a
                     ON a.admin_id = CAST(w.created_by AS BIGINT)
                 WHERE w.workorder = :workorder
                 LIMIT 1;
             """)
-    
+
             row = db.session.execute(
                 sql,
                 {"workorder": workorder}
             ).fetchone()
-    
+
             if not row:
                 return None, None, "Admin email not found for this workorder"
     
@@ -2594,22 +2551,17 @@ class WorkOrder(db.Model):
     def get_contractor_details_for_reopen(cls, workorder):
         try:
             sql = text("""
-                SELECT
-                    u.user_uid,
-                    u.email_id
+                SELECT u.email_id
                 FROM workorder_assignment_t wa
                 JOIN users_t u
                     ON u.user_uid = wa.provider_id
                 WHERE wa."WORKORDER_ID" = :workorder
                 ORDER BY wa.assigned_at DESC
-                LIMIT 1
+                LIMIT 1;
             """)
     
-            row = db.session.execute(
-                sql,
-                {"workorder": workorder}
-            ).fetchone()
-    
+            row = db.session.execute(sql,{"workorder": workorder}).fetchone()
+
             if not row:
                 return None, None, (
                     "Contractor not found"

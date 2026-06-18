@@ -199,7 +199,7 @@ def insert_email_notification_log(workorder_number, sender_name, email_id, statu
         logging.error(f"Failed to insert email log: {e}")
 
 
-def insert_workorder_lifecycle_log(workorder, contractor_id, contractor_name, remark):
+def insert_workorder_lifecycle_log(workorder, status, contractor_id, contractor_name, remark):
     try:
         db.session.execute(text("""
             INSERT INTO workorder_life_cycle_t (workorder, created_t,requested_time_close,
@@ -210,7 +210,7 @@ def insert_workorder_lifecycle_log(workorder, contractor_id, contractor_name, re
             "requested_time_close": workorder.requested_time_close,
             "dt": now_ist(),
             "r": workorder.remarks,
-            "st": workorder.status,
+            "st": status,
             "cn": contractor_name,
             "cid": contractor_id,
             "crm": remark
@@ -225,9 +225,7 @@ def update_workorder_status_in_db(workorder, status):
     logging.info(f"Updating -> workorder: {workorder}, status: {status}")
     try:
         sql = text("""
-            UPDATE workorder_t
-            SET status = :status
-            WHERE workorder = :wid
+            UPDATE workorder_t SET status = :status WHERE workorder = :wid
         """)
         db.session.execute(sql, {"status": status, "wid": workorder})
         db.session.commit()
@@ -376,9 +374,6 @@ def send_email_with_attachments_manual(request_data, recipient, name, html_body)
     if wo:
         attach_workorder_images(msg, related, wo)
     msg.attach(related)
-
-    
-
     
 
     try:
@@ -672,11 +667,9 @@ def update_workorder_status_assignment(workorder, contractor_id, status):
 def is_workorder_already_responded(workorder_id, contractor_id):
     try:
         sql = text("""
-            SELECT assignment_status
-            FROM workorder_assignment_t
-            WHERE "WORKORDER_ID" = :wid
-              AND provider_id = :pid
-              AND assignment_status IN ('Accepted', 'Rejected')
+            SELECT assignment_status FROM workorder_assignment_t
+            WHERE "WORKORDER_ID" = :wid AND provider_id = :pid
+            AND assignment_status IN ('Accepted', 'Rejected')
             LIMIT 1
         """)
 
@@ -704,13 +697,8 @@ def get_accepted_contractor(workorder):
     try:
 
         query = text("""
-            SELECT
-                u.user_uid,
-                u.name,
-                u.email_id
-            FROM workorder_assignment_t w
-            JOIN users_t u
-                ON u.user_uid = w.provider_id
+            SELECT u.user_uid,u.name,u.email_id FROM workorder_assignment_t w
+            JOIN users_t u ON u.user_uid = w.provider_id
             WHERE w."WORKORDER_ID" = :workorder
             LIMIT 1
         """)

@@ -201,11 +201,8 @@ def search_workorders():
     if not query:
         return jsonify([]), 200
 
-    print(f"[DEBUG] API called with query: {query}")
-
     workorders, error = WorkOrder.search_by_workorder_raw(query)
     if error:
-        print(f"[ERROR] search API error: {error}")
         return jsonify({"error": error}), 500
 
     print(f"[DEBUG] API returning {len(workorders)} rows")
@@ -871,18 +868,11 @@ def admin_reopen_workorder():
         if error:
             return jsonify({"success": False,"message": error}), 400
         
-        
-        
-        
         contractor_id, contractor_email, email_err = (WorkOrder.get_contractor_details_for_reopen(workorder))
         
         if contractor_email:
             try:
-                send_workorder_reopened_contractor_email(
-                    contractor_email,
-                    updated,
-                    admin_remarks
-                )
+                send_workorder_reopened_contractor_email(contractor_email,updated,admin_remarks)
             except Exception:
                 logging.exception("❌ Failed to send reopen email to contractor")
         else:
