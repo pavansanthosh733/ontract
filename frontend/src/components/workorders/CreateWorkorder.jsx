@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./css/createworkorder.css";
 import Swal from "sweetalert2";
 import { apiGet, BASE_URL } from "../../api";
@@ -45,6 +45,7 @@ const CreateWorkOrder = () => {
 
   // ===== IMAGES =====
   const [images, setImages] = useState([]);
+  const fileInputRef = useRef(null);
 
   // ===============================
   // Initial load
@@ -235,9 +236,60 @@ const CreateWorkOrder = () => {
 
   const handleReset = () => window.location.reload();
 
-  const handleImageChange = (files) => {
+  const ALLOWED_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "video/mp4",
+  "video/quicktime", // .mov
+  "video/x-msvideo", // .avi
+  "video/webm",
+];
+
+const MAX_SIZE = 20 * 1024 * 1024; // 20MB
+
+const handleImageChange = (files) => {
     if (!files?.length) return;
-    setImages((prev) => [...prev, ...Array.from(files)]);
+
+    const selectedFiles = Array.from(files);
+
+    const invalidFiles = selectedFiles.filter(
+      (file) => !ALLOWED_TYPES.includes(file.type)
+    );
+
+    if (invalidFiles.length > 0) {
+      alert(
+        `Only JPG, JPEG, PNG, WEBP, MP4, MOV, AVI and WEBM files are allowed.\n\nInvalid file(s):\n${invalidFiles
+          .map((f) => f.name)
+          .join("\n")}`
+      );
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+      return;
+    }
+
+    const oversizedFiles = selectedFiles.filter(
+      (file) => file.size > MAX_SIZE
+    );
+
+    if (oversizedFiles.length > 0) {
+      alert(
+        `Maximum file size is 20 MB.\n\nOversized file(s):\n${oversizedFiles
+          .map((f) => f.name)
+          .join("\n")}`
+      );
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+      return;
+    }
+
+    setImages((prev) => [...prev, ...selectedFiles]);
   };
 
   const removeImage = (index) => {
@@ -566,12 +618,13 @@ const CreateWorkOrder = () => {
 
             <div className="form-group required-wrapper">
               <input
-  type="date"
-  name="REQUESTED_TIME_CLOSING"
-  required
-  value={formData.REQUESTED_TIME_CLOSING}
-  onChange={handleChange}
-/>
+                type="date"
+                name="REQUESTED_TIME_CLOSING"
+                required
+                min={getMinDate()}
+                value={formData.REQUESTED_TIME_CLOSING}
+                onChange={handleChange}
+              />
               <span className="required-star">★</span>
             </div>
 
@@ -611,13 +664,14 @@ const CreateWorkOrder = () => {
         {/* IMAGE UPLOAD */}
         <div className="form-group full-width combined-row">
           <div className="combined-header single-header">
-            <div className="header-item">Upload Images</div>
+            <div className="header-item">Upload Images / Videos</div>
           </div>
 
           <div className="combined-body image-upload-body">
             <input
+              ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept=".jpg,.jpeg,.png,.webp,.mp4,.mov,.avi,.webm"
               multiple
               onChange={(e) => handleImageChange(e.target.files)}
               className="file-input"
@@ -627,11 +681,19 @@ const CreateWorkOrder = () => {
               <div className="image-preview-list">
                 {images.map((file, idx) => (
                   <div key={idx} className="image-preview-item">
-                    <img
-                      src={URL.createObjectURL(file)}
-                      alt={file.name}
-                      className="preview-thumbnail"
-                    />
+                    {file.type.startsWith("image/") ? (
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={file.name}
+                          className="preview-thumbnail"
+                        />
+                      ) : (
+                        <video
+                          src={URL.createObjectURL(file)}
+                          className="preview-thumbnail"
+                          controls
+                        />
+                      )}
                     <div className="file-info">
                       <span className="file-name">{file.name}</span>
                       <button

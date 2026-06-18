@@ -34,17 +34,59 @@
   padding: 10px 0;
 }
 
+/* ✅ All inputs same size */
 .form-input-row input {
-  padding: 8px;
+  width: 100%;
+  padding: 8px 12px;
   border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+/* 🔹 Input wrapper */
+.input-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.input-error {
+  border: 1px solid red !important;
+}
+
+.error-text {
+  color: red;
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
+}
+
+.password-hint {
+  font-size: 11px;
+  color: #888;
+  margin-top: 4px;
+  display: block;
 }
 
 /* 🔹 MODULES */
+.modules-section {
+  margin-top: 10px;
+}
+
 .modules-row {
   display: flex;
   flex-wrap: wrap;
   gap: 15px;
   padding: 10px 0;
+}
+
+.module-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14px;
+  cursor: pointer;
 }
 
 /* 🔹 BUTTONS */
@@ -60,8 +102,87 @@
   color: white;
   padding: 10px 20px;
   border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.blue-btn:hover {
+  background: #1565a0;
 }
 
 .blue-btn.cancel {
   background: gray;
+}
+
+.blue-btn.cancel:hover {
+  background: #555;
+}
+
+.blue-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ✅ Password wrapper — same size as other inputs */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+/* ✅ Password input — match all other inputs */
+.password-input-wrapper input {
+  width: 100%;
+  padding: 8px 40px 8px 12px; /* ✅ right padding for eye icon */
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+/* ✅ Eye icon inside box */
+.eye-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 16px;
+  user-select: none;
+  color: #555;
+  z-index: 1;
+}
+
+/* 🔹 MODULES */
+.modules-section {
+  margin-top: 10px;
+}
+
+/* ✅ Fix — modules row */
+.modules-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  padding: 10px 0;
+}
+
+/* ✅ Fix — each module label */
+.module-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;        /* ✅ prevents text wrapping */
+  min-width: fit-content;     /* ✅ keeps label in one line */
+}
+
+/* ✅ Fix — checkbox size */
+.module-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  flex-shrink: 0;             /* ✅ checkbox won't shrink */
 }
