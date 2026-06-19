@@ -146,7 +146,7 @@ const isApk = params.get("source") === "apk";
             element={<RateComparisonReport />}
           />
 
-          {/* Contractor routes */}
+          {/* Contractor routes done */}
           <Route
             path="/contractor/login"
             element={

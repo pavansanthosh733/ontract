@@ -31,7 +31,7 @@ function AdminApp({ admin, setAdmin }) {
   const [workorderOpen, setWorkorderOpen] = useState(false);
   const [auditOpen, setAuditOpen] = useState(false);
 
-  // 🔥 Get assigned modules from DB
+  // 🔥 Get assigned modules from DB  ok
   const modules = ctxAdmin?.modules
    ? ctxAdmin.modules.split(",").map((m) => m.trim())
    : [];

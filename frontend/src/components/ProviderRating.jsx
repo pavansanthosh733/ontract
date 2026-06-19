@@ -96,13 +96,13 @@ function ProviderRating() {
       <div className="rating-card mx-auto">
 
         <div className="rating-header">
-          PROVIDER PERFORMANCE & RATINGS for {user?.company_name || "Your Company"}
+          PROVIDER PERFORMANCE & RATINGS 
         </div>
 
         <div className="rating-inner">
 
           {/* =========================
-              SUMMARY CARDS
+              SUMMARY CARDS done
           ========================= */}
 
           <div className="summary-grid">
