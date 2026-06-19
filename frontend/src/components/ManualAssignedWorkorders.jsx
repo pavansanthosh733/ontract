@@ -74,7 +74,7 @@ function ManualAssignedWorkorders() {
       <div className="audit-card mx-auto">
 
         <div className="audit-header">
-          Manual Assigned Workorders Audit
+          Manual Assigned Workorders Audit section
         </div>
 
         <div className="audit-inner">

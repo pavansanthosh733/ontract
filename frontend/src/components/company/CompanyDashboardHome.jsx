@@ -136,7 +136,7 @@ const { contractor, loading } = useContractor();
       <div className="welcome-section mb-4">
         <h2 className="fw-bold">Welcome, {companyName} 👋</h2>
         <p className="text-muted">
-          Here’s a quick overview of your business performance.
+          Here’s a quick overview of your business performance:
         </p>
    {  /*   <Link to="/contractor/dashboard/Invoice" className="workorder-pill">
           <FaClipboardList className="me-2" />
