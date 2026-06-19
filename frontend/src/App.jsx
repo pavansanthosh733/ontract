@@ -24,7 +24,7 @@ import ProviderInvoice from "./components/ProviderInvoice";
 import AdminLogin from "./components/AdminLogin";
 import AdminDashboard from "./components/AdminDashboard";
 
-/* Contractor (company) components changes */
+/* Contractor (company) components changes done */
 import CompanyLogin from "./components/company/CompanyLogin";
 import CompanySignup from "./components/company/CompanySignup";
 import CompanyActivateAccount from "./components/company/CompanyActivateAccount";
@@ -76,7 +76,7 @@ const isApk = params.get("source") === "apk";
       {/* ROUTES */}
       <main className="flex-fill">
         <Routes>
-          {/* Common / Individuals */}
+          {/* Common / Individuals routes */}
           {/* <Route path="/" element={<Home user={user} />} /> */}
           <Route
   path="/"

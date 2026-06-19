@@ -80,7 +80,7 @@ function ProviderRating() {
   };
 
   /* =========================
-     RATING CLASS
+     RATING CLASS done
      ========================= */
 
   const getRatingClass = (rating) => {
@@ -96,7 +96,7 @@ function ProviderRating() {
       <div className="rating-card mx-auto">
 
         <div className="rating-header">
-          PROVIDER PERFORMANCE & RATINGS
+          PROVIDER PERFORMANCE & RATINGS for {user?.company_name || "Your Company"}
         </div>
 
         <div className="rating-inner">
