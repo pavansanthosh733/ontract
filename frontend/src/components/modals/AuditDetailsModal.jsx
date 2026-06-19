@@ -148,7 +148,7 @@ function AuditDetailsModal({
 
             <div className="audit-details-kv-row">
               <span className="audit-details-kv-label">
-                City
+                CITY
               </span>
 
               <span className="audit-details-kv-value">
