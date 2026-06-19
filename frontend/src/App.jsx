@@ -151,7 +151,7 @@ const isApk = params.get("source") === "apk";
             path="/contractor/login"
             element={
               contractorLoading ? (
-                <div>Loading...</div>
+                <div>LOADING...</div>
               ) : contractor ? (
                 <Navigate
                   to="/contractor/dashboard/companydashboardhome"
@@ -243,7 +243,7 @@ const isApk = params.get("source") === "apk";
             element={<AdminLogin setAdmin={setAdmin} />}
           />
 
-          {/* Fallback */}
+          {/* Fallback TO THE HOME PAGE */}
           <Route path="*" element={<Home user={user} />} />
         </Routes>
       </main>

@@ -81,7 +81,7 @@
 
 .page-title {
   text-align: center;
-  margin-top: 30px;
+  margin-top: 31px;
 }
 
 /* -------------------------------
@@ -98,7 +98,7 @@
 }
 
 /* For tablets and below */
-@media (max-width: 991px) {
+@media (max-width: 992px) {
   .menu-toggle {
     display: block;
   }

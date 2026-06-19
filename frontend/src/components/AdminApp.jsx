@@ -93,13 +93,13 @@ function AdminApp({ admin, setAdmin }) {
           <h3 className="nav-title">Admin Portal</h3>
         </div>
 
-        {/* Mobile Menu Toggle */}
+        {/* Mobile Menu Toggle for */}
         <button
           className="menu-toggle"
           onClick={() => setMenuOpen(!menuOpen)}
           aria-label="Toggle menu"
         >
-          {menuOpen ? <X size={24} /> : <Menu size={24} />}
+          {menuOpen ? <X size={25} /> : <Menu size={25} />}
         </button>
 
         {/* =========================================
@@ -115,7 +115,7 @@ function AdminApp({ admin, setAdmin }) {
         className={activeLink === 'home' ? 'active' : ''}
         onClick={() => handleLinkClick('home')}
       >
-        Home
+        HOME
       </Link>
     </li>
   )}
