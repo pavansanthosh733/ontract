@@ -23,7 +23,7 @@ function RatingDetailsModal({
         </span>
 
         <div className="modal-header">
-          Rating Details
+          RATING DETAILS
         </div>
 
         <div className="kv-grid">

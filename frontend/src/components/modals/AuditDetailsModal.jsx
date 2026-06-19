@@ -50,7 +50,7 @@ function AuditDetailsModal({
 
             <div className="audit-details-kv-row">
               <span className="audit-details-kv-label">
-                Audit ID
+                AUDIT ID
               </span>
 
               <span className="audit-details-kv-value">

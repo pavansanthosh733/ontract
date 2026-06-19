@@ -55,7 +55,7 @@ function ContractorRatingModal({
       onRatingSaved?.();
     } catch (err) {
       console.error(err);
-      alert("❌ Failed to save rating");
+      alert("❌ Failed to save rating FOR CONTRACTOR");
     } finally {
       setLoading(false);
     }
