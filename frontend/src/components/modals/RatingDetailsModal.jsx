@@ -6,6 +6,7 @@ function RatingDetailsModal({
   onClose,
   getRatingClass
 }) {
+    //please check if show is true and rating is not null before rendering the modal
 
   if (!show || !rating) return null;
 

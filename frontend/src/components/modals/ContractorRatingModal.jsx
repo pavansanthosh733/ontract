@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { apiPost } from "../../api";
 import "../css/ContractorRatingModal.css";
-import { useAdmin } from "../../context/AdminContext"; // Ensure AdminContext is imported for potential future use  
+import { useAdmin } from "../../context/AdminContext"; // Ensure the AdminContext is imported for potential future use  
 
 function ContractorRatingModal({
   show,
