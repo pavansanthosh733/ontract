@@ -191,7 +191,7 @@ function AuditDetailsModal({
         ====================================== */}
 
         <div className="audit-details-section-title audit-details-mt-4">
-          Suggested Contractors
+          Suggested Contractors for the Workorder
         </div>
 
         <div className="audit-details-table-wrapper">
