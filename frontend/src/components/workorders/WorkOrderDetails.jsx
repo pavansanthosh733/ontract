@@ -27,13 +27,22 @@ const WorkOrderDetails = () => {
         data.RATE = data.RATE || { total_rate: 0, type_rates: {} };
         setDetails(data);
 
-        if (data.region_name && data.category_name) {
-          const cdata = await apiGet(
-            `/api/workorders/contractors/by-region-category/${data.region_name}/${data.category_name}`
-          );
-          console.log("Contractors fetched:", cdata);
-          setContractors(cdata || []);
-        }
+        const payload = {
+          region_name: data.region_name,
+          state_name: data.state_name,
+          city_name: data.city_name,
+          category_name: data.category_name,
+          item_name: data.item_name,
+          type_name: data.type_name,
+          description_name: data.description_name,
+        };
+
+        const cdata = await apiPost(
+          "/api/workorders/contractors/search",
+          payload
+        );
+
+        setContractors(cdata || []);
 
         setLoading(false);
       } catch (err) {

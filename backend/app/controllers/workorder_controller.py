@@ -413,6 +413,17 @@ def get_contractors_by_region_category_name(region_name, category_name):
 
     return jsonify(contractors), 200
 
+@workorder_bp.route("/contractors/search", methods=["POST"])
+def get_contractors():
+    data = request.get_json()
+
+    contractors, error = WorkOrder.get_contractors(data)
+
+    if error:
+        return jsonify({"error": error}), 500
+
+    return jsonify(contractors), 200
+
 
 
 @workorder_bp.route("/assignment-audit", methods=["POST"])

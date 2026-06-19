@@ -1074,7 +1074,51 @@ class WorkOrder(db.Model):
         except Exception as e:
             return None, str(e)   
         
-        
+
+    @classmethod
+    def get_contractors(cls, data):
+        try:
+            sql = text("""
+                SELECT DISTINCT ON (a.user_uid) a.user_uid AS provider_id,a.email_id,
+                a.name AS full_name,b.service_rate AS rate,c.region_name,d.category_name,a.average_rating,a.total_ratings,b.city,
+                b.region AS service_locations,cd.company_id,cd.company_name,cd.brn_number,
+                cd.logo_path,cd.certificate_path,cd.updated_at FROM users_t a
+                INNER JOIN services_t b ON a.user_uid = b.user_uid
+                INNER JOIN region_master_t c ON b.region = c.region_name
+                INNER JOIN state_master_t e ON b.state = e.state_name
+                INNER JOIN city_master_t f ON b.city = f.city_name
+                INNER JOIN category_master_t d ON b.category_name = d.category_name
+                INNER JOIN item_master_t g ON b.item_name = g.item_name
+                INNER JOIN type_master_t i ON b.type_name = i.type_name
+                INNER JOIN description_master_t j ON b.description_name = j.description_name
+                LEFT JOIN company_details_t cd ON cd.user_uid = a.user_uid
+                WHERE c.region_name = :region_name AND e.state_name = :state_name
+                AND f.city_name = :city_name AND d.category_name = :category_name
+                AND g.item_name = :item_name AND i.type_name = :type_name
+                AND j.description_name = :description_name AND a.active_status = 't'
+                ORDER BY a.user_uid, b.service_rate ASC, a.average_rating DESC,a.created_at ASC
+            """)
+
+            rows = db.session.execute(
+                sql,
+                {
+                    "region_name": data.get("region_name"),
+                    "state_name": data.get("state_name"),
+                    "city_name": data.get("city_name"),
+                    "category_name": data.get("category_name"),
+                    "item_name": data.get("item_name"),
+                    "type_name": data.get("type_name"),
+                    "description_name": data.get("description_name"),
+                }
+            ).mappings().all()
+
+            return [dict(row) for row in rows], None
+
+        except Exception as e:
+            return None, str(e)
+
+
+
         
     @classmethod
     def close_workorder(cls, workorder_code, images):
