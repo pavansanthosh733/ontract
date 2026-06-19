@@ -18,6 +18,8 @@ const WorkOrderDetails = () => {
     maxPrice: "",
   });
 
+  /* please check the filters */
+
   useEffect(() => {
     const fetchDetails = async () => {
       try {

@@ -128,7 +128,7 @@ const { contractor, loading } = useContractor();
   if (loading) return null;
 
   /* =========================
-     RENDER
+     RENDER the output
      ========================= */
   return (
     <div className="company-dashboard-home">

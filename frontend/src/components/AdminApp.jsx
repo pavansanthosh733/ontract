@@ -333,7 +333,7 @@ function AdminApp({ admin, setAdmin }) {
     </li>
   )}
 
-  {/* Logout */}
+  {/* Logout  route*/}
   <li>
     <button
       className="logout-btn"

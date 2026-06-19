@@ -33,7 +33,7 @@ function AuditDetailsModal({
         </span>
 
         {/* ======================================
-            HEADER
+            HEADER for WORKORDER + AUDIT ID
         ====================================== */}
 
         <div className="audit-details-modal-header">

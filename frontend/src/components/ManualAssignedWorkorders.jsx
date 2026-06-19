@@ -48,7 +48,7 @@ function ManualAssignedWorkorders() {
   }, []);
 
   /* =====================================================
-     HANDLE WORKORDER CLICK
+     HANDLE WORKORDER CLICK  - OPEN MODAL
   ===================================================== */
   const handleWorkorderClick = (
     audit

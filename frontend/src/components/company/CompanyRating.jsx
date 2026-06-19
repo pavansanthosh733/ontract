@@ -25,8 +25,8 @@ function CompanyRating() {
   const [showModal, setShowModal] = useState(false);
 
   /* ==============================
-     AUTH CHECK modified
-     
+     AUTH CHECK modified  done
+
      ========================= */
 
   useEffect(() => {

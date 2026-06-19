@@ -25,7 +25,7 @@ function ProviderRating() {
   const [showModal, setShowModal] = useState(false);
 
   /* =========================
-     AUTH CHECK
+     AUTH CHECK modified
      ========================= */
 
   useEffect(() => {

@@ -24,7 +24,7 @@ import ProviderInvoice from "./components/ProviderInvoice";
 import AdminLogin from "./components/AdminLogin";
 import AdminDashboard from "./components/AdminDashboard";
 
-/* Contractor (company) components */
+/* Contractor (company) components changes */
 import CompanyLogin from "./components/company/CompanyLogin";
 import CompanySignup from "./components/company/CompanySignup";
 import CompanyActivateAccount from "./components/company/CompanyActivateAccount";
