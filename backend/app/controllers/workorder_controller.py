@@ -413,6 +413,72 @@ def get_contractors_by_region_category_name(region_name, category_name):
 
     return jsonify(contractors), 200
 
+
+
+@workorder_bp.route("/assignment-audit", methods=["POST"])
+def save_assignment_audit():
+    try:
+        print("=" * 80)
+        print("Inside save_assignment_audit controller")
+
+        data = request.get_json()
+
+        print("Received payload:")
+        print(data)
+
+        workorder = data.get("workorder")
+        assignment_reason = data.get("assignment_reason")
+        suggested_contractors = data.get("suggested_contractors", [])
+        selected_contractor = data.get("selected_contractor", {})
+
+        print(f"Workorder: {workorder}")
+        print(f"Assignment Reason: {assignment_reason}")
+        print(
+            f"Number of suggested contractors: "
+            f"{len(suggested_contractors)}"
+        )
+        print(
+            f"Selected contractor: "
+            f"{selected_contractor.get('contractor_name')}"
+        )
+
+        result, error = WorkOrder.save_assignment_audit(
+            workorder=workorder,
+            assignment_reason=assignment_reason,
+            suggested_contractors=suggested_contractors,
+            selected_contractor=selected_contractor
+        )
+
+        if error:
+            print(f"Error while saving audit: {error}")
+
+            return jsonify({
+                "status": "error",
+                "message": error
+            }), 400
+
+        print("Assignment audit saved successfully.")
+        print("=" * 80)
+
+        return jsonify({
+            "status": "success",
+            "message": "Assignment audit saved successfully"
+        }), 201
+
+    except Exception as e:
+        print("=" * 80)
+        print("Exception in save_assignment_audit controller")
+        print(str(e))
+        print("=" * 80)
+
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+
+
+
 @workorder_bp.route("/send-acceptance-mail/<string:workorder>", methods=["POST"])
 def send_acceptance_mail_manual(workorder):
     from app.controllers.workorder_mail_controller import handle_send_acceptance_mail
@@ -1495,5 +1561,216 @@ def withdraw_workorder(workorder):
         logging.exception("Withdraw Controller Error")
         return jsonify({
             "success": False,
+            "message": str(e)
+        }), 500
+        
+        
+        
+@workorder_bp.route(
+    "/contractor-ratings/create",
+    methods=["POST"]
+)
+def create_contractor_rating():
+    try:
+        data = request.get_json(silent=True)
+
+        logging.info(
+            "Contractor rating request received: content_type=%s, data=%r",
+            request.content_type,
+            data,
+        )
+
+        if not isinstance(data, dict):
+            logging.warning(
+                "Contractor rating request payload is invalid: %r",
+                data,
+            )
+            return jsonify({
+                "success": False,
+                "message": "Invalid JSON payload"
+            }), 400
+
+        workorder = (
+            data.get("workorder", "")
+            .strip()
+        )
+
+        rating = data.get("rating")
+
+        feedback = (
+            data.get("feedback", "")
+            .strip()
+        )
+        
+        rating_given_by = data.get("rating_given_by")
+
+        logging.info(
+            "Contractor rating input parsed: workorder=%r, rating=%r, feedback=%r",
+            workorder,
+            rating,
+            feedback,
+        )
+        
+        if not rating_given_by:
+            return jsonify({
+                "success": False,
+                "message": "rating_given_by is required"
+            }), 400
+
+        if not workorder:
+            return jsonify({
+                "success": False,
+                "message": "workorder is required"
+            }), 400
+
+        if rating is None:
+            return jsonify({
+                "success": False,
+                "message": "rating is required"
+            }), 400
+
+        try:
+            rating = float(rating)
+        except Exception:
+            return jsonify({
+                "success": False,
+                "message": "invalid rating"
+            }), 400
+
+        if rating < 1 or rating > 5:
+            return jsonify({
+                "success": False,
+                "message": "rating must be between 1 and 5"
+            }), 400
+
+        logging.info(
+            "Calling WorkOrder.create_contractor_rating with: workorder=%s, rating=%s, feedback=%r",
+            workorder,
+            rating,
+            feedback,
+        )
+
+        result, error = WorkOrder.create_contractor_rating(
+            workorder=workorder,
+            rating=rating,
+            feedback=feedback,
+            rated_by_admin_id=rating_given_by
+        )
+
+        logging.info(
+            "WorkOrder.create_contractor_rating response: result=%r, error=%r",
+            result,
+            error,
+        )
+
+        if error:
+            return jsonify({
+                "success": False,
+                "message": error
+            }), 400
+
+        return jsonify({
+            "success": True,
+            "message": "Contractor rating saved successfully",
+            "data": result
+        }), 200
+
+    except Exception as e:
+        logging.exception(
+            "Contractor Rating Controller Error"
+        )
+
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+        
+        
+@workorder_bp.route("/contractor/ratings/dashboard", methods=["GET"])
+def contractor_ratings_dashboard():
+    try:
+        user_uid = request.args.get("user_uid", type=int)
+
+        if not user_uid:
+            return jsonify({
+                "success": False,
+                "message": "user_uid is required"
+            }), 400
+
+        summary = WorkOrder.get_contractor_rating_summary(user_uid)
+        ratings = WorkOrder.get_contractor_ratings(user_uid)
+        low_ratings = WorkOrder.get_low_ratings(user_uid)
+
+        return jsonify({
+            "success": True,
+            "summary": summary,
+            "ratings": ratings,
+            "low_ratings": low_ratings
+
+        })
+
+    except Exception as e:
+        logging.exception("Contractor ratings dashboard error")
+
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+        
+        
+@workorder_bp.route(
+    "/assignment-audit",
+    methods=["GET"]
+)
+def get_assignment_audit():
+
+    try:
+        print("=" * 100)
+        print(
+            "Inside get_assignment_audit "
+            "controller"
+        )
+
+        result, error = (
+            WorkOrder
+            .get_assignment_audit()
+        )
+
+        if error:
+            print(
+                f"Error while fetching "
+                f"audit data: {error}"
+            )
+
+            return jsonify({
+                "status": "error",
+                "message": error
+            }), 400
+
+        print(
+            f"Successfully fetched "
+            f"{len(result)} audit "
+            f"records"
+        )
+
+        print("=" * 100)
+
+        return jsonify(
+            result
+        ), 200
+
+    except Exception as e:
+
+        print("=" * 100)
+        print(
+            "Exception occurred in "
+            "get_assignment_audit "
+            "controller"
+        )
+        print(str(e))
+        print("=" * 100)
+
+        return jsonify({
+            "status": "error",
             "message": str(e)
         }), 500

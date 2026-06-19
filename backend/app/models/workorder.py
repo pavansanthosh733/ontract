@@ -1031,7 +1031,10 @@ class WorkOrder(db.Model):
                     a.user_uid AS provider_id,
                     a.email_id,
                     a.name AS full_name,
+                    a.average_rating,
+                    a.total_ratings,
                     b.service_rate AS rate,
+                    b.city,
                     c.region_name,
                     d.category_name,
                     b.region AS service_locations,
@@ -1053,6 +1056,9 @@ class WorkOrder(db.Model):
                     ON cd.user_uid = a.user_uid
                 WHERE c.region_name = :region_name
                   AND d.category_name = :category_name
+                  and a.active_status='t'
+                ORDER BY b.service_rate ASC, a.average_rating DESC
+                LIMIT 6
             """)
     
             rows = db.session.execute(
@@ -2574,5 +2580,467 @@ class WorkOrder(db.Model):
                 "Error fetching contractor details"
             )
             return None, None, str(e)
+        
+        
+        
+        
+    @classmethod
+    def create_contractor_rating(
+        cls,
+        workorder,
+        rating,
+        feedback,
+        rated_by_admin_id
+    ):
+        try:
+            logging.info(
+                "Create contractor rating start: workorder=%s, rating=%s, feedback=%r, rated_by_admin_id=%s",
+                workorder,
+                rating,
+                feedback,
+                rated_by_admin_id,
+            )
+    
+            workorder_row = db.session.execute(
+                text("""
+                    SELECT
+                        created_by,
+                        closed_by
+                    FROM workorder_t
+                    WHERE workorder = :workorder
+                    LIMIT 1
+                """),
+                {
+                    "workorder": workorder
+                }
+            ).mappings().first()
+    
+            logging.info(
+                "Workorder lookup result for contractor rating: %r",
+                dict(workorder_row) if workorder_row else None,
+            )
+    
+            if not workorder_row:
+                return None, "Workorder not found"
+    
+            workorder_created_by = workorder_row["created_by"]
+            contractor_id = workorder_row["closed_by"]
+    
+            if not contractor_id:
+                return None, "Contractor not found on workorder"
+    
+            existing_rating = db.session.execute(
+                text("""
+                    SELECT id
+                    FROM contractor_ratings
+                    WHERE workorder = :workorder
+                    LIMIT 1
+                """),
+                {
+                    "workorder": workorder
+                }
+            ).fetchone()
+    
+            if existing_rating:
+                return None, (
+                    "Contractor rating already exists "
+                    "for this workorder"
+                )
+    
+            db.session.execute(
+                text("""
+                    INSERT INTO contractor_ratings
+                    (
+                        workorder,
+                        contractor_id,
+                        workorder_created_by,
+                        rated_by_admin_id,
+                        rating,
+                        feedback,
+                        created_at
+                    )
+                    VALUES
+                    (
+                        :workorder,
+                        :contractor_id,
+                        :workorder_created_by,
+                        :rated_by_admin_id,
+                        :rating,
+                        :feedback,
+                        :created_at
+                    )
+                """),
+                {
+                    "workorder": workorder,
+                    "contractor_id": contractor_id,
+                    "workorder_created_by": workorder_created_by,
+                    "rated_by_admin_id": rated_by_admin_id,
+                    "rating": rating,
+                    "feedback": feedback,
+                    "created_at": now_ist()
+                }
+            )
+    
+            contractor_row = db.session.execute(
+                text("""
+                    SELECT
+                        average_rating,
+                        total_ratings,
+                        completed_workorders_count
+                    FROM users_t
+                    WHERE user_uid = :contractor_id
+                    LIMIT 1
+                """),
+                {
+                    "contractor_id": contractor_id
+                }
+            ).mappings().first()
+    
+            if not contractor_row:
+                db.session.rollback()
+                return None, "Contractor not found"
+    
+            current_average = float(
+                contractor_row["average_rating"] or 0
+            )
+    
+            total_ratings = int(
+                contractor_row["total_ratings"] or 0
+            )
+    
+            completed_workorders_count = int(
+                contractor_row["completed_workorders_count"] or 0
+            )
+    
+            new_total_ratings = total_ratings + 1
+    
+            new_average_rating = round(
+                (
+                    (current_average * total_ratings)
+                    + float(rating)
+                ) / new_total_ratings,
+                2
+            )
+    
+            db.session.execute(
+                text("""
+                    UPDATE users_t
+                    SET
+                        average_rating = :average_rating,
+                        total_ratings = :total_ratings,
+                        completed_workorders_count =
+                            :completed_workorders_count
+                    WHERE user_uid = :contractor_id
+                """),
+                {
+                    "average_rating": new_average_rating,
+                    "total_ratings": new_total_ratings,
+                    "completed_workorders_count":
+                        completed_workorders_count + 1,
+                    "contractor_id": contractor_id
+                }
+            )
+    
+            db.session.commit()
+    
+            return {
+                "workorder": workorder,
+                "contractor_id": contractor_id,
+                "workorder_created_by": workorder_created_by,
+                "rated_by_admin_id": rated_by_admin_id,
+                "rating": rating,
+                "average_rating": new_average_rating,
+                "total_ratings": new_total_ratings,
+                "completed_workorders_count":
+                    completed_workorders_count + 1
+            }, None
+    
+        except Exception as e:
+            db.session.rollback()
+    
+            logging.exception(
+                "Create Contractor Rating Error"
+            )
+    
+            return None, str(e)
+        
+        
+    @staticmethod
+    def get_contractor_rating_summary(user_uid):
+    
+        sql = text("""
+            SELECT
+                COALESCE(u.average_rating, 0) AS average_rating,
+        
+                COALESCE((
+                    SELECT SUM(rating)
+                    FROM contractor_ratings cr
+                    WHERE cr.contractor_id = u.user_uid
+                ), 0) AS total_ratings,
+        
+                COALESCE(u.completed_workorders_count, 0)
+                    AS completed_workorders_count
+        
+            FROM users_t u
+            WHERE u.user_uid = :user_uid
+        """)
+    
+        row = db.session.execute(
+            sql,
+            {"user_uid": user_uid}
+        ).mappings().first()
+    
+        if not row:
+            return {
+                "average_rating": 0,
+                "total_ratings": 0,
+                "completed_workorders_count": 0,
+                "badge": "Bronze"
+            }
+    
+        avg = float(row["average_rating"] or 0)
+    
+        badge = "Bronze"
+    
+        if avg >= 4.5:
+            badge = "Gold"
+        elif avg >= 3.5:
+            badge = "Silver"
+    
+        return {
+            "average_rating": round(avg, 2),
+            "total_ratings": row["total_ratings"],
+            "completed_workorders_count":
+                row["completed_workorders_count"],
+            "badge": badge
+        }
+        
+        
+    @staticmethod
+    def get_contractor_ratings(user_uid):
+    
+        sql = text("""
+            SELECT
+                workorder,
+                rating,
+                feedback,
+                created_at
+            FROM contractor_ratings
+            WHERE contractor_id = :user_uid
+            ORDER BY created_at DESC
+        """)
+    
+        rows = db.session.execute(
+            sql,
+            {"user_uid": user_uid}
+        ).mappings().all()
+    
+        return [
+            {
+                "workorder": r["workorder"],
+                "rating": float(r["rating"]),
+                "feedback": r["feedback"],
+                "created_at":
+                    r["created_at"].strftime(
+                        "%d-%m-%Y %H:%M"
+                    ) if r["created_at"] else None
+            }
+            for r in rows
+        ]
+        
+        
+    @staticmethod
+    def get_low_ratings(user_uid):
+    
+        sql = text("""
+            SELECT
+                workorder,
+                rating,
+                feedback,
+                created_at
+            FROM contractor_ratings
+            WHERE contractor_id = :user_uid
+              AND rating < 4
+            ORDER BY rating ASC
+        """)
+    
+        rows = db.session.execute(
+            sql,
+            {"user_uid": user_uid}
+        ).mappings().all()
+    
+        return [dict(r) for r in rows]
+    
     
 
+    @classmethod
+    def save_assignment_audit(
+        cls,
+        workorder,
+        assignment_reason,
+        suggested_contractors,
+        selected_contractor
+    ):
+        try:
+            print("=" * 100)
+            print("Inside save_assignment_audit model")
+    
+            print(f"Workorder: {workorder}")
+            print(f"Assignment Reason: {assignment_reason}")
+    
+            selected_contractor_id = selected_contractor.get(
+                "contractor_id"
+            )
+    
+            print(
+                f"Selected Contractor ID: "
+                f"{selected_contractor_id}"
+            )
+    
+            print(
+                f"Suggested Contractors Count: "
+                f"{len(suggested_contractors)}"
+            )
+    
+            sql = text("""
+                INSERT INTO contractor_assignment_audit_t
+                (
+                    workorder,
+                    selected_contractor_id,
+                    assignment_reason,
+                    suggested_contractors,
+                    selected_contractor
+                )
+                VALUES
+                (
+                    :workorder,
+                    :selected_contractor_id,
+                    :assignment_reason,
+                    CAST(:suggested_contractors AS JSONB),
+                    CAST(:selected_contractor AS JSONB)
+                )
+                RETURNING audit_id
+            """)
+    
+            result = db.session.execute(
+                sql,
+                {
+                    "workorder": workorder,
+                    "selected_contractor_id": selected_contractor_id,
+                    "assignment_reason": assignment_reason,
+                    "suggested_contractors": json.dumps(
+                        suggested_contractors
+                    ),
+                    "selected_contractor": json.dumps(
+                        selected_contractor
+                    ),
+                }
+            )
+    
+            audit_id = result.scalar()
+    
+            db.session.commit()
+    
+            print(
+                f"Assignment audit saved successfully."
+            )
+            print(f"Generated Audit ID: {audit_id}")
+            print("=" * 100)
+    
+            return {
+                "audit_id": audit_id
+            }, None
+    
+        except Exception as e:
+            db.session.rollback()
+    
+            print("=" * 100)
+            print(
+                "Exception occurred in "
+                "save_assignment_audit"
+            )
+            print(str(e))
+            print("=" * 100)
+    
+            return None, str(e)
+        
+        
+    @classmethod
+    def get_assignment_audit(cls):
+        try:
+    
+            print("=" * 100)
+            print("Inside get_assignment_audit model")
+    
+            sql = text("""
+                SELECT
+                    audit_id,
+                    workorder,
+                    selected_contractor_id,
+                    assignment_reason,
+                    suggested_contractors,
+                    selected_contractor,
+                    created_at
+                FROM contractor_assignment_audit_t
+                ORDER BY created_at DESC
+            """)
+    
+            print("Executing assignment audit query...")
+    
+            rows = db.session.execute(
+                sql
+            ).mappings().all()
+    
+            print(
+                f"Fetched {len(rows)} "
+                f"audit records"
+            )
+    
+            result = []
+    
+            for row in rows:
+    
+                audit = dict(row)
+    
+                print(
+                    f"Processing Workorder: "
+                    f"{audit.get('workorder')}"
+                )
+    
+                # JSONB safety handling
+                if audit.get(
+                    "suggested_contractors"
+                ) is None:
+                    audit[
+                        "suggested_contractors"
+                    ] = []
+    
+                if audit.get(
+                    "selected_contractor"
+                ) is None:
+                    audit[
+                        "selected_contractor"
+                    ] = {}
+    
+                result.append(audit)
+    
+            print(
+                "Successfully processed "
+                "audit records"
+            )
+    
+            print("=" * 100)
+    
+            return result, None
+    
+        except Exception as e:
+    
+            print("=" * 100)
+            print(
+                "Exception in "
+                "get_assignment_audit model"
+            )
+            print(str(e))
+            print("=" * 100)
+    
+            return None, str(e)
