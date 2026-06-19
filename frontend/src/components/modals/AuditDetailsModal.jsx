@@ -82,7 +82,7 @@ function AuditDetailsModal({
 
             <div className="audit-details-kv-row">
               <span className="audit-details-kv-label">
-                Assignment Reason
+                ASSIGNMENT REASON
               </span>
 
               <span className="audit-details-kv-value">

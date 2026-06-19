@@ -64,7 +64,7 @@ function RatingDetailsModal({
 
           <div className="kv-row">
             <span className="kv-label">
-              Rated On
+              Rated ON
             </span>
 
             <span className="kv-value">
