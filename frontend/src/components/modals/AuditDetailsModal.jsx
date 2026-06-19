@@ -16,20 +16,17 @@ function AuditDetailsModal({
   const selectedIndex =
     suggestedContractors.findIndex(
       (c) =>
-        Number(
-          c.contractor_id
-        ) ===
-        Number(
-          selectedContractor.contractor_id
-        )
+        Number(c.contractor_id) ===
+        Number(selectedContractor.contractor_id)
     ) + 1;
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-box modal-xl">
+    <div className="audit-details-modal-overlay">
+
+      <div className="audit-details-modal-box audit-details-modal-xl">
 
         <span
-          className="modal-close"
+          className="audit-details-modal-close"
           onClick={onClose}
         >
           ×
@@ -37,87 +34,79 @@ function AuditDetailsModal({
 
         {/* ======================================
             HEADER
-        ======================================= */}
+        ====================================== */}
 
-        <div className="modal-header">
+        <div className="audit-details-modal-header">
           Manual Assignment Audit
         </div>
 
         {/* ======================================
             AUDIT SUMMARY
-        ======================================= */}
+        ====================================== */}
 
-        <div className="audit-summary-card">
+        <div className="audit-details-summary-card">
 
-          <div className="kv-grid">
+          <div className="audit-details-kv-grid">
 
-            <div className="kv-row">
-              <span className="kv-label">
+            <div className="audit-details-kv-row">
+              <span className="audit-details-kv-label">
                 Audit ID
               </span>
 
-              <span className="kv-value">
+              <span className="audit-details-kv-value">
                 {audit.audit_id}
               </span>
             </div>
 
-            <div className="kv-row">
-              <span className="kv-label">
+            <div className="audit-details-kv-row">
+              <span className="audit-details-kv-label">
                 Workorder
               </span>
 
-              <span className="kv-value">
+              <span className="audit-details-kv-value audit-details-nowrap">
                 {audit.workorder}
               </span>
             </div>
 
-            <div className="kv-row">
-              <span className="kv-label">
+            <div className="audit-details-kv-row">
+              <span className="audit-details-kv-label">
                 Created At
               </span>
 
-              <span className="kv-value">
+              <span className="audit-details-kv-value">
                 {new Date(
                   audit.created_at
                 ).toLocaleString()}
               </span>
             </div>
 
-            <div className="kv-row">
-              <span className="kv-label">
+            <div className="audit-details-kv-row">
+              <span className="audit-details-kv-label">
                 Assignment Reason
               </span>
 
-              <span className="kv-value">
-                {
-                  audit.assignment_reason
-                }
+              <span className="audit-details-kv-value">
+                {audit.assignment_reason}
               </span>
             </div>
 
-            <div className="kv-row">
-              <span className="kv-label">
+            <div className="audit-details-kv-row">
+              <span className="audit-details-kv-label">
                 Total Suggested
               </span>
 
-              <span className="kv-value">
-                {
-                  suggestedContractors.length
-                }{" "}
-                Contractors
+              <span className="audit-details-kv-value">
+                {suggestedContractors.length} Contractors
               </span>
             </div>
 
-            <div className="kv-row">
-              <span className="kv-label">
+            <div className="audit-details-kv-row">
+              <span className="audit-details-kv-label">
                 Selected Position
               </span>
 
-              <span className="kv-value">
-                {selectedIndex} of{" "}
-                {
-                  suggestedContractors.length
-                }
+              <span className="audit-details-kv-value">
+                {selectedIndex} of {suggestedContractors.length}
               </span>
             </div>
 
@@ -127,58 +116,52 @@ function AuditDetailsModal({
 
         {/* ======================================
             SELECTED CONTRACTOR
-        ======================================= */}
+        ====================================== */}
 
-        <div className="selected-card">
+        <div className="audit-details-selected-card">
 
-          <div className="section-title">
+          <div className="audit-details-section-title">
             Selected Contractor
           </div>
 
-          <div className="kv-grid">
+          <div className="audit-details-kv-grid">
 
-            <div className="kv-row">
-              <span className="kv-label">
+            <div className="audit-details-kv-row">
+              <span className="audit-details-kv-label">
                 Name
               </span>
 
-              <span className="kv-value">
-                {
-                  selectedContractor.contractor_name
-                }
+              <span className="audit-details-kv-value">
+                {selectedContractor.contractor_name}
               </span>
             </div>
 
-            <div className="kv-row">
-              <span className="kv-label">
+            <div className="audit-details-kv-row">
+              <span className="audit-details-kv-label">
                 Contractor ID
               </span>
 
-              <span className="kv-value">
-                {
-                  selectedContractor.contractor_id
-                }
+              <span className="audit-details-kv-value">
+                {selectedContractor.contractor_id}
               </span>
             </div>
 
-            <div className="kv-row">
-              <span className="kv-label">
+            <div className="audit-details-kv-row">
+              <span className="audit-details-kv-label">
                 City
               </span>
 
-              <span className="kv-value">
-                {
-                  selectedContractor.city
-                }
+              <span className="audit-details-kv-value">
+                {selectedContractor.city}
               </span>
             </div>
 
-            <div className="kv-row">
-              <span className="kv-label">
+            <div className="audit-details-kv-row">
+              <span className="audit-details-kv-label">
                 Rate
               </span>
 
-              <span className="kv-value">
+              <span className="audit-details-kv-value">
                 ₹
                 {Number(
                   selectedContractor.rate || 0
@@ -186,12 +169,12 @@ function AuditDetailsModal({
               </span>
             </div>
 
-            <div className="kv-row">
-              <span className="kv-label">
+            <div className="audit-details-kv-row">
+              <span className="audit-details-kv-label">
                 Rating
               </span>
 
-              <span className="kv-value">
+              <span className="audit-details-kv-value">
                 ⭐
                 {Number(
                   selectedContractor.rating || 0
@@ -205,22 +188,20 @@ function AuditDetailsModal({
 
         {/* ======================================
             CONTRACTORS TABLE
-        ======================================= */}
+        ====================================== */}
 
-        <div className="section-title mt-4">
+        <div className="audit-details-section-title audit-details-mt-4">
           Suggested Contractors
         </div>
 
-        <div className="audit-table-wrapper">
+        <div className="audit-details-table-wrapper">
 
-          <table className="audit-table">
+          <table className="audit-details-table">
 
             <thead>
               <tr>
                 <th>S.No</th>
-                <th>
-                  Contractor Name
-                </th>
+                <th>Contractor Name</th>
                 <th>City</th>
                 <th>Rate</th>
                 <th>Rating</th>
@@ -234,33 +215,25 @@ function AuditDetailsModal({
                 (c, index) => {
 
                   const isSelected =
-                    Number(
-                      c.contractor_id
-                    ) ===
+                    Number(c.contractor_id) ===
                     Number(
                       selectedContractor.contractor_id
                     );
 
                   return (
                     <tr
-                      key={
-                        c.contractor_id
-                      }
+                      key={c.contractor_id}
                       className={
                         isSelected
-                          ? "selected-row"
+                          ? "audit-details-selected-row"
                           : ""
                       }
                     >
 
-                      <td>
-                        {index + 1}
-                      </td>
+                      <td>{index + 1}</td>
 
                       <td>
-                        {
-                          c.contractor_name
-                        }
+                        {c.contractor_name}
                       </td>
 
                       <td>
@@ -299,6 +272,7 @@ function AuditDetailsModal({
         </div>
 
       </div>
+
     </div>
   );
 }
