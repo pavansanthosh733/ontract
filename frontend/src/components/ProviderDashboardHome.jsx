@@ -196,7 +196,7 @@ function ProviderDashboardHome() {
                         ))}
                       </ul>
                     ) : (
-                      <p className="text-muted">No services found for this contractor.</p>
+                      <p className="text-muted">No services found for this contractor at present.</p>
                     )}
                   </div>
                 </div>
@@ -209,6 +209,6 @@ function ProviderDashboardHome() {
   );
 }
 
-/* checking the filters  done* done */
+/* checking the filters  done* done HAI BOSS */
 
 export default ProviderDashboardHome;

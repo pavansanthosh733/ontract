@@ -102,14 +102,14 @@ function ProviderRating() {
         <div className="rating-inner">
 
           {/* =========================
-              SUMMARY CARDS done
+              SUMMARY CARDS done DONE BOSS
           ========================= */}
 
           <div className="summary-grid">
 
             <div className="summary-box">
               <div className="summary-label">
-                Average Rating
+                AVERAGE RATING
               </div>
 
               <div className="summary-value">
@@ -119,7 +119,7 @@ function ProviderRating() {
 
             <div className="summary-box">
               <div className="summary-label">
-                Badge
+                BADGE
               </div>
 
               <div
