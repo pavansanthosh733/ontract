@@ -65,7 +65,7 @@ class AdminController:
 
             return {
                 "message": "OTP verified successfully",
-                "admin_email": admin,
+                "admin_email": admin.get("email"),
                 "access_token": access_token
             }, 200
 
