@@ -181,77 +181,75 @@ class ContractorController:
 # ---------------- Verify OTP ----------------
     @staticmethod
     def verify_otp(data):
-
         email = data.get("email")
-        otp = data.get("otp")
+        otp   = data.get("otp")
 
         if not email or not otp:
-
-            return {
-                "error": "Email and OTP required"
-            }, 400
+            return {"error": "Email and OTP required"}, 400
 
         record = ContractorModel.validate_otp(email)
 
-        print(f"🧾 OTP DB Record : {record}")
+        if not record or record["otp_code"] != otp:
+            return {"error": "Invalid or expired OTP"}, 400
 
-        # =====================================================
-        # VALID OTP
-        # =====================================================
+        ContractorModel.delete_otp(email)
 
-        if record and record["otp_code"] == otp:
+        contractor = ContractorModel.get_basic_info(email)
 
-            ContractorModel.delete_otp(email)
+        if not contractor:
+            return {"error": "Contractor not found"}, 404
 
-            contractor = ContractorModel.get_basic_info(email)
+        # ✅ Generate JWT token
+        token = jwt.encode(
+            {
+                "user_id": contractor["user_uid"],
+                "role":    "contractor",
+                "exp":     datetime.utcnow() + timedelta(hours=24)
+            },
+            current_app.config["SECRET_KEY"],
+            algorithm="HS256"
+        )
 
-            if not contractor:
-
-                return {
-                    "error": "Contractor not found"
-                }, 404
-
-            family_id = str(uuid.uuid4())
-
-            print(f"🧬 Token Family ID : {family_id}")
-
-            refresh_token = jwt.encode(
-                {
-                    "contractor_id": contractor["user_uid"],
-                    "exp": datetime.utcnow() + timedelta(days=90),
-                },
-                current_app.config["SECRET_KEY"],
-                algorithm="HS256",
-            )
-
-            ip_address = request.headers.get(
-                "X-Forwarded-For",
-                request.remote_addr
-            )
-
-            ContractorModel.create_session(
-                contractor["user_uid"],
-                refresh_token,
-                "WEB",
-                datetime.utcnow() + timedelta(days=90),
-                ip_address,
-                token_family=family_id,
-                rotated_from=None
-            )
-
-            return {
-                "message": "OTP verified successfully",
-                "contractor": contractor,
-                "refresh_token": refresh_token,
-            }, 200
-
-        # =====================================================
-        # INVALID OTP
-        # =====================================================
+        # ✅ Save token in users_t
+        db.session.execute(
+            text("""
+                UPDATE users_t
+                SET token = :token
+                WHERE user_uid = :user_uid
+            """),
+            {"token": token, "user_uid": contractor["user_uid"]}
+        )
+        db.session.commit()
 
         return {
-            "error": "Invalid or expired OTP"
-        }, 400
+            "message":    "OTP verified successfully",
+            "token":      token,
+            "role":       "contractor",
+            "contractor": contractor,
+        }, 200
+
+        # ---------------- Logout ----------------
+    @staticmethod
+    def logout(data):
+        user_uid = data.get("user_uid")
+
+        if not user_uid:
+            return {"error": "user_uid required"}, 400
+
+        # ✅ Clear token from users_t
+        db.session.execute(
+            text("""
+                UPDATE users_t
+                SET token = NULL
+                WHERE user_uid = :user_uid
+            """),
+            {"user_uid": user_uid}
+        )
+        db.session.commit()
+
+        logging.info(f"✅ Contractor logged out | user_uid={user_uid}")
+
+        return {"message": "Logged out successfully"}, 200
 
     @staticmethod
     def refresh_token(refresh_token):
