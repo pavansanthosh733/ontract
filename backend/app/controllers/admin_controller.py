@@ -63,9 +63,12 @@ class AdminController:
                 access_token
             )
 
+             admin_data = {k: v for k, v in admin.items() if k not in ("access_token", "password_hash")}
+
             return {
                 "message": "OTP verified successfully",
-                "admin_email": admin
+                "admin_email": admin_data,
+                "access_token": access_token
                 
             }, 200
 
