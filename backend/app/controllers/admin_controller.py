@@ -65,8 +65,8 @@ class AdminController:
 
             return {
                 "message": "OTP verified successfully",
-                "admin_email": admin.get("email"),
-                "access_token": access_token
+                "admin_email": admin
+                
             }, 200
 
         return {"error": "Invalid or expired OTP"}, 401
