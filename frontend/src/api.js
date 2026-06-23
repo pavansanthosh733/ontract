@@ -111,19 +111,29 @@ export async function apiFetch(path, options = {}) {
 // ==============================================
 function _handleUnauthorized() {
   const role = getCurrentRole();
+  const currentPath = window.location.pathname;
+  const loginPaths = ["/admin/login", "/contractor/login", "/login", "/"];
+  
+  if (loginPaths.includes(currentPath)) {
+    console.warn("🔒 Already on login page, skipping redirect");
+    return;
+  }
 
   if (role === "admin") {
     console.warn("🔒 Admin token expired");
-    // localStorage.removeItem("admin_token");
-    // window.location.href = "/admin/login";
+    localStorage.removeItem("admin_token");
+    localStorage.removeItem("admin"); 
+    window.location.href = "/admin/login";
   } else if (role === "contractor") {
     console.warn("🔒 Contractor token expired");
-    // localStorage.removeItem("contractor_token");
-    // window.location.href = "/contractor/login";
+     localStorage.removeItem("contractor_token");
+     localStorage.removeItem("contractor");
+     window.location.href = "/contractor/login";
   } else {
     console.warn("🔒 User token expired");
-    // localStorage.removeItem("access_token");
-    // window.location.href = "/login";
+     localStorage.removeItem("access_token");
+     localStorage.removeItem("user"); 
+     window.location.href = "/login";
   }
 }
 
