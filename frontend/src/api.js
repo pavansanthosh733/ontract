@@ -9,35 +9,122 @@ const BACKEND_URL =
 export const BASE_URLS = { user: BACKEND_URL, admin: BACKEND_URL };
 export const BASE_URL = BASE_URLS.user;
 
+function getAuthToken() {
+
+  // 1️⃣ Check admin token first
+  const adminToken = localStorage.getItem("admin_token");
+  if (adminToken) return adminToken;
+
+  // 2️⃣ Check contractor token
+  const contractorToken = localStorage.getItem("contractor_token");
+  if (contractorToken) return contractorToken;
+
+  // 3️⃣ Check user/individual token
+  const userToken = localStorage.getItem("access_token");
+  if (userToken) return userToken;
+
+  // 4️⃣ No token found
+  return null;
+}
+
+// ==============================================
+// ✅ GET ROLE BASED ON TOKEN
+// ==============================================
+function getCurrentRole() {
+  if (localStorage.getItem("admin_token"))      return "admin";
+  if (localStorage.getItem("contractor_token")) return "contractor";
+  if (localStorage.getItem("access_token"))     return "user";
+  return null;
+}
+
+/* ==============================================
+   API FETCH WRAPPER
+============================================== */
 export async function apiFetch(path, options = {}) {
-  const url = path.startsWith("http") ? path : `${BASE_URL}${path}`;
-  const isFormData = options.body instanceof FormData;
-  const refreshToken = localStorage.getItem("refresh_token");
 
-  const res = await fetch(url, {
-    credentials: "include",
-    headers: {
+  // ✅ Loading events
+  window.dispatchEvent(new Event("api-loading-start"));
+
+  try {
+    const url = path.startsWith("http")
+      ? path
+      : `${BASE_URL}${path}`;
+
+    const isFormData = options.body instanceof FormData;
+
+    // ✅ Auto pick correct token
+    const token = getAuthToken();
+
+    const headers = {
       ...(isFormData ? {} : { "Content-Type": "application/json" }),
-      ...(refreshToken ? { Authorization: `Bearer ${refreshToken}` } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.headers || {}),
-    },
-    ...options,
-  });
+    };
 
-  const raw = await res.text();
-  if (raw.startsWith("<!DOCTYPE html>")) {
-    throw new Error("Backend returned HTML error page.");
-  }
-  let data = null;
-  try { data = raw ? JSON.parse(raw) : null; } catch { data = null; }
+    const res = await fetch(url, {
+      mode: "cors",
+      credentials: "include",
+      ...options,
+      headers,
+    });
 
-  if (!res.ok) {
-    const message = data?.error || data?.message || raw || `HTTP ${res.status}`;
-    const err = new Error(message);
-    err.response = { status: res.status, data };
-    throw err;
+    const raw = await res.text();
+
+    if (raw.startsWith("<!DOCTYPE html>")) {
+      throw new Error("Backend returned HTML error page.");
+    }
+
+    let data = null;
+    try {
+      data = raw ? JSON.parse(raw) : null;
+    } catch {
+      data = null;
+    }
+
+    if (!res.ok) {
+      const message =
+        data?.error   ||
+        data?.message ||
+        raw           ||
+        `HTTP ${res.status} ${res.statusText}`;
+
+      // ✅ 401 — logout correct user
+      if (res.status === 401) {
+        console.warn(`🔒 Unauthorized | role=${getCurrentRole()}`);
+        _handleUnauthorized();
+      }
+
+      const err = new Error(message);
+      err.response = { status: res.status, data };
+      throw err;
+    }
+
+    return data ?? null;
+
+  } finally {
+    window.dispatchEvent(new Event("api-loading-end"));
   }
-  return data ?? null;
+}
+
+// ==============================================
+// ✅ HANDLE 401 — clear correct token
+// ==============================================
+function _handleUnauthorized() {
+  const role = getCurrentRole();
+
+  if (role === "admin") {
+    console.warn("🔒 Admin token expired");
+    // localStorage.removeItem("admin_token");
+    // window.location.href = "/admin/login";
+  } else if (role === "contractor") {
+    console.warn("🔒 Contractor token expired");
+    // localStorage.removeItem("contractor_token");
+    // window.location.href = "/contractor/login";
+  } else {
+    console.warn("🔒 User token expired");
+    // localStorage.removeItem("access_token");
+    // window.location.href = "/login";
+  }
 }
 
 export const apiGet = (path, extra = {}) =>
