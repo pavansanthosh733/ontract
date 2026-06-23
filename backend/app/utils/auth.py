@@ -54,6 +54,7 @@ PUBLIC_ROUTES = [
     "/api/contractor/activate",
     "/api/contractor/resend_otp",
     "/api/contractor/logout",
+    "/api/contractor/",
 
     # ✅ Provider logout
     "/api/logout",
