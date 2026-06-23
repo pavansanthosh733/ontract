@@ -321,19 +321,10 @@ function Login() {
             />
 
             <span
-              className="hw-icon eye-icon"
-              onClick={() =>
-                setShowPassword(
-                  !showPassword
-                )
-              }
-              style={{
-                cursor: "pointer",
-              }}
+              className="eye-icon"
+              onClick={() => setShowPassword(!showPassword)}
             >
-              {showPassword
-                ? "🙈"
-                : "👁️"}
+              {showPassword ? "🙈" : "👁️"}
             </span>
 
           </div>
