@@ -5,6 +5,7 @@ from app.config import Config
 import os
 import logging
 from logging.handlers import RotatingFileHandler
+from app.utils.auth import register_auth_middleware
 
 
 # ---------------------------------------------------------
@@ -171,6 +172,7 @@ def create_app(include_admin=True):
         ],
         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     )
+    register_auth_middleware(app)
 
 
     # ---------------------------------------------------------
