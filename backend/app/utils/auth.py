@@ -35,6 +35,7 @@ PUBLIC_ROUTES = [
     "/api/admin/dev-login",
     "/api/admin/resend-otp",
     "/api/admin/send-otp",
+    "/api/workorders/admin/",
 
     # ✅ Provider auth routes
     "/api/verify_otp",
