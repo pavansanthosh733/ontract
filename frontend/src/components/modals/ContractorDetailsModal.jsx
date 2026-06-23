@@ -68,9 +68,18 @@ const ContractorDetailsModal = ({ contractor, onClose }) => {
                   <th>Company Name</th>
                   <td>{contractor.company_name || "N/A"}</td>
                 </tr>
+
                 <tr>
-                  <th>Email</th>
-                  <td>{contractor.email_id || "N/A"}</td>
+                  <th>Name</th>
+                  <td>{contractor.name || "N/A"}</td>
+                </tr>
+                <tr>
+                  <th>Mailing Address</th>
+                  <td>{contractor.mailing_address || "N/A"}</td>
+                </tr>
+                <tr>
+                  <th>Billing Address</th>
+                  <td>{contractor.billing_address || "N/A"}</td>
                 </tr>
                 <tr>
                   <th>Contact</th>

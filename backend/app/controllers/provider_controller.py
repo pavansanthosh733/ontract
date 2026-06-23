@@ -117,6 +117,12 @@ class ProviderController:
 
         if not provider['active_status']:
             return {"error": "Account not activated"}, 401
+        
+
+        # Allow only providers with service_type = 0
+        if provider.get('service_type') != 0:
+            return {"error": "Invalid credentials"}, 401
+
 
         # OTP flow remains the same
         otp = ''.join(random.choices(string.digits, k=6))

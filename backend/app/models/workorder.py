@@ -878,16 +878,43 @@ class WorkOrder(db.Model):
             logging.info("Dashboard Filter Query Triggered")
 
             sql = text("""
-                SELECT DISTINCT ON (w.workorder) w.*,c.category_name,r.region_name,
-                u.name AS contractor_name,u.user_uid AS contractor_id,wa.assignment_status,
-                wa.assigned_at FROM workorder_t w
-                LEFT JOIN category_master_t c ON w.category = c.category_id
-                LEFT JOIN region_master_t r ON w.region = r.region_id
-                LEFT JOIN workorder_assignment_t wa ON wa."WORKORDER_ID" = w.workorder
-                LEFT JOIN users_t u ON wa.provider_id = u.user_uid
+                SELECT DISTINCT ON (w.workorder)
+                    w.*,
+                    c.category_name,
+                    r.region_name,
+                    u.name AS contractor_name,
+                    u.user_uid AS contractor_id,
+                    wa.assignment_status,
+                    wa.assigned_at,
+            
+                    cd.company_id,
+                    cd.company_name,
+                    cd.brn_number
+            
+                FROM workorder_t w
+            
+                LEFT JOIN category_master_t c
+                    ON w.category = c.category_id
+            
+                LEFT JOIN region_master_t r
+                    ON w.region = r.region_id
+            
+                LEFT JOIN workorder_assignment_t wa
+                    ON wa."WORKORDER_ID" = w.workorder
+            
+                LEFT JOIN users_t u
+                    ON wa.provider_id = u.user_uid
+            
+                LEFT JOIN company_details_t cd
+                    ON cd.user_uid = u.user_uid
+            
                 WHERE w.created_t BETWEEN :from_dt AND :to_dt
-                AND (:status = 'All' OR LOWER(w.status) = LOWER(:status))
-                ORDER BY w.workorder,wa.assigned_at DESC NULLS LAST,w.id DESC
+                  AND (:status = 'All' OR LOWER(w.status) = LOWER(:status))
+            
+                ORDER BY
+                    w.workorder,
+                    wa.assigned_at DESC NULLS LAST,
+                    w.id DESC
             """)
 
             rows = db.session.execute(

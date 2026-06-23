@@ -379,7 +379,7 @@ const WorkOrders = () => {
                       <th>Created At</th>
                       <th>SLA (Hours)</th>
                       <th>Assignment Type</th>
-                      <th>Contractor_Name</th>
+                      <th>Contractor</th>
                     </tr>
                   </thead>
 
@@ -423,7 +423,7 @@ const WorkOrders = () => {
 
                           <td>{wo.ticket_assignment_type || "N/A"}</td>
 
-                          <td>{wo.contractor_name || "Not Assigned"}</td>
+                          <td>{wo.company_name || wo.contractor_name || "Not Assigned"}</td>
                         </tr>
                       );
                     })}

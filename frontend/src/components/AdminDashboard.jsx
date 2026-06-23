@@ -444,14 +444,14 @@ paginatedProviders.map((p) => (
       {c.active_status ? (
         <button
           className="btn btn-sm btn-warning"
-          onClick={() => handleDeactivate(p.email_id)}
+          onClick={() => handleDeactivate(c.email_id)}
         >
           Deactivate
         </button>
       ) : (
         <button
           className="btn btn-sm btn-success"
-          onClick={() => handleActivate(p.email_id)}
+          onClick={() => handleActivate(c.email_id)}
         >
           Activate
         </button>

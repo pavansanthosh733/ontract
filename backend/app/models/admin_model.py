@@ -359,6 +359,9 @@ class AdminModel:
         sql = text("""
             SELECT
                 u.user_uid,
+                u.name,
+                u.mailing_address,
+                u.billing_address,
                 c.company_id,
                 c.company_name,
                 u.email_id,
@@ -393,6 +396,9 @@ class AdminModel:
     
             contractor = {
                 "user_uid": row.get("user_uid"),
+                "name": row.get("name"),
+                "mailing_address": row.get("mailing_address"),
+                "billing_address": row.get("billing_address"),
                 "company_id": row.get("company_id"),
                 "company_name": row.get("company_name"),
                 "email_id": row.get("email_id"),
