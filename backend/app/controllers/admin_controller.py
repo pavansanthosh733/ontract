@@ -13,6 +13,7 @@ from app.models.admin_model import AdminModel
 from app.utils.email_utils import send_email, send_admin_otp_email
 from app.utils.pdf_utils import generate_certificate_pdf
 
+
 class AdminController:
 
     # ===== Auth =====
@@ -45,6 +46,8 @@ class AdminController:
 
             AdminModel.delete_otp(email)
 
+            
+
             # Generate JWT Token
             access_token = jwt.encode(
                 {
@@ -63,13 +66,14 @@ class AdminController:
                 access_token
             )
 
-             admin_data = {k: v for k, v in admin.items() if k not in ("access_token", "password_hash")}
+            # ✅ Add this line — remove sensitive fields
+            admin_data = {k: v for k, v in admin.items() if k not in ("access_token", "password_hash")}
+
 
             return {
                 "message": "OTP verified successfully",
                 "admin_email": admin_data,
                 "access_token": access_token
-                
             }, 200
 
         return {"error": "Invalid or expired OTP"}, 401
