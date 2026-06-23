@@ -82,7 +82,13 @@ function CompanyOTPVerification() {
       // =====================================================
       console.log("🧠 Saving contractor in context");
 
-      loginContractor(contractorData);
+      // ✅ Save JWT token
+      if (data.token) {
+          localStorage.setItem("contractor_token", data.token);
+          console.log("✅ contractor_token saved to localStorage");
+      }
+
+      loginContractor(contractorData, data.token);
 
       console.log("✅ Contractor saved in context");
 

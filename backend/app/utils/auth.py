@@ -36,15 +36,15 @@ PUBLIC_ROUTES = [
     "/api/admin/resend-otp",
     "/api/admin/send-otp",
 
-    # ✅ Provider (individual) auth routes
-    "/api/verify_otp",           # ✅ provider verify otp
-    "/api/login",                # ✅ provider login
-    "/api/signup",               # ✅ provider signup
-    "/api/activate",             # ✅ provider activate
-    "/api/resend_otp",           # ✅ provider resend otp
-    "/api/forgot",               # ✅ provider forgot password
-    "/api/reset-password",       # ✅ provider reset password
-    "/api/verify-reset-otp",     # ✅ provider verify reset otp
+    # ✅ Provider auth routes
+    "/api/verify_otp",
+    "/api/login",
+    "/api/signup",
+    "/api/activate",
+    "/api/resend_otp",
+    "/api/forgot",
+    "/api/reset-password",
+    "/api/verify-reset-otp",
 
     # ✅ Contractor auth routes
     "/api/contractor/verify_otp",
@@ -57,6 +57,14 @@ PUBLIC_ROUTES = [
     # ✅ Provider logout
     "/api/logout",
 
+    # ✅ Add these missing routes causing 401
+    "/api/dashboard/completed-orders",        # ✅
+    "/api/dashboard/service-coverage-details", # ✅
+    "/api/contractor/gate_status",             # ✅
+    "/api/contractor/unread_count",            # ✅
+    "/api/contractor/gate-status",             # ✅
+    "/api/save_token",                         # ✅
+
     # ✅ Workorder public routes
     "/api/workorders/search",
     "/api/workorders/workorder-types",
@@ -68,8 +76,6 @@ PUBLIC_ROUTES = [
     "/api/workorders/send-acceptance-mail",
     "/api/workorders/contractors/by-area-type",
     "/api/workorders/contractors/by-region-category",
-
-    # ✅ Mobile app provider routes (no login)
     "/api/workorders/provider/",
     "/api/workorders/admin-notification-close",
 
@@ -78,6 +84,16 @@ PUBLIC_ROUTES = [
     "/api/notification",
     "/api/location",
     "/api/file",
+
+    # ✅ Master data routes
+    "/api/region",
+    "/api/state",
+    "/api/city",
+    "/api/zone",
+    "/api/mapping",
+    "/api/workorder-type",
+    "/api/master",
+    "/api/ai-report",
 ]
 
 

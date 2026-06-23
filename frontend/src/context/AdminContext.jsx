@@ -40,13 +40,18 @@ export const AdminProvider = ({ children }) => {
   /* -------------------------------------------
      LOGIN ADMIN
   -------------------------------------------- */
-  const loginAdmin = (adminData) => {
+  const loginAdmin = (adminData, token) => {
     console.group("🔐 Admin Login");
 
     console.log("Admin data received:", adminData);
 
     setAdmin(adminData);
     localStorage.setItem("admin", JSON.stringify(adminData));
+
+     if (token) {
+        localStorage.setItem("admin_token", token);
+        console.log("✅ Admin token saved to localStorage");
+    }
 
     console.log("✅ Admin stored in context & localStorage");
     console.groupEnd();
@@ -60,6 +65,7 @@ export const AdminProvider = ({ children }) => {
 
     setAdmin(null);
     localStorage.removeItem("admin");
+    localStorage.removeItem("admin_token");
 
     console.log("✅ Admin cleared from context & localStorage");
     console.groupEnd();

@@ -46,14 +46,17 @@ function OTPVerification() {
       if (response.ok && data?.user) {
 
         const userData = {
-          ...data.user,
-          role: "INDIVIDUAL",
-        };
+              ...data.user,
+              role: "INDIVIDUAL",
+          };
 
-        loginUser(userData);
+          // ✅ Save JWT token
+          if (data.token) {
+              localStorage.setItem("access_token", data.token);
+              console.log("✅ access_token saved");
+          }
 
-        console.log("🔥 OTP SUCCESS TRIGGERED");
-        console.log("👤 USER ID:", userData.user_uid);
+          loginUser(userData, data.token);
 
         // =========================
         // 📱 MOBILE (FLUTTER)

@@ -129,7 +129,7 @@ export const ContractorProvider = ({ children }) => {
   /* -------------------------------------------
      LOGIN CONTRACTOR
   -------------------------------------------- */
-  const loginContractor = (contractorData) => {
+  const loginContractor = (contractorData, token) => {
     console.group("🔐 Contractor Login");
 
     setContractor(contractorData);
@@ -138,6 +138,11 @@ export const ContractorProvider = ({ children }) => {
       "contractor",
       JSON.stringify(contractorData)
     );
+
+    if (token) {
+        localStorage.setItem("contractor_token", token);
+        console.log("✅ Contractor token saved to localStorage");
+    }
 
     console.log("✅ Contractor saved in context + localStorage");
     console.groupEnd();
@@ -160,6 +165,7 @@ export const ContractorProvider = ({ children }) => {
       // ✅ 🔥 CLEAN EVERYTHING
       localStorage.removeItem("contractor");
       localStorage.removeItem("refresh_token");
+      localStorage.removeItem("contractor_token");
 
       console.log("✅ Frontend cleared");
       console.groupEnd();
