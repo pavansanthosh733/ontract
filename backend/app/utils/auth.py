@@ -80,6 +80,7 @@ PUBLIC_ROUTES = [
     "/api/workorders/contractors/by-region-category",
     "/api/workorders/provider/",
     "/api/workorders/admin-notification-close",
+    "/api/workorders/",
 
     # ✅ Provider routes
     "/api/provider",
