@@ -99,6 +99,9 @@ PUBLIC_ROUTES = [
     "/api/workorder-type",
     "/api/master",
     "/api/ai-report",
+    "/api/items",
+    "/api/types",
+    "/api/description",
 ]
 
 
