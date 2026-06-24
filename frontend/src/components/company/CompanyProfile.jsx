@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 
 import { BASE_URL, BASE_URLS, apiGet, apiPost, apiPut, apiDelete } from "../../api";
 
-#working or not
 function CompanyProfile({ contractor }) {
    console.log("Contractor prop:", contractor);
   const navigate = useNavigate();
