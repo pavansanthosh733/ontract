@@ -1024,10 +1024,11 @@ def admin_reopen_workorder():
 @workorder_bp.route("/admin/close", methods=["POST"])
 def admin_close_workorder():
     try:
+        logging.info("Admin close workorder API called for rating")
         data = request.get_json()
         workorder = data.get("workorder")
         admin_remarks = data.get("remarks", "")
-        logging.info(f"data gggg for certificate: '{data}'")
+        logging.info(f"data gggg for certificate rating: '{data}'")
 
         if not workorder:
             return jsonify({
@@ -1060,11 +1061,13 @@ def admin_close_workorder():
 
 
         # ✅ ORIGINAL STEP: Close workorder
+        
+        logging.info(f"Closing workorder for rating: '{workorder}' with remarks: '{admin_remarks}'")
         updated, error = WorkOrder.workorder_update_admin_notification_close(
             workorder,
             admin_remarks
         )
-
+        logging.info(f"Updated workorder after closure rating: '{updated}'")
         if error:
             return jsonify({
                 "success": False,

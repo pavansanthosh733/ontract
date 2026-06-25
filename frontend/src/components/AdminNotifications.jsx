@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { apiGet, apiPost, BASE_URL } from "../api";
 import "./css/AdminNotification.css";
 import { useNavigate } from "react-router-dom";
+import ContractorRatingModal from "./modals/ContractorRatingModal";
 
 function AdminNotifications() {
   const navigate = useNavigate();
@@ -18,6 +19,8 @@ function AdminNotifications() {
 
   const [adminRemarks, setAdminRemarks] = useState("");
   const [adminSubmitting, setAdminSubmitting] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+const [ratingWorkorderData, setRatingWorkorderData] = useState(null);
 
   /* =========================================================
      TOGGLE CONTRACTOR
@@ -116,31 +119,87 @@ function AdminNotifications() {
   /* =========================================================
      CLOSE WORKORDER
   ========================================================= */
+  // const handleCloseWorkorder = async () => {
+  //   if (!adminRemarks.trim()) {
+  //     alert("Admin remarks are required");
+  //     return;
+  //   }
+
+  //   try {
+  //     setAdminSubmitting(true);
+
+  //     await apiPost("/api/workorders/admin/close", {
+  //       workorder: selectedWorkorder,
+  //       remarks: adminRemarks,
+  //     });
+
+  //     alert("✅ Workorder closed successfully");
+  //     closeModal();
+  //     fetchWorkorders(activeTab);
+
+  //   } catch (err) {
+  //     console.error(err);
+  //     alert("❌ Failed to close workorder");
+  //   } finally {
+  //     setAdminSubmitting(false);
+  //   }
+  // };
+
+
   const handleCloseWorkorder = async () => {
-    if (!adminRemarks.trim()) {
-      alert("Admin remarks are required");
-      return;
-    }
+  if (!adminRemarks.trim()) {
+    alert("Admin remarks are required");
+    return;
+  }
 
-    try {
-      setAdminSubmitting(true);
+  try {
+    setAdminSubmitting(true);
 
-      await apiPost("/api/workorders/admin/close", {
+    const response = await apiPost(
+      "/api/workorders/admin/close",
+      {
         workorder: selectedWorkorder,
         remarks: adminRemarks,
-      });
+      }
+    );
+    console.log("Selected Workorder:", selectedWorkorder);
+console.log("API Response:", response);
+console.log("Response Workorder:", response?.data?.workorder);
+console.groupEnd()
 
-      alert("✅ Workorder closed successfully");
-      closeModal();
-      fetchWorkorders(activeTab);
+    alert("✅ Workorder closed successfully");
 
-    } catch (err) {
-      console.error(err);
-      alert("❌ Failed to close workorder");
-    } finally {
-      setAdminSubmitting(false);
-    }
-  };
+    // Open rating popup immediately
+    // setRatingWorkorderData({
+    //   workorder:
+    //     response?.data?.workorder ||
+    //     selectedWorkorder,
+    // });
+
+    const ratingData = {
+  workorder:
+    response?.data?.workorder ||
+    selectedWorkorder,
+};
+
+console.group("⭐ RATING MODAL DATA");
+console.log("ratingData:", ratingData);
+console.groupEnd();
+
+setRatingWorkorderData(ratingData);
+
+    setShowModal(false);
+    setShowRatingModal(true);
+
+    fetchWorkorders(activeTab);
+
+  } catch (err) {
+    console.error(err);
+    alert("❌ Failed to close workorder");
+  } finally {
+    setAdminSubmitting(false);
+  }
+};
 
   /* =========================================================
      REOPEN WORKORDER
@@ -516,6 +575,20 @@ function AdminNotifications() {
           </div>
         </div>
       )}
+
+      <ContractorRatingModal
+  show={showRatingModal}
+  workorderData={ratingWorkorderData}
+  onClose={() => {
+    setShowRatingModal(false);
+    setRatingWorkorderData(null);
+  }}
+  onRatingSaved={() => {
+    setShowRatingModal(false);
+    setRatingWorkorderData(null);
+    fetchWorkorders(activeTab);
+  }}
+/>
     </div>
   );
 }

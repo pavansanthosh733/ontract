@@ -22,6 +22,7 @@ function ContractorRatingModal({
     workorderData?.workorder_id ||
     "";
     console.log("ContractorRatingModal - workorderData:", workorderData);
+    console.log("ContractorRatingModal - ratingGivenBy:", ratingGivenBy);
 
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState("");

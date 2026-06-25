@@ -1800,26 +1800,29 @@ class WorkOrder(db.Model):
     @classmethod
     def workorder_update_admin_notification_close(cls,workorder,admin_remarks):
         logging.info(f"🔒 Admin Close → workorder={workorder}")
+        
+        logging.info(f"Admin  for rating testing: {admin_remarks}")
 
         try:
-            sql_workorder = text("""
-                UPDATE workorder_t
-                SET status = 'CLOSED'
-                WHERE workorder = :workorder
-                RETURNING *;
-            """)
+            # sql_workorder = text("""
+            #     UPDATE workorder_t
+            #     SET status = 'CLOSED'
+            #     WHERE workorder = :workorder
+            #     RETURNING *;
+            # """)
 
-            row = db.session.execute(
-                sql_workorder,
-                {"workorder": workorder}
-            ).mappings().fetchone()
+            # row = db.session.execute(
+            #     sql_workorder,
+            #     {"workorder": workorder}
+            # ).mappings().fetchone()
 
-            if not row:
-                db.session.rollback()
-                return None, "Workorder not found"
+            # if not row:
+            #     db.session.rollback()
+            #     return None, "Workorder not found"
 
             # -----------------------------------
             # Lifecycle update
+            logging.info(f"Admin  for rating testing: {admin_remarks}")
             completed_row = db.session.execute(
                 text("""
                     SELECT * FROM workorder_life_cycle_t WHERE workorder = :workorder
@@ -1829,6 +1832,42 @@ class WorkOrder(db.Model):
 
             if not completed_row:
                 return None, "Completed lifecycle record not found"
+            
+            contractor_id = completed_row["contractor_id"]
+            
+            logging.info(
+                "Contractor found from COMPLETED lifecycle: %s",
+                contractor_id
+            )
+            
+            
+            sql_workorder = text("""
+                UPDATE workorder_t
+                SET
+                    status = 'CLOSED',
+                    closed_by = :contractor_id
+                WHERE workorder = :workorder
+                RETURNING *;
+            """)
+            
+            row = db.session.execute(
+                sql_workorder,
+                {
+                    "workorder": workorder,
+                    "contractor_id": contractor_id
+                }
+            ).mappings().fetchone()
+            if not row:
+                db.session.rollback()
+                return None, "Workorder not found"
+            
+            logging.info(
+                "Workorder closed successfully. closed_by=%s workorder=%s",
+                contractor_id,
+                workorder
+            )
+            
+            
 
             db.session.execute(
                 text("""
@@ -1838,7 +1877,7 @@ class WorkOrder(db.Model):
                 """),
                 {
                     "workorder": workorder,
-                    "contractor_id": completed_row["contractor_id"],
+                    "contractor_id": contractor_id,
                     "admin_remarks": admin_remarks
                 }
             )
