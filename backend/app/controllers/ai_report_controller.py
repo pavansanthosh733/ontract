@@ -1,7 +1,10 @@
+
 from flask import Blueprint, request, jsonify
 import traceback
-from app.services.ai_report_service import generate_ai_report
+
 from app.models.ai_report_model import AIReportModel
+from app.services.ai_report_service import generate_ai_report
+from app.utils.ai_prompt_validator import validate_prompt
 
 ai_report_bp = Blueprint("ai_report", __name__)
 
@@ -13,6 +16,7 @@ def get_contractors():
     try:
         data = AIReportModel.get_contractors()
         return jsonify({"data": data}), 200
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -21,11 +25,19 @@ def get_contractors():
 def generate_report():
     try:
         data = request.get_json(silent=True) or {}
-        prompt = (data.get("prompt") or "").strip()
 
-        if not prompt:
-            return jsonify({"error": "Prompt is required"}), 400
+        # Get user prompt
+        raw_prompt = data.get("prompt")
 
+        # Validate & sanitize prompt
+        try:
+            prompt = validate_prompt(raw_prompt)
+        except ValueError as validation_error:
+            return jsonify({
+                "error": str(validation_error)
+            }), 400
+
+        # Generate AI Report
         result = generate_ai_report(prompt, data)
 
         return jsonify(result), 200
@@ -39,3 +51,4 @@ def generate_report():
             "error": str(e),
             "type": type(e).__name__
         }), 500
+

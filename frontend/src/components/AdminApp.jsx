@@ -321,17 +321,17 @@ function AdminApp({ admin, setAdmin }) {
             Rate Comparison Report
           </Link>
         </li>
-                <li>
+         {  /*     <li>
           <Link
             to="/admin/reports/aireport"
             onClick={() => handleLinkClick('aireport')}
           >
             Prompt Based Reports
           </Link>
-        </li>
+        </li> */}
       </ul>
     </li>
-  )}
+  )  }
 
   {/* Logout  route*/}
   <li>

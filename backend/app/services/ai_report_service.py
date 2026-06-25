@@ -1,6 +1,7 @@
 import json
 import os
 from datetime import datetime, timedelta, date
+from app.utils.ai_prompt_validator import validate_prompt
 
 try:
     from google import genai
@@ -750,6 +751,14 @@ def generate_ai_report(
     print(f"📦 Payload: {payload}")
     
     payload = payload or {}
+    
+    try:
+        prompt = validate_prompt(prompt)
+    except ValueError as e:
+        return {
+            "success": False,
+            "error": str(e),
+        }
 
     print(f"🔍 Parsing prompt to intent...")
     intent = parse_prompt_to_intent(
