@@ -9,6 +9,7 @@
 
 # ===== Firebase / service-account credentials =====
 backend/serviceAccountKey.json
+backend/.env
 backend/ontract-notifications-firebase-adminsdk-*.json
 **/serviceAccountKey.json
 
@@ -62,4 +63,4 @@ rontend/public/firebase-messaging-sw.js
 frontend/.env.local
 frontend/.env.*.local
 
-#  backend/.env
+ backend/.env
