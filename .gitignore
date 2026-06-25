@@ -64,3 +64,4 @@ frontend/.env.local
 frontend/.env.*.local
 
  backend/.env
+backend/.env
