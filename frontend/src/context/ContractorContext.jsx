@@ -128,7 +128,7 @@ export const ContractorProvider = ({ children }) => {
       JSON.stringify(contractorData)
     );
 
-    // JWT Access Token (keep existing implementation) implementation
+    // JWT Access Token (keep existing implementation)
     if (token) {
       localStorage.setItem("contractor_token", token);
       console.log("✅ Contractor token saved to localStorage");
