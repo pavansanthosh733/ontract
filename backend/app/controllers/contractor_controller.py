@@ -1742,7 +1742,7 @@ class ContractorController:
                     "reason_message": "Your profile is not approved yet."
                 }, 200
 
-            # 3) profile completeness check
+            # 3) profile completeness check please boss 
             missing_profile_fields = []
             profile_fields = [
                 "name",
