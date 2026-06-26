@@ -41,8 +41,10 @@ def register_security_headers(app):
         # ------------------------------------------------------------------
         # Cross-Origin Protection
         # ------------------------------------------------------------------
-        response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
-        response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
+        # response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+        # response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
+        response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
 
         # ------------------------------------------------------------------
         # HTTP Strict Transport Security
