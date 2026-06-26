@@ -6,7 +6,6 @@ from flask import current_app
 contractor_bp = Blueprint('contractor_bp', __name__)
 
 
-
 @contractor_bp.route('/contractor_signup', methods=['POST'])
 def signup():
     data = request.get_json()
@@ -30,7 +29,7 @@ def login():
     if not email or not password:
         return jsonify({"error": "Email and password required"}), 400
 
-    # NEW - only allow login for company users
+    # NEW - only allow login for company users added nes line 
     result, status = ContractorController.login(email, password)
     return jsonify(result), status
 
@@ -57,7 +56,6 @@ def verify_otp():
         )
 
     return response
-
 
 @contractor_bp.route('/refresh_token', methods=['POST'])
 def refresh_token():
@@ -89,7 +87,6 @@ def refresh_token():
         )
 
     return response
-
 
 @contractor_bp.route('/logout', methods=['POST'])
 def logout():
@@ -149,9 +146,9 @@ def mark_read():
     result, status = ContractorController.mark_as_read(data)
     return jsonify(result), status
 
-
 @contractor_bp.route("/contractor_gate_status", methods=["GET"])
 def contractor_gate_status():
     user_uid = request.args.get("user_uid")
     result, status = ContractorController.get_contractor_gate_status(user_uid)
     return jsonify(result), status
+
