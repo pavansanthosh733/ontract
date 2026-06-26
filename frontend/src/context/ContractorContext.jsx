@@ -22,7 +22,7 @@ export const ContractorProvider = ({ children }) => {
   const didRestore = useRef(false);
 
   /* -------------------------------------------
-     REUSABLE REFRESH SESSION
+     REUSABLE REFRESH SESSION 
   -------------------------------------------- */
   const refreshContractorSession = async () => {
     console.group("🔄 Manual Contractor Session Refresh");
@@ -128,7 +128,7 @@ export const ContractorProvider = ({ children }) => {
       JSON.stringify(contractorData)
     );
 
-    // JWT Access Token (keep existing implementation)
+    // JWT Access Token (keep existing implementation) implementation
     if (token) {
       localStorage.setItem("contractor_token", token);
       console.log("✅ Contractor token saved to localStorage");
@@ -191,3 +191,4 @@ export const useContractor = () => {
 
   return ctx;
 };
+
