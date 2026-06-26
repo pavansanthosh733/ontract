@@ -48,7 +48,7 @@ root_logger.addHandler(console_handler)
 def create_app(include_admin=True):
     app = Flask(__name__)
     app.config.from_object(Config)
-    register_security_headers(app)
+    #register_security_headers(app)
 
     # ---------------------------------------------------------
     # Liveness probe for ALB / ECS health checks.
@@ -175,6 +175,7 @@ def create_app(include_admin=True):
         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     )
     register_auth_middleware(app)
+    register_security_headers(app)
 
 
     # ---------------------------------------------------------
