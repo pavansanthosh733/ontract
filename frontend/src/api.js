@@ -55,9 +55,15 @@ export async function apiFetch(path, options = {}) {
     // ✅ Auto pick correct token
     const token = getAuthToken();
 
+        const isCookieOnlyEndpoint =
+      path.includes("/refresh_token") ||
+      path.includes("/logout");
+
     const headers = {
       ...(isFormData ? {} : { "Content-Type": "application/json" }),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(token && !isCookieOnlyEndpoint
+          ? { Authorization: `Bearer ${token}` }
+          : {}),
       ...(options.headers || {}),
     };
 
