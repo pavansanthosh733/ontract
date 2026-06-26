@@ -179,56 +179,93 @@ class ContractorController:
         return {"message": "OTP sent to contractor email"}, 200
 
 # ---------------- Verify OTP ----------------
+# ---------------- Verify OTP ----------------
     @staticmethod
     def verify_otp(data):
         email = data.get("email")
-        otp   = data.get("otp")
-
+        otp = data.get("otp")
+    
         if not email or not otp:
             return {"error": "Email and OTP required"}, 400
-
+    
         record = ContractorModel.validate_otp(email)
-
+    
         if not record or record["otp_code"] != otp:
             return {"error": "Invalid or expired OTP"}, 400
-
+    
+        # Delete OTP after successful verification
         ContractorModel.delete_otp(email)
-
+    
         contractor = ContractorModel.get_basic_info(email)
-
+    
         if not contractor:
             return {"error": "Contractor not found"}, 404
-
-        # ✅ Generate JWT token
+    
+        # -------------------------------------------------------
+        # Generate JWT Access Token (Existing Functionality)
+        # -------------------------------------------------------
         token = jwt.encode(
             {
                 "user_id": contractor["user_uid"],
-                "role":    "contractor",
-                "exp":     datetime.utcnow() + timedelta(hours=24)
+                "role": "contractor",
+                "exp": datetime.utcnow() + timedelta(hours=24),
             },
             current_app.config["SECRET_KEY"],
-            algorithm="HS256"
+            algorithm="HS256",
         )
-
-        # ✅ Save token in users_t
+    
+        # -------------------------------------------------------
+        # Generate Refresh Token (90 Days)
+        # -------------------------------------------------------
+        refresh_token = jwt.encode(
+            {
+                "contractor_id": contractor["user_uid"],
+                "exp": datetime.utcnow() + timedelta(days=90),
+            },
+            current_app.config["SECRET_KEY"],
+            algorithm="HS256",
+        )
+    
+        # -------------------------------------------------------
+        # Save Access Token (Existing Functionality)
+        # -------------------------------------------------------
         db.session.execute(
             text("""
                 UPDATE users_t
                 SET token = :token
                 WHERE user_uid = :user_uid
             """),
-            {"token": token, "user_uid": contractor["user_uid"]}
+            {
+                "token": token,
+                "user_uid": contractor["user_uid"],
+            },
         )
+    
+        # -------------------------------------------------------
+        # Create Refresh Session (New)
+        # -------------------------------------------------------
+        ContractorModel.create_session(
+            contractor_id=contractor["user_uid"],
+            refresh_token=refresh_token,
+            device_name=request.headers.get("User-Agent", "WEB"),
+            expires_at=datetime.utcnow() + timedelta(days=90),
+            ip_address=request.remote_addr,
+            token_family=str(uuid.uuid4()),
+        )
+    
+        # Commit both operations together
         db.session.commit()
-
+    
         return {
-            "message":    "OTP verified successfully",
-            "token":      token,
-            "role":       "contractor",
+            "message": "OTP verified successfully",
+            "token": token,
+            "refresh_token": refresh_token,
+            "role": "contractor",
             "contractor": contractor,
         }, 200
-
-        # ---------------- Logout ----------------
+    
+    
+    # ---------------- Logout ----------------
     @staticmethod
     def logout(data):
         user_uid = data.get("user_uid")

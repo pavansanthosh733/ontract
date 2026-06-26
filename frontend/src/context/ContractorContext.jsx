@@ -30,11 +30,6 @@ export const ContractorProvider = ({ children }) => {
     try {
       const data = await apiPost("/api/contractor/refresh_token", {});
 
-      // ✅ 🔥 UPDATE TOKEN (CRITICAL)
-      if (data?.refresh_token) {
-        localStorage.setItem("refresh_token", data.refresh_token);
-      }
-
       if (data?.contractor) {
         console.log("✅ Contractor restored from backend");
 
@@ -69,7 +64,7 @@ export const ContractorProvider = ({ children }) => {
 
     const restoreSession = async () => {
       try {
-        // ✅ Fast UI restore
+        // Fast UI restore
         const stored = localStorage.getItem("contractor");
 
         if (stored) {
@@ -78,13 +73,8 @@ export const ContractorProvider = ({ children }) => {
           setContractor(parsed);
         }
 
-        // ✅ Backend validation
+        // Validate session using HttpOnly refresh cookie
         const data = await apiPost("/api/contractor/refresh_token", {});
-
-        // ✅ 🔥 UPDATE TOKEN (CRITICAL)
-        if (data?.refresh_token) {
-          localStorage.setItem("refresh_token", data.refresh_token);
-        }
 
         if (data?.contractor) {
           console.log("🔐 Contractor restored from backend");
@@ -110,7 +100,6 @@ export const ContractorProvider = ({ children }) => {
 
           setContractor(null);
           localStorage.removeItem("contractor");
-          localStorage.removeItem("refresh_token"); // 🔥 IMPORTANT
         } else {
           console.error(
             "⚠️ Temporary backend issue, keeping cached contractor",
@@ -139,9 +128,10 @@ export const ContractorProvider = ({ children }) => {
       JSON.stringify(contractorData)
     );
 
+    // JWT Access Token (keep existing implementation)
     if (token) {
-        localStorage.setItem("contractor_token", token);
-        console.log("✅ Contractor token saved to localStorage");
+      localStorage.setItem("contractor_token", token);
+      console.log("✅ Contractor token saved to localStorage");
     }
 
     console.log("✅ Contractor saved in context + localStorage");
@@ -162,9 +152,8 @@ export const ContractorProvider = ({ children }) => {
     } finally {
       setContractor(null);
 
-      // ✅ 🔥 CLEAN EVERYTHING
+      // Clear frontend cache
       localStorage.removeItem("contractor");
-      localStorage.removeItem("refresh_token");
       localStorage.removeItem("contractor_token");
 
       console.log("✅ Frontend cleared");

@@ -1,7 +1,11 @@
-from flask import Blueprint, request, jsonify,make_response
+from flask import Blueprint, request, jsonify, make_response, current_app
 from app.controllers.contractor_controller import ContractorController
+from app.config import Config
+from flask import current_app
 
 contractor_bp = Blueprint('contractor_bp', __name__)
+
+
 
 @contractor_bp.route('/contractor_signup', methods=['POST'])
 def signup():
@@ -32,19 +36,22 @@ def login():
 
 @contractor_bp.route('/verify_otp', methods=['POST'])
 def verify_otp():
+    print("SESSION_COOKIE_HTTPONLY =", current_app.config["SESSION_COOKIE_HTTPONLY"])
+    print("SESSION_COOKIE_SECURE   =", current_app.config["SESSION_COOKIE_SECURE"])
+    print("SESSION_COOKIE_SAMESITE =", current_app.config["SESSION_COOKIE_SAMESITE"])
     data = request.get_json()
     result, status = ContractorController.verify_otp(data)
 
     response = make_response(jsonify(result), status)
 
-    # ✅ set 90 day persistent cookie
+    # Set persistent HttpOnly refresh cookie
     if status == 200 and "refresh_token" in result:
         response.set_cookie(
             "contractor_refresh_token",
             result["refresh_token"],
-            httponly=True,
-            secure=True,
-            samesite="None",
+            httponly=current_app.config["SESSION_COOKIE_HTTPONLY"],
+            secure=current_app.config["SESSION_COOKIE_SECURE"],
+            samesite=current_app.config["SESSION_COOKIE_SAMESITE"],
             max_age=90 * 24 * 60 * 60,
             path="/"
         )
@@ -52,13 +59,10 @@ def verify_otp():
     return response
 
 
-
 @contractor_bp.route('/refresh_token', methods=['POST'])
 def refresh_token():
-    refresh_token = (
-    request.cookies.get("contractor_refresh_token")
-    or request.headers.get("Authorization", "").replace("Bearer ", "")
-)
+    # Read refresh token ONLY from HttpOnly cookie
+    refresh_token = request.cookies.get("contractor_refresh_token")
 
     if not refresh_token:
         return jsonify({"error": "Refresh token missing"}), 401
@@ -67,7 +71,7 @@ def refresh_token():
 
     response = make_response(jsonify(result), status)
 
-    # rotate refresh token cookie if backend returns new one
+    # Rotate refresh cookie
     if status == 200 and "refresh_token" in result:
         response.delete_cookie(
             "contractor_refresh_token",
@@ -77,9 +81,9 @@ def refresh_token():
         response.set_cookie(
             "contractor_refresh_token",
             result["refresh_token"],
-            httponly=True,
-            secure=True,
-            samesite="None",
+            httponly=current_app.config["SESSION_COOKIE_HTTPONLY"],
+            secure=current_app.config["SESSION_COOKIE_SECURE"],
+            samesite=current_app.config["SESSION_COOKIE_SAMESITE"],
             max_age=90 * 24 * 60 * 60,
             path="/"
         )
@@ -89,16 +93,14 @@ def refresh_token():
 
 @contractor_bp.route('/logout', methods=['POST'])
 def logout():
-    refresh_token = (
-    request.cookies.get("contractor_refresh_token")
-    or request.headers.get("Authorization", "").replace("Bearer ", "")
-)
+    # Read refresh token ONLY from HttpOnly cookie
+    refresh_token = request.cookies.get("contractor_refresh_token")
 
     result, status = ContractorController.logout(refresh_token)
 
     response = make_response(jsonify(result), status)
 
-    # remove persistent login cookie
+    # Remove refresh cookie
     response.delete_cookie(
         "contractor_refresh_token",
         path="/"

@@ -57,16 +57,10 @@ function CompanyOTPVerification() {
       // =====================================================
       // STEP 3️⃣ STORE REFRESH TOKEN
       // =====================================================
-      if (data?.refresh_token) {
-        console.log("💾 Saving refresh token to localStorage");
-
-        localStorage.setItem("refresh_token", data.refresh_token);
-
-        console.log("✅ Refresh token saved");
-      } else {
-        console.warn("⚠️ No refresh token received from backend");
-      }
-
+// =====================================================
+// STEP 3️⃣ REFRESH TOKEN
+// =====================================================
+// Refresh token is stored automatically by the
       // =====================================================
       // STEP 4️⃣ PREPARE CONTRACTOR DATA
       // =====================================================
