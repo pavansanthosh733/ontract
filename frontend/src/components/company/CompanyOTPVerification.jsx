@@ -291,7 +291,7 @@ function CompanyOTPVerification() {
       }
 
       // =====================================================
-      // STEP 1️⃣4️⃣ NAVIGATION
+      // STEP 1️⃣4️⃣ NAVIGATION here
       // =====================================================
       console.log("🚀 Navigating to dashboard...");
 
@@ -340,7 +340,7 @@ function CompanyOTPVerification() {
   }
 };
   /* =========================
-     RESEND OTP
+     RESEND OTP functioanlity added
   ========================= */
   const handleResend = async () => {
     setError("");
@@ -402,3 +402,4 @@ function CompanyOTPVerification() {
 }
 
 export default CompanyOTPVerification;
+
