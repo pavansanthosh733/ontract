@@ -205,7 +205,6 @@ def search_workorders():
     if error:
         return jsonify({"error": error}), 500
 
-    print(f"[DEBUG] API returning {len(workorders)} rows")
     return jsonify(workorders), 200
 
 @workorder_bp.route("/<int:id>", methods=["PUT"])
@@ -391,7 +390,7 @@ def get_standard_rates():
         return jsonify(data), 200
 
     except Exception as e:
-        print("[ERROR] get_standard_rates:", e)
+        logging.exception("get_standard_rates controller error")
         return jsonify({"error": str(e)}), 500
 
 
@@ -429,29 +428,12 @@ def get_contractors():
 @workorder_bp.route("/assignment-audit", methods=["POST"])
 def save_assignment_audit():
     try:
-        print("=" * 80)
-        print("Inside save_assignment_audit controller")
-
         data = request.get_json()
-
-        print("Received payload:")
-        print(data)
 
         workorder = data.get("workorder")
         assignment_reason = data.get("assignment_reason")
         suggested_contractors = data.get("suggested_contractors", [])
         selected_contractor = data.get("selected_contractor", {})
-
-        print(f"Workorder: {workorder}")
-        print(f"Assignment Reason: {assignment_reason}")
-        print(
-            f"Number of suggested contractors: "
-            f"{len(suggested_contractors)}"
-        )
-        print(
-            f"Selected contractor: "
-            f"{selected_contractor.get('contractor_name')}"
-        )
 
         result, error = WorkOrder.save_assignment_audit(
             workorder=workorder,
@@ -461,15 +443,10 @@ def save_assignment_audit():
         )
 
         if error:
-            print(f"Error while saving audit: {error}")
-
             return jsonify({
                 "status": "error",
                 "message": error
             }), 400
-
-        print("Assignment audit saved successfully.")
-        print("=" * 80)
 
         return jsonify({
             "status": "success",
@@ -477,11 +454,6 @@ def save_assignment_audit():
         }), 201
 
     except Exception as e:
-        print("=" * 80)
-        print("Exception in save_assignment_audit controller")
-        print(str(e))
-        print("=" * 80)
-
         return jsonify({
             "status": "error",
             "message": str(e)
@@ -707,7 +679,7 @@ def fetch_contractors_for_workorder():
         }), 200
 
     except Exception as e:
-        print("Error:", e)
+        logging.exception("Error fetching contractors for workorder")
         return jsonify({
             "success": False,
             "message": "Internal server error"
@@ -1171,7 +1143,7 @@ def check_category_usage():
         }), 200
 
     except Exception as e:
-        print("CONTROLLER ERROR:", str(e))
+        logging.exception("check_category_usage controller error")
         return jsonify({"error": str(e)}), 500
 
 @workorder_bp.route("/admin/item/usage-check", methods=["POST"])
@@ -1200,9 +1172,9 @@ def check_item_usage():
         }), 200
 
     except Exception as e:
-        print("CONTROLLER ERROR:", str(e))
+        logging.exception("check_item_usage controller error")
         return jsonify({"error": str(e)}), 500
-    
+
 @workorder_bp.route("/admin/type/usage-check", methods=["POST"])
 def check_type_usage():
     try:
@@ -1231,7 +1203,7 @@ def check_type_usage():
         }), 200
 
     except Exception as e:
-        print("CONTROLLER ERROR:", str(e))
+        logging.exception("check_type_usage controller error")
         return jsonify({"error": str(e)}), 500
     
 
@@ -1267,7 +1239,7 @@ def check_description_usage():
         }), 200
 
     except Exception as e:
-        print("CONTROLLER ERROR:", str(e))
+        logging.exception("check_description_usage controller error")
         return jsonify({"error": str(e)}), 500
 
 @workorder_bp.route("/admin/register", methods=["POST"])
@@ -1739,51 +1711,23 @@ def contractor_ratings_dashboard():
 def get_assignment_audit():
 
     try:
-        print("=" * 100)
-        print(
-            "Inside get_assignment_audit "
-            "controller"
-        )
-
         result, error = (
             WorkOrder
             .get_assignment_audit()
         )
 
         if error:
-            print(
-                f"Error while fetching "
-                f"audit data: {error}"
-            )
-
             return jsonify({
                 "status": "error",
                 "message": error
             }), 400
-
-        print(
-            f"Successfully fetched "
-            f"{len(result)} audit "
-            f"records"
-        )
-
-        print("=" * 100)
 
         return jsonify(
             result
         ), 200
 
     except Exception as e:
-
-        print("=" * 100)
-        print(
-            "Exception occurred in "
-            "get_assignment_audit "
-            "controller"
-        )
-        print(str(e))
-        print("=" * 100)
-
+        logging.exception("get_assignment_audit controller error")
         return jsonify({
             "status": "error",
             "message": str(e)

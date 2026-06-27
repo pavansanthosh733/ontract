@@ -49,16 +49,6 @@ def now_ist():
 def to_ist_safe(value):
     return format_datetime(value)
 
-# Check all times
-print("\n" + "=" * 80)
-print("SERVER LOCAL TIME  :", datetime.now())
-print("UTC TIME           :", datetime.utcnow())
-print("KUALA LUMPUR TIME  :", datetime.now(ZoneInfo("Asia/Kuala_Lumpur")))
-print("now_ist() VALUE    :", now_ist())
-print("=" * 80 + "\n")
-
-
-
 
 class WorkOrder(db.Model):
     __tablename__ = "workorder_t"
@@ -102,10 +92,6 @@ class WorkOrder(db.Model):
             workorder_code = cls.generates_workorder_id()
             created_time = now_ist()
 
-            print(f"[CREATE WO] Workorder: {workorder_code}")
-            print(f"[CREATE WO] created_t being inserted: {created_time}")
-            print(f"[CREATE WO] requested_time_close: {data.get('REQUESTED_TIME_CLOSING')}")
-
             sql = text("""
                 INSERT INTO workorder_t (workorder,created_t,status,category,item,type,description,region,
                 state,city,client,address,ticket_assignment_type,requested_time_close,remarks,detailed_description,
@@ -145,12 +131,6 @@ class WorkOrder(db.Model):
             db.session.commit()
 
             wo = dict(row._mapping)
-            
-            print("\n========== DB RETURN ==========")
-            print("WORKORDER :", wo.get("workorder"))
-            print("CREATED_T :", wo.get("created_t"))
-            print("STATUS    :", wo.get("status"))
-            print("================================\n")
 
             # ----------------------------
             # SEND MAIL ONLY IF AUTO
@@ -786,13 +766,6 @@ class WorkOrder(db.Model):
                     or row.get("created_t")
                 )
 
-                print(
-                    lifecycle_status,
-                    row.get("remarks"),
-                    row.get("contractor_remarks"),
-                    row.get("admin_remarks")
-                )
-
                 timeline.append({
                     "status": lifecycle_status,
                     "time": (
@@ -823,7 +796,6 @@ class WorkOrder(db.Model):
             return [response], None
 
         except Exception as e:
-            print(f"[ERROR] search_by_workorder_raw exception: {e}")
             return None, str(e)
 
 
@@ -1019,7 +991,6 @@ class WorkOrder(db.Model):
             ]
 
         except Exception as e:
-            print("[ERROR] get_standard_rates:", e)
             return []
 
 
@@ -2995,26 +2966,10 @@ class WorkOrder(db.Model):
         selected_contractor
     ):
         try:
-            print("=" * 100)
-            print("Inside save_assignment_audit model")
-    
-            print(f"Workorder: {workorder}")
-            print(f"Assignment Reason: {assignment_reason}")
-    
             selected_contractor_id = selected_contractor.get(
                 "contractor_id"
             )
-    
-            print(
-                f"Selected Contractor ID: "
-                f"{selected_contractor_id}"
-            )
-    
-            print(
-                f"Suggested Contractors Count: "
-                f"{len(suggested_contractors)}"
-            )
-    
+
             sql = text("""
                 INSERT INTO contractor_assignment_audit_t
                 (
@@ -3053,38 +3008,19 @@ class WorkOrder(db.Model):
             audit_id = result.scalar()
     
             db.session.commit()
-    
-            print(
-                f"Assignment audit saved successfully."
-            )
-            print(f"Generated Audit ID: {audit_id}")
-            print("=" * 100)
-    
+
             return {
                 "audit_id": audit_id
             }, None
     
         except Exception as e:
             db.session.rollback()
-    
-            print("=" * 100)
-            print(
-                "Exception occurred in "
-                "save_assignment_audit"
-            )
-            print(str(e))
-            print("=" * 100)
-    
             return None, str(e)
-        
-        
+
+
     @classmethod
     def get_assignment_audit(cls):
         try:
-    
-            print("=" * 100)
-            print("Inside get_assignment_audit model")
-    
             sql = text("""
                 SELECT
                     audit_id,
@@ -3097,29 +3033,16 @@ class WorkOrder(db.Model):
                 FROM contractor_assignment_audit_t
                 ORDER BY created_at DESC
             """)
-    
-            print("Executing assignment audit query...")
-    
+
             rows = db.session.execute(
                 sql
             ).mappings().all()
-    
-            print(
-                f"Fetched {len(rows)} "
-                f"audit records"
-            )
-    
+
             result = []
-    
+
             for row in rows:
-    
                 audit = dict(row)
-    
-                print(
-                    f"Processing Workorder: "
-                    f"{audit.get('workorder')}"
-                )
-    
+
                 # JSONB safety handling
                 if audit.get(
                     "suggested_contractors"
@@ -3127,34 +3050,18 @@ class WorkOrder(db.Model):
                     audit[
                         "suggested_contractors"
                     ] = []
-    
+
                 if audit.get(
                     "selected_contractor"
                 ) is None:
                     audit[
                         "selected_contractor"
                     ] = {}
-    
+
                 result.append(audit)
-    
-            print(
-                "Successfully processed "
-                "audit records"
-            )
-    
-            print("=" * 100)
-    
+
             return result, None
-    
+
         except Exception as e:
-    
-            print("=" * 100)
-            print(
-                "Exception in "
-                "get_assignment_audit model"
-            )
-            print(str(e))
-            print("=" * 100)
-    
             return None, str(e)
         #workorder_bp.route("/admin/notifications/overrated", methods=["GET"]) donee
