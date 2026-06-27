@@ -68,16 +68,14 @@ def handle_send_acceptance_mail(workorder_code, request_data, base_url):
         # 🔥 🔔 PUSH NOTIFICATION START
         # =====================================================
         logging.info("🔥 ENTERING NOTIFICATION BLOCK")
-        print("🔥 STEP 2: BEFORE EMAIL")
         try:
-            print("🔥 TEST NOTIFICATION BLOCK")
             from app.utils.notification_service import send_notification_to_tokens
             from app.models.provider_model import ProviderModel
             logging.info(f"🔍 Fetching tokens for contractor: {request_data['CONTRACTOR_ID']}")
             tokens, error = ProviderModel.get_active_token_user_id(
                 request_data["CONTRACTOR_ID"]
             )
-            print("🔥 TOKENS:", tokens)
+            logging.info(f"🔥 TOKENS: {tokens}")
             if tokens:
                 send_notification_to_tokens(
                     tokens,

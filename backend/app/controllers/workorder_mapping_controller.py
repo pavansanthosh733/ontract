@@ -1,3 +1,5 @@
+import logging
+
 from flask import Blueprint, jsonify, request
 from app.models.database import db
 from app.models.workorder import WorkOrder
@@ -83,9 +85,7 @@ def map_workorders():
 
     except Exception as e:
         db.session.rollback()
-        import traceback
-        print("❌ Error in /api/mapping/map:", str(e))
-        traceback.print_exc()
+        logging.exception("Error in /api/mapping/map")
         return jsonify({"error": str(e)}), 500
     
  

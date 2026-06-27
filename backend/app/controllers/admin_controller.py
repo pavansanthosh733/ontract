@@ -275,12 +275,12 @@ class AdminController:
         
         logging.info("email_id resolved: %s", email)
         company = AdminModel.get_contractor_by_email(email)
-        print("company",company)
+        logging.debug("company: %s", company)
         company_id = company["company_id"]
-    
+
         logging.info("company_id resolved: %s", company_id)
         services = AdminModel.get_contractor_services(company['user_uid'])
-        print(services)
+        logging.debug("contractor services: %s", services)
         details = {
             "Company ID": company['brn_number'],
             "Company Name": company['company_name'],
@@ -428,7 +428,7 @@ class AdminController:
     @staticmethod
     def list_standard_rates(params):
         try:
-            print(params)
+            logging.debug("list_standard_rates params: %s", params)
             res = AdminModel.list_standard_rates(params)
             return res, 200
         except Exception as e:

@@ -1,6 +1,8 @@
+import logging
+import os
+
 from flask import Blueprint, request, jsonify, send_file, abort
 from app.models.invoice_model import InvoiceModel
-import os
 
 invoice_bp = Blueprint("invoice", __name__, url_prefix="/api/admin/invoice")
 
@@ -33,7 +35,7 @@ def generate_invoice():
         }), 200
 
     except Exception as e:
-        print("🔥 INVOICE GENERATION ERROR:", e)
+        logging.exception("INVOICE GENERATION ERROR")
         return jsonify({
             "status": "error",
             "message": "Invoice generation failed"
@@ -47,7 +49,7 @@ def generate_invoice():
 def download_invoice(filename):
     file_path = os.path.join(PDF_DIR, filename)
 
-    print("📄 PDF PATH:", file_path)
+    logging.info("PDF PATH: %s", file_path)
 
     if not os.path.exists(file_path):
         abort(404)

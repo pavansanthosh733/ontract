@@ -1,6 +1,7 @@
 
+import logging
+
 from flask import Blueprint, request, jsonify
-import traceback
 
 from app.models.ai_report_model import AIReportModel
 from app.services.ai_report_service import generate_ai_report
@@ -8,7 +9,7 @@ from app.utils.ai_prompt_validator import validate_prompt
 
 ai_report_bp = Blueprint("ai_report", __name__)
 
-print("✅ ai_report_controller loaded successfully")
+logging.info("✅ ai_report_controller loaded successfully")
 
 
 @ai_report_bp.route("/contractors", methods=["GET"])
@@ -43,9 +44,7 @@ def generate_report():
         return jsonify(result), 200
 
     except Exception as e:
-        print("\n========== AI REPORT ERROR ==========")
-        traceback.print_exc()
-        print("=====================================\n")
+        logging.exception("AI REPORT ERROR")
 
         return jsonify({
             "error": str(e),
