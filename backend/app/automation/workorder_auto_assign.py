@@ -35,10 +35,8 @@ def reassign_expired_workorders(app):
             # (1) MARK EXPIRED ASSIGNMENTS
             # ---------------------------------------------------
             mark_sql = text("""
-                UPDATE workorder_assignment_t
-                SET assignment_status = 'EXPIRED'
-                WHERE assignment_status = 'PENDING'
-                AND expiry_time < CURRENT_TIMESTAMP;
+                UPDATE workorder_assignment_t SET assignment_status = 'EXPIRED'
+                WHERE assignment_status = 'PENDING' AND expiry_time < CURRENT_TIMESTAMP;
             """)
 
             res = db.session.execute(mark_sql)
@@ -49,9 +47,7 @@ def reassign_expired_workorders(app):
             # (2) FETCH WORKORDERS FOR AUTO ASSIGNMENT
             # ---------------------------------------------------
             wo_sql = text("""
-                SELECT *
-                FROM workorder_t
-                WHERE ticket_assignment_type = 'auto'
+                SELECT * FROM workorder_t WHERE ticket_assignment_type = 'auto'
                 AND lower(status) in ('open','rejected')
             """)
 
@@ -66,10 +62,14 @@ def reassign_expired_workorders(app):
             # ---------------------------------------------------
             for wr in workorders:
 
-                workorder_code = wr["workorder"]
-                
+                workorder_code = wr["workorder"]          
                 region_id = wr["region"]
+                state_id = wr["state"]
+                city_id = wr["city"]
                 category_id = wr["category"]
+                item_id = wr["item"]
+                type_id = wr["type"]
+                description_id = wr["description"]
                 wo_created_at = wr.get("created_t")
                 
                 logging.info(f"[AUTO] Processing WO {workorder_code}")
@@ -78,17 +78,12 @@ def reassign_expired_workorders(app):
                 # (4) CHECK LATEST ASSIGNMENT STATUS
                 # ---------------------------------------------------
                 last_sql = text("""
-                    SELECT provider_id, assignment_status
-                    FROM workorder_assignment_t
-                    WHERE "WORKORDER_ID" = :wid
-                    ORDER BY assigned_at DESC
+                    SELECT provider_id, assignment_status FROM workorder_assignment_t
+                    WHERE "WORKORDER_ID" = :wid ORDER BY assigned_at DESC
                     LIMIT 1;
                 """)
 
-                latest = db.session.execute(
-                    last_sql, {"wid": workorder_code}
-                ).fetchone()
-
+                latest = db.session.execute(last_sql, {"wid": workorder_code}).fetchone()
                 status = latest.assignment_status if latest else None
                 logging.info(f"[AUTO] Last Status = {status}")
 
@@ -99,24 +94,21 @@ def reassign_expired_workorders(app):
                 # (5) FETCH CONTRACTORS FOR REGION + CATEGORY
                 # ---------------------------------------------------
                 provider_sql = text("""
-                    SELECT 
-                        a.user_uid AS provider_id,
-                        a.name AS full_name,
-                        a.email_id,
-                        b.service_rate,
-                        c.region_name,
-                        d.category_name
-                    FROM users_t a
+                    SELECT a.user_uid AS provider_id,a.name AS full_name,a.email_id,b.service_rate,
+                    c.region_name,d.category_name,e.item_name,f.type_name,g.description_name,
+                    h.state_name,i.city_name FROM users_t a
                     JOIN services_t b ON a.user_uid = b.user_uid
                     JOIN region_master_t c ON b.region = c.region_name
-                    JOIN category_master_t d ON d.category_name = b.category_name
-                    WHERE d.category_id = :cat
-                    AND c.region_id = :reg
-                
-                    -- ✅ FAIR ASSIGNMENT LOCK
-                    AND COALESCE(a.updated_at, a.created_at) <= :wo_created_at
-                
-                    ORDER BY b.service_rate ASC;
+                    JOIN category_master_t d ON b.category_name = d.category_name
+                    JOIN item_master_t e ON b.item_name = e.item_name
+                    JOIN type_master_t f ON b.type_name = f.type_name
+                    JOIN description_master_t g ON b.description_name = g.description_name
+                    JOIN state_master_t h ON b.state = h.state_name
+                    JOIN city_master_t i ON b.city = i.city_name
+                    WHERE d.category_id = :cat AND c.region_id = :reg AND e.item_id = :item
+                    AND f.type_id = :type AND g.description_id = :description
+                    AND h.state_id = :state AND i.city_id = :city AND a.active_status ='t'
+                    ORDER BY b.service_rate ASC,a.average_rating DESC,a.created_at ASC,a.user_uid;
                 """)
 
                 providers = db.session.execute(
@@ -124,7 +116,11 @@ def reassign_expired_workorders(app):
                     {
                         "cat": category_id,
                         "reg": region_id,
-                        "wo_created_at": wo_created_at
+                        "item": item_id,
+                        "type": type_id,
+                        "description": description_id,
+                        "state": state_id,
+                        "city": city_id,
                     }
                 ).mappings().all()
 
@@ -138,8 +134,7 @@ def reassign_expired_workorders(app):
                 # (6) FETCH EXPIRY MINUTES FOR REGION
                 # ---------------------------------------------------
                 expiry_sql = text("""
-                    SELECT a.expiry_minutes
-                    FROM link_expiry_t a
+                    SELECT a.expiry_minutes FROM link_expiry_t a
                     JOIN region_master_t b ON a.region = b.region_name
                     WHERE b.region_id = :rid
                 """)
@@ -159,11 +154,8 @@ def reassign_expired_workorders(app):
                     provider_id = int(p.provider_id)
 
                     check_sql = text("""
-                        SELECT 1
-                        FROM workorder_assignment_t
-                        WHERE "WORKORDER_ID" = :wid
-                        AND provider_id = :pid
-                        LIMIT 1
+                        SELECT 1 FROM workorder_assignment_t WHERE "WORKORDER_ID" = :wid
+                        AND provider_id = :pid LIMIT 1
                     """)
 
                     exists = db.session.execute(
@@ -176,9 +168,8 @@ def reassign_expired_workorders(app):
 
                     # ✅ INSERT NEW ASSIGNMENT
                     assign_sql = text("""
-                        INSERT INTO workorder_assignment_t
-                        ("WORKORDER_ID", provider_id, assigned_at,
-                         assignment_status, expiry_time)
+                        INSERT INTO workorder_assignment_t 
+                        ("WORKORDER_ID", provider_id, assigned_at,assignment_status, expiry_time)
                         VALUES (:wid, :pid, :at, 'PENDING', :exp)
                     """)
 
@@ -199,17 +190,9 @@ def reassign_expired_workorders(app):
 
                     # ✅ SEND EMAIL AFTER ASSIGNMENT
                     try:
-                        base_url = os.getenv(
-                            "PUBLIC_BASE_URL", "http://localhost:5000"
-                        )
+                        base_url = os.getenv("PUBLIC_BASE_URL", "http://localhost:5000")
 
-                        handle_send_acceptance_mail_auto(
-                            wr,
-                            p,
-                            expiry_minutes,
-                            base_url
-                        )
-
+                        handle_send_acceptance_mail_auto(wr,p,expiry_minutes,base_url)
                         logging.info(f"[AUTO] Email sent to {p.email_id}")
 
                     except Exception as e:
@@ -223,10 +206,8 @@ def reassign_expired_workorders(app):
                 if not assigned_to_someone:
 
                     final_status_sql = text("""
-                        SELECT assignment_status
-                        FROM workorder_assignment_t
-                        WHERE "WORKORDER_ID" = :wid
-                        ORDER BY assigned_at DESC
+                        SELECT assignment_status FROM workorder_assignment_t
+                        WHERE "WORKORDER_ID" = :wid ORDER BY assigned_at DESC
                         LIMIT 1;
                     """)
 
@@ -237,8 +218,7 @@ def reassign_expired_workorders(app):
                     last_status = last_record.assignment_status if last_record else None
 
                     escalation_check_sql = text("""
-                        SELECT 1
-                        FROM workorder_escalation_admin_t
+                        SELECT 1 FROM workorder_escalation_admin_t
                         WHERE workorder_id = :wid
                         LIMIT 1;
                     """)
@@ -350,7 +330,7 @@ def start_auto_scheduler(app):
         scheduler.add_job(
             reassign_expired_workorders,
             "interval",
-            minutes=100,
+            minutes=1,
             args=[app],
             next_run_time=now_ist() + timedelta(seconds=5),
             id="auto_assign_job",
