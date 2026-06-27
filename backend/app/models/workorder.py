@@ -490,6 +490,7 @@ class WorkOrder(db.Model):
                 LEFT JOIN category_master_t c ON w.category = c.category_id
                 LEFT JOIN region_master_t r ON w.region = r.region_id
                 where lower(w.status) in ('open','rejected')
+                AND LOWER (ticket_assignment_type) in ('manual')
                 ORDER BY w.id DESC
             """)
 
