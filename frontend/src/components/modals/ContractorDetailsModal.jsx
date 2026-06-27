@@ -90,6 +90,10 @@ const ContractorDetailsModal = ({ contractor, onClose }) => {
                   <td>{contractor.brn_number || "N/A"}</td>
                 </tr>
                 <tr>
+                  <th>TIN NUMBER</th>
+                  <td>{contractor.tin_number || "N/A"}</td>
+                </tr>
+                <tr>
                   <th>Status</th>
                   <td>{contractor.status || "N/A"}</td>
                 </tr>
@@ -104,7 +108,7 @@ const ContractorDetailsModal = ({ contractor, onClose }) => {
               </tbody>
             </table>
 
-            <h6 className="text-primary mt-3">Bank Details</h6>
+            <h6 className="text-primary mt-3">Bank Details2</h6>
             <table className="table table-bordered table-sm">
               <tbody>
                 {bank ? (
@@ -119,28 +123,13 @@ const ContractorDetailsModal = ({ contractor, onClose }) => {
                     </tr>
                     <tr>
                       <th>Account Number</th>
-                      <td>{bank.bank_account_number || "N/A"}</td>
+                      <td>{bank.account_number || "N/A"}</td>
                     </tr>
                     <tr>
                       <th>Swift Code</th>
                       <td>{bank.swift_code || "N/A"}</td>
                     </tr>
-                    <tr>
-                      <th>Status</th>
-                      <td>
-                        <span
-                          className={`badge ${
-                            bank.status === "approved"
-                              ? "bg-success"
-                              : bank.status === "pending"
-                              ? "bg-warning text-dark"
-                              : "bg-danger"
-                          }`}
-                        >
-                          {bank.status || "N/A"}
-                        </span>
-                      </td>
-                    </tr>
+
                     <tr>
                       <th>Bank details submitted At</th>
                       <td>{bank.created_at || "N/A"}</td>

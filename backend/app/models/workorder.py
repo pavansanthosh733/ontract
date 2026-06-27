@@ -1372,9 +1372,12 @@ class WorkOrder(db.Model):
                     b.name,
                     a.assigned_at,
                     a.assignment_status,
+                    c.company_name,
                     a.expiry_time
                 FROM workorder_assignment_t a
                 JOIN users_t b ON a.provider_id = b.user_uid
+                LEFT JOIN company_details_t c
+                    ON b.user_uid = c.user_uid
                 WHERE 1=1
             """
 

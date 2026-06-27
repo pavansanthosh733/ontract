@@ -365,18 +365,23 @@ class AdminModel:
                 c.company_id,
                 c.company_name,
                 u.email_id,
+                u.tin_number,
                 u.contact_number,
                 u.status,
                 u.active_status,
                 c.brn_number,
                 u.bumiputra_status,
+                u.tin_number,
     
                 -- bank details
                 b.company_bank_id,
                 b.company_id AS bank_company_id,
                 b.swift_code,
                 b.holder_name,
-                b.bank_name
+                b.bank_name,
+                b.account_number,
+                b.created_at,
+                b.updated_at
                 
     
             FROM users_t u
@@ -402,11 +407,13 @@ class AdminModel:
                 "company_id": row.get("company_id"),
                 "company_name": row.get("company_name"),
                 "email_id": row.get("email_id"),
+                "tin_number":row.get("tin_number"),
                 "contact_number": row.get("contact_number"),
                 "status": row.get("status"),
                 "active_status": bool(row.get("active_status")),
                 "brn_number": row.get("brn_number"),
                 "bumiputra_status": row.get("bumiputra_status"),
+                "tin_number":row.get("tin_number"),
     
                 "bank_details": {
                     "company_bank_id": row.get("company_bank_id"),
@@ -414,6 +421,10 @@ class AdminModel:
                     "swift_code": decrypt_value(row.get("swift_code")) if row.get("swift_code") else None,
                     "holder_name": row.get("holder_name"),
                     "bank_name": row.get("bank_name"),
+                    "account_number": decrypt_value(row.get("account_number")) if row.get("account_number") else None,
+                    "created_at":row.get("created_at"),
+                    "updated_at":row.get("updated_at")
+                    
                 } if row.get("company_bank_id") else None
             }
     

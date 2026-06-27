@@ -137,7 +137,7 @@ const WorkorderAssignment = () => {
                   rows.map((row, index) => (
                     <tr key={index}>
                       <td>{row.WORKORDER_ID}</td>
-                      <td>{row.name || "-"}</td>
+                      <td>{row.company_name || row.name || "-"}</td>
                       <td>{formatDate(row.assigned_at)}</td>
                       <td className={`status ${row.assignment_status?.toLowerCase()}`}>
                         {row.assignment_status}
