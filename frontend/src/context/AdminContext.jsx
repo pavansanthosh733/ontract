@@ -23,13 +23,16 @@ export const AdminProvider = ({ children }) => {
 
       if (storedAdmin) {
         const parsed = JSON.parse(storedAdmin);
+
         console.log("✅ Admin loaded from localStorage:", parsed);
+
         setAdmin(parsed);
       } else {
         console.log("ℹ️ No admin in localStorage");
       }
     } catch (err) {
-      console.error("❌ Failed to parse admin from localStorage", err);
+      console.error("❌ Failed to parse admin", err);
+
       localStorage.removeItem("admin");
     } finally {
       setLoading(false);
@@ -40,20 +43,32 @@ export const AdminProvider = ({ children }) => {
   /* -------------------------------------------
      LOGIN ADMIN
   -------------------------------------------- */
-  const loginAdmin = (adminData, token) => {
+  const loginAdmin = (adminData) => {
     console.group("🔐 Admin Login");
 
     console.log("Admin data received:", adminData);
 
-    setAdmin(adminData);
-    localStorage.setItem("admin", JSON.stringify(adminData));
+    // Keep ALL admin fields
+    const safeData = {
+      ...adminData,
+    };
 
-     if (token) {
-        localStorage.setItem("admin_token", token);
-        console.log("✅ Admin token saved to localStorage");
-    }
+    // Remove sensitive fields only if present
+    delete safeData.password_hash;
+    delete safeData.access_token;
 
-    console.log("✅ Admin stored in context & localStorage");
+    console.log("✅ Safe data:", safeData);
+
+    setAdmin(safeData);
+
+    localStorage.setItem(
+      "admin",
+      JSON.stringify(safeData)
+    );
+
+    // Admin now uses HttpOnly cookie
+    localStorage.removeItem("admin_token");
+
     console.groupEnd();
   };
 
@@ -64,10 +79,12 @@ export const AdminProvider = ({ children }) => {
     console.group("🚪 Admin Logout");
 
     setAdmin(null);
+
     localStorage.removeItem("admin");
     localStorage.removeItem("admin_token");
 
-    console.log("✅ Admin cleared from context & localStorage");
+    console.log("✅ Admin logged out");
+
     console.groupEnd();
   };
 
@@ -90,8 +107,12 @@ export const AdminProvider = ({ children }) => {
 ===================================================== */
 export const useAdmin = () => {
   const ctx = useContext(AdminContext);
+
   if (!ctx) {
-    throw new Error("useAdmin must be used inside AdminProvider");
+    throw new Error(
+      "useAdmin must be used inside AdminProvider"
+    );
   }
+
   return ctx;
 };
