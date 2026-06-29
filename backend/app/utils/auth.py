@@ -12,10 +12,9 @@ from app.models.database import db
 # ==============================================
 class Roles:
     ADMIN      = "admin"
-    MANAGER    = "manager"
     PROVIDER   = "provider"
     CONTRACTOR = "contractor"
-    USER       = "user"
+    
 
 
 # ==============================================
@@ -259,6 +258,46 @@ def register_auth_middleware(app):
             request.role    = payload.get("role")
             request.jti     = jti
 
+            # ==============================================
+            # RBAC
+            # ==============================================
+            ROLE_RULES = {
+                "/api/admin": {Roles.ADMIN},
+                "/api/contractor": {Roles.ADMIN, Roles.CONTRACTOR},
+                "/api/workorders": {Roles.ADMIN, Roles.PROVIDER, Roles.CONTRACTOR},
+                "/api/region": {Roles.ADMIN},
+                "/api/state": {Roles.ADMIN},
+                "/api/city": {Roles.ADMIN},
+                "/api/zone": {Roles.ADMIN},
+                "/api/master": {Roles.ADMIN},
+                "/api/mapping": {Roles.ADMIN},
+                "/api/workorder-type": {Roles.ADMIN, Roles.PROVIDER},
+                "/api/provider": {Roles.ADMIN, Roles.PROVIDER},
+                "/api/notification": {Roles.ADMIN, Roles.PROVIDER, Roles.CONTRACTOR},
+                "/api/dashboard": {Roles.ADMIN, Roles.PROVIDER, Roles.CONTRACTOR},
+                "/api/invoice": {Roles.ADMIN, Roles.PROVIDER},
+                "/api/ai-report": {Roles.ADMIN},
+            }
+
+            for api, allowed_roles in ROLE_RULES.items():
+
+                if request.path.startswith(api):
+
+                    if request.role not in allowed_roles:
+
+                        logging.warning(
+                            f"RBAC FAILED | "
+                            f"Role={request.role} | "
+                            f"Path={request.path}"
+                        )
+
+                        return jsonify({
+                            "success": False,
+                            "message": "Access denied."
+                        }), 403
+
+                    break
+
             logging.info(
                 f"✅ Auth passed: {request.path} "
                 f"| user={request.user_id} "
@@ -334,28 +373,7 @@ def token_required(f):
     return decorated
 
 
-# ==============================================
-# 🛡️ RBAC — PROTECT ENTIRE BLUEPRINT AT ONCE
-# ==============================================
-def protect_blueprint(bp, *allowed_roles):
-    @bp.before_request
-    def check_role():
-        user_role = getattr(request, "role", None)
-        user_id   = getattr(request, "user_id", None)
 
-        if user_role not in allowed_roles:
-            logging.warning(
-                f"🚫 Access denied: "
-                f"user_id={user_id} | "
-                f"role='{user_role}' | "
-                f"path={request.path}"
-            )
-            return jsonify({
-                "success": False,
-                "message": "Access denied. You don't have permission."
-            }), 403
-
-        logging.info(f"✅ Role OK: {user_role} | {request.path}")
 
 
 # ==============================================

@@ -9,6 +9,7 @@ import jwt
 from datetime import datetime, timedelta
 from flask import current_app
 from flask import jsonify, make_response, current_app
+from flask import current_app, make_response, jsonify, request
 
 from app.models.provider_model import ProviderModel   
 from app.utils.email_utils import (
@@ -118,12 +119,6 @@ class ProviderController:
 
         if not provider['active_status']:
             return {"error": "Account not activated"}, 401
-        
-
-        # Allow only providers with service_type = 0
-        if provider.get('service_type') != 0:
-            return {"error": "Invalid credentials"}, 401
-
 
         # OTP flow remains the same
         otp = ''.join(random.choices(string.digits, k=6))
@@ -196,7 +191,62 @@ class ProviderController:
             max_age=24 * 60 * 60
         )
 
-        return response, 200
+        return response
+
+    @staticmethod
+    def logout():
+        token = request.cookies.get("access_token")
+
+        if not token:
+            response = make_response(jsonify({
+                "success": True,
+                "message": "Already logged out"
+            }))
+            return response
+
+        try:
+            payload = jwt.decode(
+                token,
+                current_app.config["SECRET_KEY"],
+                algorithms=["HS256"]
+            )
+
+            revoke_token(
+                jti=payload["jti"],
+                user_id=payload["user_id"],
+                role=payload["role"],
+                expires_at=datetime.fromtimestamp(
+                    payload["exp"],
+                    timezone.utc
+                )
+            )
+
+            db.session.execute(
+                text("""
+                    UPDATE users_t
+                    SET token = NULL
+                    WHERE user_uid = :uid
+                """),
+                {"uid": payload["user_id"]}
+            )
+            db.session.commit()
+
+        except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+            pass
+
+        response = make_response(jsonify({
+            "success": True,
+            "message": "Logged out successfully"
+        }))
+
+        response.delete_cookie(
+            "access_token",
+            path="/",
+            samesite=current_app.config["SESSION_COOKIE_SAMESITE"],
+            secure=current_app.config["SESSION_COOKIE_SECURE"],
+        )
+
+        return response
         
         
     @staticmethod

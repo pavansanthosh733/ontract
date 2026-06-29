@@ -35,19 +35,7 @@ def verify_otp():
     data = request.get_json()
     return ContractorController.verify_otp(data)
 
-    # ✅ set 90 day persistent cookie
-    if status == 200 and "refresh_token" in result:
-        response.set_cookie(
-            "contractor_refresh_token",
-            result["refresh_token"],
-            httponly=True,
-            secure=True,
-            samesite="Strict",
-            max_age=90 * 24 * 60 * 60,
-            path="/"
-        )
-
-    return response
+   
 
 
 

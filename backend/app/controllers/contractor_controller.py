@@ -17,7 +17,8 @@ from datetime import datetime, timedelta
 from app.utils.file_utils import save_uploaded_file
 from app.models.contractor_model import ContractorModel
 from app.models.provider_model import ProviderModel 
-from flask import current_app, jsonify, make_response
+from flask import current_app, make_response, jsonify, request
+from app.utils.auth import revoke_token
 from app.utils.encrypt_utils import cipher
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import text
@@ -243,29 +244,60 @@ class ContractorController:
 
         return response, 200
 
-        # ---------------- Logout ----------------
     @staticmethod
-    def logout(data):
-        user_uid = data.get("user_uid")
+    def logout():
+        token = request.cookies.get("access_token")
 
-        if not user_uid:
-            return {"error": "user_uid required"}, 400
-        
+        if not token:
+            response = make_response(jsonify({
+                "success": True,
+                "message": "Already logged out"
+            }))
+            return response
 
-        # ✅ Clear token from users_t
-        db.session.execute(
-            text("""
-                UPDATE users_t
-                SET token = NULL
-                WHERE user_uid = :user_uid
-            """),
-            {"user_uid": user_uid}
+        try:
+            payload = jwt.decode(
+                token,
+                current_app.config["SECRET_KEY"],
+                algorithms=["HS256"]
+            )
+
+            revoke_token(
+                jti=payload["jti"],
+                user_id=payload["user_id"],
+                role=payload["role"],
+                expires_at=datetime.fromtimestamp(
+                    payload["exp"],
+                    timezone.utc
+                )
+            )
+
+            db.session.execute(
+                text("""
+                    UPDATE users_t
+                    SET token = NULL
+                    WHERE user_uid = :uid
+                """),
+                {"uid": payload["user_id"]}
+            )
+            db.session.commit()
+
+        except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+            pass
+
+        response = make_response(jsonify({
+            "success": True,
+            "message": "Logged out successfully"
+        }))
+
+        response.delete_cookie(
+            "access_token",
+            path="/",
+            samesite=current_app.config["SESSION_COOKIE_SAMESITE"],
+            secure=current_app.config["SESSION_COOKIE_SECURE"],
         )
-        db.session.commit()
 
-        logging.info(f"✅ Contractor logged out | user_uid={user_uid}")
-
-        return {"message": "Logged out successfully"}, 200
+        return response
 
     @staticmethod
     def refresh_token(refresh_token):
