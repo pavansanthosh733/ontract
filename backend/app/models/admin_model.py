@@ -460,10 +460,10 @@ class AdminModel:
     
         result = [dict(r._mapping) for r in rows]
     
-        print("\n========== FINAL RESULT ==========")
     
-        for r in result:
-            print(r)
+    
+        
+            
     
         return result
     
@@ -477,7 +477,7 @@ class AdminModel:
             WHERE user_uid = :uid AND service_type = 1
         """)
         rows = db.session.execute(sql, {"uid": user_uid}).fetchall()
-        print("rows",rows,user_uid)
+        
         return [dict(r._mapping) for r in rows]
 # admin_model.py
 
@@ -504,7 +504,7 @@ class AdminModel:
             WHERE u.email_id = :email
         """)
         row = db.session.execute(sql, {"email": email}).fetchone()
-        print("email",row)
+       
         return dict(row._mapping) if row else None
 
 

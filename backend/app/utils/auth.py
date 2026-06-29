@@ -1,7 +1,10 @@
+import uuid
 import jwt
 import logging
 from functools import wraps
+from datetime import datetime, timezone
 from flask import request, jsonify, current_app
+from app.models.database import db
 
 
 # ==============================================
@@ -29,6 +32,7 @@ PUBLIC_ROUTES = [
     # ✅ Testdb
     "/api/testdb",
 
+    
     # ✅ Admin auth routes
     "/api/admin/login",
     "/api/admin/verify_otp",
@@ -36,6 +40,8 @@ PUBLIC_ROUTES = [
     "/api/admin/resend-otp",
     "/api/admin/send-otp",
     "/api/workorders/admin/",
+    "/api/admin/logout",
+      
 
     # ✅ Provider auth routes
     "/api/verify_otp",
@@ -55,6 +61,7 @@ PUBLIC_ROUTES = [
     "/api/contractor/resend_otp",
     "/api/contractor/logout",
     "/api/contractor/",
+
 
     # ✅ Provider logout
     "/api/logout",
@@ -106,8 +113,101 @@ PUBLIC_ROUTES = [
 
 
 # ==============================================
+# 🔑 HELPER — extract token from cookie OR header
+# ==============================================
+def _extract_token():
+    """
+    1st: httpOnly cookie (secure)
+    2nd: Authorization header (fallback during transition)
+    """
+    # Primary: httpOnly cookie
+    token = request.cookies.get("access_token")
+    if token:
+        return token
+
+    # Fallback: Authorization header
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        return auth_header.split(" ")[1]
+
+    return None
+
+
+# ==============================================
+# 🚫 JWT REVOCATION — DATABASE FUNCTIONS
+# ==============================================
+def is_token_revoked(jti: str) -> bool:
+    """
+    Check if token JTI exists in revoked_tokens_t table.
+    Called on EVERY protected request.
+    """
+    try:
+        with db.engine.connect() as conn:
+            from sqlalchemy import text
+            result = conn.execute(
+                text("""
+                    SELECT 1 FROM revoked_tokens_t
+                    WHERE jti = :jti
+                    AND expires_at > NOW()
+                    LIMIT 1
+                """),
+                {"jti": jti}
+            )
+            return result.fetchone() is not None
+    except Exception as e:
+        logging.error(f"❌ Token revocation check failed: {e}")
+        # Fail open — if DB check fails, don't block the request
+        return False
+
+
+def revoke_token(jti: str, user_id: str, role: str, expires_at: datetime):
+    """
+    Add token JTI to revoked_tokens_t.
+    Called on logout.
+    """
+    try:
+        with db.engine.connect() as conn:
+            from sqlalchemy import text
+            conn.execute(
+                text("""
+                    INSERT INTO revoked_tokens_t 
+                        (jti, user_id, role, revoked_at, expires_at)
+                    VALUES 
+                        (:jti, :user_id, :role, NOW(), :expires_at)
+                    ON CONFLICT (jti) DO NOTHING
+                """),
+                {
+                    "jti":        jti,
+                    "user_id":    str(user_id),
+                    "role":       role,
+                    "expires_at": expires_at
+                }
+            )
+            conn.commit()
+            logging.info(f"✅ Token revoked: jti={jti} user={user_id}")
+    except Exception as e:
+        logging.error(f"❌ Token revocation failed: {e}")
+
+
+def cleanup_expired_tokens():
+    """
+    Delete expired tokens from revoked_tokens_t.
+    Call this on a schedule (e.g. daily) to keep table small.
+    """
+    try:
+        with db.engine.connect() as conn:
+            from sqlalchemy import text
+            result = conn.execute(
+                text("DELETE FROM revoked_tokens_t WHERE expires_at < NOW()")
+            )
+            conn.commit()
+            logging.info(f"🧹 Cleaned up {result.rowcount} expired revoked tokens")
+    except Exception as e:
+        logging.error(f"❌ Token cleanup failed: {e}")
+
+
+# ==============================================
 # 🌐 GLOBAL MIDDLEWARE
-# Runs before every request automatically
 # ==============================================
 def register_auth_middleware(app):
 
@@ -121,31 +221,43 @@ def register_auth_middleware(app):
         # ✅ Skip public routes
         for public in PUBLIC_ROUTES:
             if request.path.startswith(public):
-                logging.info(f"⚪ Public route, skipping auth: {request.path}")
+                logging.info(f"⚪ Public route: {request.path}")
                 return None
 
-        # ✅ Check Authorization header exists
-        auth_header = request.headers.get("Authorization")
+        # ✅ Extract token
+        token = _extract_token()
 
-        if not auth_header:
-            logging.warning(f"❌ No token on protected route: {request.path}")
+        if not token:
+            logging.warning(f"❌ No token on: {request.path}")
             return jsonify({
                 "success": False,
                 "message": "Authorization token missing"
             }), 401
 
-        # ✅ Validate token
+        # ✅ Decode and validate token
         try:
-            token = auth_header.split(" ")[1]
-
             payload = jwt.decode(
                 token,
                 current_app.config["SECRET_KEY"],
                 algorithms=["HS256"]
             )
 
+            # ✅ JWT REVOCATION CHECK — runs on every request
+            jti = payload.get("jti")
+            if jti and is_token_revoked(jti):
+                logging.warning(
+                    f"🚫 Revoked token used: "
+                    f"jti={jti} | "
+                    f"path={request.path}"
+                )
+                return jsonify({
+                    "success": False,
+                    "message": "Token has been revoked. Please login again."
+                }), 401
+
             request.user_id = payload["user_id"]
             request.role    = payload.get("role")
+            request.jti     = jti
 
             logging.info(
                 f"✅ Auth passed: {request.path} "
@@ -154,21 +266,21 @@ def register_auth_middleware(app):
             )
 
         except jwt.ExpiredSignatureError:
-            logging.error(f"❌ Token expired on: {request.path}")
+            logging.error(f"❌ Token expired: {request.path}")
             return jsonify({
                 "success": False,
                 "message": "Token expired. Please login again."
             }), 401
 
         except jwt.InvalidTokenError as e:
-            logging.error(f"❌ Invalid token on {request.path}: {e}")
+            logging.error(f"❌ Invalid token: {request.path}: {e}")
             return jsonify({
                 "success": False,
                 "message": "Invalid token"
             }), 401
 
         except Exception as e:
-            logging.error(f"❌ Token error on {request.path}: {e}")
+            logging.error(f"❌ Token error: {request.path}: {e}")
             return jsonify({
                 "success": False,
                 "message": "Authentication failed"
@@ -179,64 +291,46 @@ def register_auth_middleware(app):
 # 🔐 TOKEN REQUIRED DECORATOR
 # ==============================================
 def token_required(f):
-
     @wraps(f)
     def decorated(*args, **kwargs):
 
-        logging.info("🔐 TOKEN CHECK STARTED")
+        token = _extract_token()
 
-        auth_header = request.headers.get("Authorization")
-
-        logging.info(f"Authorization Header: {auth_header}")
-
-        if not auth_header:
-            logging.warning("❌ Authorization token missing")
+        if not token:
             return jsonify({
                 "success": False,
                 "message": "Authorization token missing"
             }), 401
 
         try:
-            token = auth_header.split(" ")[1]
-
-            logging.info(f"Token Received: {token[:20]}...")
-
             payload = jwt.decode(
                 token,
                 current_app.config["SECRET_KEY"],
                 algorithms=["HS256"]
             )
 
-            logging.info(f"✅ Token Validated Successfully")
-            logging.info(f"User ID: {payload.get('user_id')}")
-            logging.info(f"Role: {payload.get('role')}")
+            # ✅ Revocation check
+            jti = payload.get("jti")
+            if jti and is_token_revoked(jti):
+                return jsonify({
+                    "success": False,
+                    "message": "Token has been revoked. Please login again."
+                }), 401
 
             request.user_id = payload["user_id"]
             request.role    = payload.get("role")
+            request.jti     = jti
 
         except jwt.ExpiredSignatureError:
-            logging.error("❌ Token expired")
-            return jsonify({
-                "success": False,
-                "message": "Token expired. Please login again."
-            }), 401
+            return jsonify({"success": False, "message": "Token expired."}), 401
 
-        except jwt.InvalidTokenError as e:
-            logging.error(f"❌ Invalid Token: {str(e)}")
-            return jsonify({
-                "success": False,
-                "message": "Invalid token"
-            }), 401
+        except jwt.InvalidTokenError:
+            return jsonify({"success": False, "message": "Invalid token"}), 401
 
         except Exception as e:
-            logging.error(f"❌ Token error: {str(e)}")
-            return jsonify({
-                "success": False,
-                "message": "Authentication failed"
-            }), 401
+            return jsonify({"success": False, "message": "Authentication failed"}), 401
 
         return f(*args, **kwargs)
-
     return decorated
 
 
@@ -244,11 +338,6 @@ def token_required(f):
 # 🛡️ RBAC — PROTECT ENTIRE BLUEPRINT AT ONCE
 # ==============================================
 def protect_blueprint(bp, *allowed_roles):
-    """
-    Protects ALL routes in a blueprint at once.
-    Usage in __init__.py:
-        protect_blueprint(workorder_bp, Roles.ADMIN, Roles.MANAGER)
-    """
     @bp.before_request
     def check_role():
         user_role = getattr(request, "role", None)
@@ -259,25 +348,18 @@ def protect_blueprint(bp, *allowed_roles):
                 f"🚫 Access denied: "
                 f"user_id={user_id} | "
                 f"role='{user_role}' | "
-                f"path={request.path} | "
-                f"allowed={allowed_roles}"
+                f"path={request.path}"
             )
             return jsonify({
                 "success": False,
                 "message": "Access denied. You don't have permission."
             }), 403
 
-        logging.info(
-            f"✅ Role OK: "
-            f"user_id={user_id} | "
-            f"role='{user_role}' | "
-            f"path={request.path}"
-        )
+        logging.info(f"✅ Role OK: {user_role} | {request.path}")
 
 
 # ==============================================
 # 🛡️ RBAC — ROLE REQUIRED DECORATOR
-# (use this if one route needs different role)
 # ==============================================
 def role_required(*allowed_roles):
     def decorator(f):
@@ -311,5 +393,7 @@ __all__ = [
     "token_required",
     "role_required",
     "protect_blueprint",
+    "revoke_token",
+    "cleanup_expired_tokens",
     "Roles",
 ]

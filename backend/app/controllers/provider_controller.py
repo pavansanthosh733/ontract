@@ -8,6 +8,7 @@ from app import db
 import jwt
 from datetime import datetime, timedelta
 from flask import current_app
+from flask import jsonify, make_response, current_app
 
 from app.models.provider_model import ProviderModel   
 from app.utils.email_utils import (
@@ -132,59 +133,70 @@ class ProviderController:
         return {"message": "OTP sent to email"}, 200
     @staticmethod
     def verify_otp(email, otp):
+
+        if not email or not otp:
+            return {"error": "Email and OTP required"}, 400
+
+        # ✅ Validate OTP
         record = ProviderModel.get_otp(email)
 
-        if not record or record['otp_code'].strip() != otp.strip():
+        if not record or record["otp_code"].strip() != otp.strip():
             return {"error": "Invalid or expired OTP"}, 401
 
+        # Delete OTP
         ProviderModel.delete_otp(email)
 
+        # Get user
         user = ProviderModel.get_user_for_context(email)
 
         if not user:
             return {"error": "User not found"}, 404
 
-        # ✅ Generate JWT token
-        try:
-            token = jwt.encode(
-                {
-                    "user_id": user["user_uid"],
-                    "role":    "provider",
-                    "exp":     datetime.utcnow() + timedelta(hours=24)
-                },
-                current_app.config["SECRET_KEY"],
-                algorithm="HS256"
-            )
-            logging.info(f"✅ Token generated for {email}")
+        # Generate JWT
+        token = jwt.encode(
+            {
+                "user_id": user["user_uid"],
+                "role": "provider",
+                "exp": datetime.utcnow() + timedelta(hours=24)
+            },
+            current_app.config["SECRET_KEY"],
+            algorithm="HS256"
+        )
 
-        except Exception as e:
-            logging.error(f"❌ Token generation failed: {e}")
-            return {"error": f"Token generation failed: {str(e)}"}, 500
+        # Save JWT in database
+        db.session.execute(
+            text("""
+                UPDATE users_t
+                SET token = :token
+                WHERE user_uid = :user_uid
+            """),
+            {
+                "token": token,
+                "user_uid": user["user_uid"]
+            }
+        )
+        db.session.commit()
 
-        # ✅ Save token in DB
-        try:
-            db.session.execute(
-                text("""
-                    UPDATE users_t
-                    SET token = :token
-                    WHERE user_uid = :user_uid
-                """),
-                {"token": token, "user_uid": user["user_uid"]}
-            )
-            db.session.commit()
-            logging.info(f"✅ Token saved in DB for user_uid={user['user_uid']}")
-
-        except Exception as e:
-            db.session.rollback()
-            logging.error(f"❌ Token save failed: {e}")
-            # Non-fatal — still return the token to the client
-
-        return {
+        # Create response
+        response = make_response(jsonify({
             "success": True,
-            "token":   token,
-            "role":    "provider",
-            "user":    user
-        }, 200
+            "message": "OTP verified successfully",
+            "role": "provider",
+            "user": user
+        }))
+
+        # Store JWT in HttpOnly cookie
+        response.set_cookie(
+            "access_token",
+            value=token,
+            httponly=True,
+            secure=current_app.config["SESSION_COOKIE_SECURE"],
+            samesite=current_app.config["SESSION_COOKIE_SAMESITE"],
+            path="/",
+            max_age=24 * 60 * 60
+        )
+
+        return response, 200
         
         
     @staticmethod

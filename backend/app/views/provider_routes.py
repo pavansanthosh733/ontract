@@ -42,14 +42,10 @@ def login():
 @provider_bp.route("/verify_otp", methods=["POST"])
 def verify_otp():
     data = request.get_json()
-    email = data.get("email")
-    otp = data.get("otp")
-
-    if not email or not otp:
-        return jsonify({"error": "Email and OTP required"}), 400
-
-    result, status = ProviderController.verify_otp(email, otp)
-    return jsonify(result), status
+    return ProviderController.verify_otp(
+        data["email"],
+        data["otp"]
+    )
 
 @provider_bp.route("/save_token", methods=["POST"])
 def save_token():
@@ -170,7 +166,7 @@ def update_profile():
     try:
         form = request.form
         files = request.files
-        print("provider files",files)
+        
 
         email = form.get("email")
         if not email:

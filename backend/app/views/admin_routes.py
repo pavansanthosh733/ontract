@@ -14,8 +14,12 @@ def admin_login():
 @admin_bp.route('/verify_otp', methods=['POST'])
 def verify_admin_otp():
     data = request.get_json(force=True)
-    res, status = AdminController.verify_otp(data.get('email'), data.get('otp'))
-    return jsonify(res), status
+
+    return AdminController.verify_otp(
+        data.get("email"),
+        data.get("otp"),
+    )
+    return response
 
 # ===== Providers =====
 @admin_bp.route('/providers', methods=['GET'])
@@ -34,6 +38,10 @@ def reject_provider():
     email = request.get_json(force=True).get('email')
     res, status = AdminController.reject_provider(email)
     return jsonify(res), status
+
+@admin_bp.route("/logout", methods=["POST"])
+def admin_logout():
+    return AdminController.logout()
 
 @admin_bp.route('/send_message', methods=['POST'])
 def send_message_provider():

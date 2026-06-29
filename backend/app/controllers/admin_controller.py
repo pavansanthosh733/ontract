@@ -4,14 +4,17 @@ import tempfile
 import logging
 import magic
 import jwt
-from datetime import datetime, timedelta
+import uuid 
+from datetime import datetime, timedelta, timezone
 from app.utils.current_admin import set_admin
 from app.utils.current_admin import set_admin, get_admin
+from flask import current_app, make_response, jsonify 
 from flask import current_app
 from flask import session
 from app.models.admin_model import AdminModel
 from app.utils.email_utils import send_email, send_admin_otp_email
 from app.utils.pdf_utils import generate_certificate_pdf
+from app.utils.auth import revoke_token
 
 
 class AdminController:
@@ -32,54 +35,131 @@ class AdminController:
         send_admin_otp_email(email, otp)
         return {"message": "OTP sent to email"}, 200
 
+    
     @staticmethod
     def verify_otp(email, otp):
+
         if not email or not otp:
             return {"error": "Email and OTP required"}, 400
 
         ok = AdminModel.verify_otp(email, otp)
-        ok = True
-        if ok:
-            admin = AdminModel.get_admin_by_email(email)
 
-            set_admin(admin)
+        if not ok:
+            return {"error": "Invalid OTP"}, 401
 
-            AdminModel.delete_otp(email)
+        admin = AdminModel.get_admin_by_email(email)
 
-            
+        set_admin(admin)
 
-            # Generate JWT Token
-            access_token = jwt.encode(
-                {
-                    "user_id": admin.get("admin_id"),
-                    "email": admin.get("email"),
-                    "role": "ADMIN",
-                    "exp": datetime.utcnow() + timedelta(hours=8)
-                },
-                current_app.config["SECRET_KEY"],
-                algorithm="HS256"
-            )
+        AdminModel.delete_otp(email)
 
-            # SAVE TOKEN IN DATABASE
-            AdminModel.update_access_token(
-                admin.get("admin_id"),
-                access_token
-            )
+        access_token = jwt.encode(
+            {
+                "jti": str(uuid.uuid4()),
+                "user_id": admin["admin_id"],
+                "email": admin["email"],
+                "role": "admin",
+                "exp": datetime.utcnow() + timedelta(hours=8)
+            },
+            current_app.config["SECRET_KEY"],
+            algorithm="HS256"
+        )
 
-            # ✅ Add this line — remove sensitive fields
-            admin_data = {k: v for k, v in admin.items() if k not in ("access_token", "password_hash")}
+        AdminModel.update_access_token(
+            admin["admin_id"],
+            access_token
+        )
 
+        admin_data = {
+            k: v
+            for k, v in admin.items()
+            if k not in ("password_hash", "access_token")
+        }
 
-            return {
-                "message": "OTP verified successfully",
-                "admin_email": admin_data,
-                "access_token": access_token
-            }, 200
+        # -----------------------------
+        # CREATE RESPONSE
+        # -----------------------------
+        response = make_response(jsonify({
+            "success": True,
+            "message": "OTP verified successfully",
+            "admin": admin_data
+        }))
 
-        return {"error": "Invalid or expired OTP"}, 401
+        # -----------------------------
+        # SET COOKIE
+        # -----------------------------
+        response.set_cookie(
+            "access_token",
+            value=access_token,
+            httponly=True,
+            secure=True,      # True in production HTTPS
+            samesite="None",    # Strict in production if desired
+            path="/",
+            max_age=8 * 60 * 60
+        )
+
+        return response
+
         
     
     
+   
+    
+    @staticmethod
+    def logout():
+        from flask import request, current_app, make_response, jsonify
+        import jwt
+        from datetime import datetime, timezone
+
+        token = request.cookies.get("access_token")
+
+        if not token:
+            return {
+                "success": True,
+                "message": "Already logged out"
+            }, 200
+
+        try:
+            payload = jwt.decode(
+                token,
+                current_app.config["SECRET_KEY"],
+                algorithms=["HS256"]
+            )
+
+            revoke_token(
+                jti=payload["jti"],
+                user_id=payload["user_id"],
+                role=payload["role"],
+                expires_at=datetime.fromtimestamp(
+                    payload["exp"],
+                    timezone.utc
+                )
+            )
+
+            # DO NOT clear access_token from admins_t
+
+        except jwt.ExpiredSignatureError:
+            pass
+
+        except jwt.InvalidTokenError:
+            pass
+
+        response = make_response(jsonify({
+            "success": True,
+            "message": "Logged out successfully"
+        }))
+
+        response.delete_cookie(
+            "access_token",
+            path="/",
+            samesite="None",    # ✅ add this
+            secure=True         # ✅ add this
+        )
+
+        return response, 200
+            
+        
+        
     @staticmethod
     def resend_otp(email):
         if not email:
@@ -94,16 +174,16 @@ class AdminController:
     @staticmethod
     def list_providers():
         providers = AdminModel.list_providers()
-    
+
         for p in providers:
-    
+
             # Normalize current services
             if not p.get("services"):
                 p["services"] = []
-    
-            # 🔥 Get previous services
+
+            # Get previous services
             previous_rows = AdminModel.get_previous_services(p["user_uid"])
-    
+
             previous_services = [
                 {
                     "service_rate": float(s["service_rate"]) if s["service_rate"] else 0.0,
@@ -120,9 +200,9 @@ class AdminController:
                 }
                 for s in previous_rows
             ]
-    
+
             p["previous_services"] = previous_services
-    
+
         return providers, 200
 
 
@@ -210,14 +290,7 @@ class AdminController:
     
         for s in svcs:
             
-            # print("\n--- BEFORE MAP ---")
-            # print("company_id:", s.get("company_id"))
-            # print("category_name:", s.get("category_name"))
-            # print("item_name:", s.get("item_name"))
-            # print("type_name:", s.get("type_name"))
-            # print("description_name:", s.get("description_name"))
-            # print("service_name:", s.get("service_name"))
-            # print("service_rate:", s.get("service_rate"))
+           
             
             svc_map.setdefault(s['company_id'], []).append({
                 "category": s.get("category_name"),
@@ -275,12 +348,12 @@ class AdminController:
         
         logging.info("email_id resolved: %s", email)
         company = AdminModel.get_contractor_by_email(email)
-        logging.debug("company: %s", company)
+       
         company_id = company["company_id"]
-
+    
         logging.info("company_id resolved: %s", company_id)
         services = AdminModel.get_contractor_services(company['user_uid'])
-        logging.debug("contractor services: %s", services)
+        
         details = {
             "Company ID": company['brn_number'],
             "Company Name": company['company_name'],
@@ -428,9 +501,9 @@ class AdminController:
     @staticmethod
     def list_standard_rates(params):
         try:
-            logging.debug("list_standard_rates params: %s", params)
-            res = AdminModel.list_standard_rates(params)
-            return res, 200
+           
+          res = AdminModel.list_standard_rates(params)
+          return res, 200
         except Exception as e:
             current_app.logger.exception("List rates failed")
             return {"error": str(e)}, 500
