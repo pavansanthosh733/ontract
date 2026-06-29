@@ -154,6 +154,7 @@ function AdminLogin() {
         `${BASE_URLS.admin}/api/admin/verify_otp`,
         {
           method: "POST",
+          credentials: "include", 
           headers: {
             "Content-Type":
               "application/json",
@@ -194,9 +195,9 @@ function AdminLogin() {
       // NORMALIZE ADMIN
       // =====================================================
       const adminData = {
-        ...data.admin_email,
-        role: "ADMIN",
-      };
+    ...data.admin,
+    role: "admin",
+};
 
       console.log(
         "Normalized admin data:",
@@ -211,10 +212,7 @@ function AdminLogin() {
   data.access_token
 );
       
-      loginAdmin(
-  adminData,
-  data.access_token
-)
+    loginAdmin(adminData);
 
       console.log(
         "Admin saved into context/localStorage"
@@ -366,6 +364,7 @@ await new Promise((resolve) =>
               `${BASE_URLS.admin}/api/save_token`,
               {
                 method: "POST",
+                credentials: "include",
 
                 headers: {
                   "Content-Type":
