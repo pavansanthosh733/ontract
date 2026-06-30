@@ -30,10 +30,7 @@ export const ContractorProvider = ({ children }) => {
     try {
       const data = await apiPost("/api/contractor/refresh_token", {});
 
-      // ✅ 🔥 UPDATE TOKEN (CRITICAL)
-      if (data?.refresh_token) {
-        localStorage.setItem("refresh_token", data.refresh_token);
-      }
+    
 
       if (data?.contractor) {
         console.log("✅ Contractor restored from backend");
@@ -81,10 +78,7 @@ export const ContractorProvider = ({ children }) => {
         // ✅ Backend validation
         const data = await apiPost("/api/contractor/refresh_token", {});
 
-        // ✅ 🔥 UPDATE TOKEN (CRITICAL)
-        if (data?.refresh_token) {
-          localStorage.setItem("refresh_token", data.refresh_token);
-        }
+      
 
         if (data?.contractor) {
           console.log("🔐 Contractor restored from backend");
@@ -110,7 +104,7 @@ export const ContractorProvider = ({ children }) => {
 
           setContractor(null);
           localStorage.removeItem("contractor");
-          localStorage.removeItem("refresh_token"); // 🔥 IMPORTANT
+         
         } else {
           console.error(
             "⚠️ Temporary backend issue, keeping cached contractor",
@@ -129,7 +123,7 @@ export const ContractorProvider = ({ children }) => {
   /* -------------------------------------------
      LOGIN CONTRACTOR
   -------------------------------------------- */
-  const loginContractor = (contractorData, token) => {
+  const loginContractor = (contractorData) => {
     console.group("🔐 Contractor Login");
 
     setContractor(contractorData);
