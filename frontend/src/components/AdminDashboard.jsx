@@ -23,6 +23,8 @@ const [contractorModal, setContractorModal] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [providerPage, setProviderPage] = useState(1);
   const [contractorPage, setContractorPage] = useState(1);
+  const [certificateModal, setCertificateModal] = useState(null);
+  const [selectedCertificate, setSelectedCertificate] = useState(null);
 const pageSize = 5;
 
   const navigate = useNavigate();
@@ -327,14 +329,15 @@ paginatedProviders.map((p) => (
                           >
                             Profile
                           </a>
-                          <a
-                            href={`${BASE_URL}/api/get_image/${p.email_id || p.email}/certificate`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn btn-sm btn-outline-secondary"
-                          >
-                            Certificate
-                          </a>
+<button
+                              className="btn btn-sm btn-outline-secondary"
+                              onClick={() => {
+                              setCertificateModal(p);
+                              setSelectedCertificate(null);
+                             }}
+                            >
+                         Certificate
+                     </button>
                         </>
                       )}
                     </td>
@@ -471,14 +474,15 @@ paginatedProviders.map((p) => (
                           >
                             Logo
                           </a>
-                          <a
-                            href={`${BASE_URL}/api/get_image/${c.email_id || c.email}/contractor_certificate`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn btn-sm btn-outline-secondary"
-                          >
-                            Certificate
-                          </a>
+<button
+                      className="btn btn-sm btn-outline-secondary"
+                      onClick={() => {
+                      setCertificateModal(c);
+                      setSelectedCertificate(null);
+                    }}
+                     >
+                      Certificate
+                  </button>
                         </>
                       )}
                     </td>
@@ -586,6 +590,93 @@ paginatedProviders.map((p) => (
   contractor={contractorModal}
   onClose={() => setContractorModal(null)}
 />
+
+{certificateModal && (
+  <div
+    className="modal fade show d-block"
+    style={{ background: "rgba(0,0,0,0.6)" }}
+  >
+    <div
+      className="modal-dialog modal-xl"
+      style={{ maxWidth: "90%" }}
+    >
+      <div className="modal-content">
+
+        <div className="modal-header">
+         <h5 className="modal-title">
+  {certificateModal.company_name
+    ? "Company Certificates"
+    : "Provider Certificates"}
+</h5>
+
+          <button
+            className="btn-close"
+            onClick={() => {
+              setCertificateModal(null);
+              setSelectedCertificate(null);
+            }}
+          />
+        </div>
+
+        <div className="modal-body">
+
+          <div className="row">
+
+            <div className="col-md-3 border-end">
+
+              <h6>Documents</h6>
+
+             	          
+				       {(
+                          certificateModal.certificate_path ||
+                          certificateModal.authorized_certificate ||
+                          []
+                         ).map((doc, index) => (
+                                <button
+                                      key={index}
+                                      className="btn btn-outline-primary w-100 mb-2"
+                                      onClick={() => setSelectedCertificate(doc)}
+                                 >
+                           Document {index + 1}
+                           </button>
+                         ))}
+		
+
+            </div>
+
+            <div className="col-md-9">
+
+              {selectedCertificate ? (
+                selectedCertificate.endsWith(".pdf") ? (
+                  <iframe
+                    src={`${BASE_URL}${selectedCertificate}`}
+                    width="100%"
+                    height="600px"
+                    title="certificate"
+                  />
+                ) : (
+                  <img
+                    src={`${BASE_URL}${selectedCertificate}`}
+                    alt="certificate"
+                    className="img-fluid"
+                  />
+                )
+              ) : (
+                <div className="text-center mt-5">
+                  Select a document
+                </div>
+              )}
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+)}
 
     </div>
   );

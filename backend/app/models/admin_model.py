@@ -184,13 +184,16 @@ class AdminModel:
                 b.swift_code,
                 b.account_holder_name,
                 b.status AS bank_status,
-                b.created_at AS bank_created_at
+                b.created_at AS bank_created_at,
+                p.authorized_certificate
     
             FROM users_t u
             LEFT JOIN services_t s
                 ON u.user_uid = s.user_uid
             LEFT JOIN providers_bank_details_t b
                 ON b.provider_id = u.user_uid
+            LEFT JOIN providers_t p
+                    ON p.user_uid = u.user_uid
             WHERE u.service_type = 0
             ORDER BY u.created_at DESC
         """)
@@ -208,6 +211,7 @@ class AdminModel:
                     "user_uid": uid,
                     "name": row.get("name"),
                     "email_id": row.get("email_id"),
+                    "authorized_certificate": row.get("authorized_certificate"),
                     "contact_number": row.get("contact_number"),
                     "status": row.get("status"),
                     "mailing_address": row.get("mailing_address"),
@@ -381,7 +385,8 @@ class AdminModel:
                 b.bank_name,
                 b.account_number,
                 b.created_at,
-                b.updated_at
+                b.updated_at,
+                c.certificate_path
                 
     
             FROM users_t u
@@ -407,6 +412,7 @@ class AdminModel:
                 "company_id": row.get("company_id"),
                 "company_name": row.get("company_name"),
                 "email_id": row.get("email_id"),
+                "certificate_path": row.get("certificate_path"),
                 "tin_number":row.get("tin_number"),
                 "contact_number": row.get("contact_number"),
                 "status": row.get("status"),
