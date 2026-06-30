@@ -31,22 +31,16 @@ export const UserProvider = ({ children }) => {
   }, []);
 
   // Login: save user globally
-  const loginUser = (userData, token) => {
+  const loginUser = (userData) => {
     setUser(userData);
     localStorage.setItem("user", JSON.stringify(userData));
-
-     if (token) {
-        localStorage.setItem("access_token", token);
-        console.log("✅ access_token saved to localStorage");
-    }
   };
 
   // Logout: clear everything
   const logoutUser = () => {
     setUser(null);
     localStorage.removeItem("user");
-    localStorage.removeItem("provider_token");
-    localStorage.removeItem("access_token");
+    
   };
 
   return (
