@@ -22,13 +22,18 @@ export const ContractorProvider = ({ children }) => {
   const didRestore = useRef(false);
 
   /* -------------------------------------------
-     REUSABLE REFRESH SESSION 
+     REUSABLE REFRESH SESSION
   -------------------------------------------- */
   const refreshContractorSession = async () => {
     console.group("🔄 Manual Contractor Session Refresh");
 
     try {
       const data = await apiPost("/api/contractor/refresh_token", {});
+
+      // ✅ 🔥 UPDATE TOKEN (CRITICAL)
+      if (data?.refresh_token) {
+        localStorage.setItem("refresh_token", data.refresh_token);
+      }
 
       if (data?.contractor) {
         console.log("✅ Contractor restored from backend");
@@ -64,7 +69,7 @@ export const ContractorProvider = ({ children }) => {
 
     const restoreSession = async () => {
       try {
-        // Fast UI restore
+        // ✅ Fast UI restore
         const stored = localStorage.getItem("contractor");
 
         if (stored) {
@@ -73,8 +78,13 @@ export const ContractorProvider = ({ children }) => {
           setContractor(parsed);
         }
 
-        // Validate session using HttpOnly refresh cookie
+        // ✅ Backend validation
         const data = await apiPost("/api/contractor/refresh_token", {});
+
+        // ✅ 🔥 UPDATE TOKEN (CRITICAL)
+        if (data?.refresh_token) {
+          localStorage.setItem("refresh_token", data.refresh_token);
+        }
 
         if (data?.contractor) {
           console.log("🔐 Contractor restored from backend");
@@ -100,6 +110,7 @@ export const ContractorProvider = ({ children }) => {
 
           setContractor(null);
           localStorage.removeItem("contractor");
+          localStorage.removeItem("refresh_token"); // 🔥 IMPORTANT
         } else {
           console.error(
             "⚠️ Temporary backend issue, keeping cached contractor",
@@ -127,39 +138,22 @@ export const ContractorProvider = ({ children }) => {
       "contractor",
       JSON.stringify(contractorData)
     );
-
-    // JWT Access Token (keep existing implementation)
-    if (token) {
-      localStorage.setItem("contractor_token", token);
-      console.log("✅ Contractor token saved to localStorage");
-    }
-
-    console.log("✅ Contractor saved in context + localStorage");
-    console.groupEnd();
   };
 
   /* -------------------------------------------
      LOGOUT CONTRACTOR
   -------------------------------------------- */
   const logoutContractor = async () => {
-    console.group("🚪 Contractor Logout");
-
-    try {
-      await apiPost("/api/contractor/logout", {});
-      console.log("✅ Backend session revoked");
-    } catch (err) {
-      console.error("❌ Logout API failed", err);
-    } finally {
-      setContractor(null);
-
-      // Clear frontend cache
-      localStorage.removeItem("contractor");
-      localStorage.removeItem("contractor_token");
-
-      console.log("✅ Frontend cleared");
-      console.groupEnd();
-    }
-  };
+  try {
+    await apiPost("/api/contractor/logout", {});
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setContractor(null);
+    localStorage.removeItem("contractor");
+    localStorage.removeItem("refresh_token");
+  }
+};
 
   return (
     <ContractorContext.Provider
@@ -191,4 +185,3 @@ export const useContractor = () => {
 
   return ctx;
 };
-
