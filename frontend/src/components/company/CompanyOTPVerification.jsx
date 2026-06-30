@@ -57,10 +57,8 @@ function CompanyOTPVerification() {
       // =====================================================
       // STEP 3️⃣ STORE REFRESH TOKEN
       // =====================================================
-// =====================================================
-// STEP 3️⃣ REFRESH TOKEN
-// =====================================================
-// Refresh token is stored automatically by the
+      
+
       // =====================================================
       // STEP 4️⃣ PREPARE CONTRACTOR DATA
       // =====================================================
@@ -77,12 +75,12 @@ function CompanyOTPVerification() {
       console.log("🧠 Saving contractor in context");
 
       // ✅ Save JWT token
-      if (data.token) {
-          localStorage.setItem("contractor_token", data.token);
+    
+          
           console.log("✅ contractor_token saved to localStorage");
-      }
+      
 
-      loginContractor(contractorData, data.token);
+      loginContractor(contractorData);
 
       console.log("✅ Contractor saved in context");
 
@@ -291,7 +289,7 @@ function CompanyOTPVerification() {
       }
 
       // =====================================================
-      // STEP 1️⃣4️⃣ NAVIGATION here
+      // STEP 1️⃣4️⃣ NAVIGATION
       // =====================================================
       console.log("🚀 Navigating to dashboard...");
 
@@ -340,7 +338,7 @@ function CompanyOTPVerification() {
   }
 };
   /* =========================
-     RESEND OTP functioanlity added
+     RESEND OTP
   ========================= */
   const handleResend = async () => {
     setError("");
@@ -378,9 +376,13 @@ function CompanyOTPVerification() {
           <input
             type="text"
             value={otp}
-            onChange={(e) => setOtp(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, ""); // ✅ digits only
+              if (val.length <= 6) setOtp(val);              // ✅ max 6
+            }}
             placeholder="Enter OTP"
             maxLength={6}
+            inputMode="numeric"
             required
           />
 
@@ -402,4 +404,3 @@ function CompanyOTPVerification() {
 }
 
 export default CompanyOTPVerification;
-
