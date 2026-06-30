@@ -37,6 +37,7 @@ function OTPVerification() {
     try {
       const response = await fetch(`${BASE_URLS.user}/api/verify_otp`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, otp }),
       });
@@ -51,12 +52,11 @@ function OTPVerification() {
           };
 
           // ✅ Save JWT token
-          if (data.token) {
-              localStorage.setItem("access_token", data.token);
+          
               console.log("✅ access_token saved");
-          }
+          
 
-          loginUser(userData, data.token);
+          loginUser(userData);
 
         // =========================
         // 📱 MOBILE (FLUTTER)
@@ -97,6 +97,7 @@ function OTPVerification() {
             try {
               await fetch(`${BASE_URLS.user}/api/save_token`, {
                 method: "POST",
+                credentials: "include",
                 headers: {
                   "Content-Type": "application/json",
                 },
@@ -164,12 +165,17 @@ function OTPVerification() {
           <div className="otpverification-input-group">
             <label className="otpverification-label">OTP</label>
             <input
-              type="text"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              className="otpverification-input"
-              required
-            />
+                type="text"
+                value={otp}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, ""); // ✅ digits only
+                  if (val.length <= 6) setOtp(val);              // ✅ max 6
+                }}
+                className="otpverification-input"
+                maxLength={6}
+                inputMode="numeric"
+                required
+              />
           </div>
           <button type="submit" className="otpverification-button">
             Verify
