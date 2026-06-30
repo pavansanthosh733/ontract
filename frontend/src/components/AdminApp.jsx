@@ -20,7 +20,7 @@ import AIReport from './AiReport';
 import ManualAssignedWorkorders from './ManualAssignedWorkorders';
 
 function AdminApp({ admin, setAdmin }) {
-  const { admin: ctxAdmin, loading } = useAdmin();
+  const {admin: ctxAdmin,loading,logoutAdmin,} = useAdmin();
 
   const navigate = useNavigate();
 
@@ -65,11 +65,13 @@ function AdminApp({ admin, setAdmin }) {
     };
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('admin');
-    setAdmin(null);
-    navigate('/admin/login');
-  };
+  const handleLogout = async () => {
+  try {
+    await logoutAdmin();
+  } finally {
+    navigate("/admin/login");
+  }
+};
 
   const handleLinkClick = (link) => {
     setActiveLink(link);
@@ -321,17 +323,17 @@ function AdminApp({ admin, setAdmin }) {
             Rate Comparison Report
           </Link>
         </li>
-         {  /*     <li>
+                <li>
           <Link
             to="/admin/reports/aireport"
             onClick={() => handleLinkClick('aireport')}
           >
             Prompt Based Reports
           </Link>
-        </li> */}
+        </li>
       </ul>
     </li>
-  )  }
+  )}
 
   {/* Logout  route*/}
   <li>

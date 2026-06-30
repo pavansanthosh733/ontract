@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
+import { apiPost } from "../api";
+
 /* =====================================================
    ADMIN CONTEXT
 ===================================================== */
@@ -72,20 +74,34 @@ export const AdminProvider = ({ children }) => {
     console.groupEnd();
   };
 
-  /* -------------------------------------------
+/* -------------------------------------------
      LOGOUT ADMIN
   -------------------------------------------- */
-  const logoutAdmin = () => {
+  const logoutAdmin = async () => {
     console.group("🚪 Admin Logout");
 
-    setAdmin(null);
+    try {
+      // Backend will:
+      // 1. Read HttpOnly cookie
+      // 2. Revoke JWT
+      // 3. Insert into revoked_tokens_t
+      // 4. Delete cookie
+      await apiPost("/api/admin/logout", {});
 
-    localStorage.removeItem("admin");
-    localStorage.removeItem("admin_token");
+      console.log("✅ Backend logout successful");
+    } catch (err) {
+      console.error("❌ Logout API failed", err);
+    } finally {
+      // Clear frontend state
+      setAdmin(null);
 
-    console.log("✅ Admin logged out");
+      // Remove cached admin profile
+      localStorage.removeItem("admin");
 
-    console.groupEnd();
+      console.log("✅ Frontend logout complete");
+
+      console.groupEnd();
+    }
   };
 
   return (
