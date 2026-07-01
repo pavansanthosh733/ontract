@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -32,6 +32,78 @@ function AdminLogin() {
   const [error, setError] = useState("");
 
   const [loading, setLoading] = useState(false);
+
+  const [resendLoading, setResendLoading] = useState(false);
+const [countdown, setCountdown] = useState(30);
+const [canResend, setCanResend] = useState(false);
+
+
+
+    const resetCredentialTimer = () => {
+    clearTimeout(timerRef.current);
+
+    timerRef.current = setTimeout(() => {
+      setEmail("");
+      setPassword("");
+    }, 300000); // 5 minutes
+  };
+
+  useEffect(() => {
+    resetCredentialTimer();
+
+    return () => clearTimeout(timerRef.current);
+  }, []);
+  const timerRef = useRef(null);
+
+
+  useEffect(() => {
+  if (step === "otp") {
+    setCanResend(false);
+    setCountdown(30);
+
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setCanResend(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }
+}, [step]);
+
+  const handleResendOtp = async () => {
+  try {
+    const res = await fetch(
+      `${BASE_URLS.admin}/api/admin/resend_otp`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+        }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      setError(data.error || "Failed to resend OTP");
+      return;
+    }
+
+    alert(data.message);
+
+  } catch (err) {
+    setError("Failed to resend OTP");
+  }
+};
 
   // =====================================================
   // LOGIN SUBMIT
@@ -90,6 +162,8 @@ function AdminLogin() {
         console.log(
           "Admin login success. OTP sent."
         );
+
+                clearTimeout(timerRef.current);
 
         setStep("otp");
 
@@ -197,6 +271,7 @@ function AdminLogin() {
       const adminData = {
     ...data.admin,
     role: "admin",
+     access_token: data.access_token,
 };
 
       console.log(
@@ -488,9 +563,10 @@ await new Promise((resolve) =>
                 type="email"
                 placeholder="Admin Email ID"
                 value={email}
-                onChange={(e) =>
-                  setEmail(e.target.value)
-                }
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  resetCredentialTimer();
+                }}
                 disabled={loading}
               />
             </div>
@@ -505,9 +581,10 @@ await new Promise((resolve) =>
                 }
                 placeholder="Password"
                 value={password}
-                onChange={(e) =>
-                  setPassword(e.target.value)
-                }
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  resetCredentialTimer();
+                }}
                 disabled={loading}
               />
 
@@ -565,6 +642,23 @@ await new Promise((resolve) =>
                 ? "Verifying..."
                 : "Verify OTP"}
             </button>
+
+
+            <div className="resend-container">
+            {canResend ? (
+  <button
+    type="button"
+    className="resend-btn"
+    onClick={handleResendOtp}
+  >
+    Resend OTP
+  </button>
+  ) : (
+    <span>Resend OTP in {countdown}s</span>
+  )}
+</div>
+
+            
 
           </form>
         )}

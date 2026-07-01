@@ -124,3 +124,33 @@
     transform: translateY(0);
   }
 }
+
+.resend-container {
+    display: flex;
+    justify-content: center;
+}
+
+.resend-container .resend-btn {
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+
+    color: #1997d5 !important;   /* Same blue as Verify OTP */
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+}
+
+.resend-container .resend-btn:hover {
+    color: #1997d5 !important;
+    text-decoration: underline;
+}
+
+.resend-container .resend-btn:focus,
+.resend-container .resend-btn:active {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
