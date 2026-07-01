@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import "./css/CompanyLogin.css";
+import { RefreshCw } from "lucide-react";
 import { BASE_URLS } from "../../api";
 
 function Login() {
@@ -22,7 +23,21 @@ function Login() {
 
   const [loading, setLoading] =
     useState(false);
+  const timerRef = useRef(null);
 
+  const resetCredentialTimer = () => {
+    clearTimeout(timerRef.current);
+
+    timerRef.current = setTimeout(() => {
+      setEmail("");
+      setPassword("");
+      generateCaptcha(); // Refresh CAPTCHA
+    }, 60000); // 1 minute
+  };
+
+  useEffect(() => {
+    return () => clearTimeout(timerRef.current);
+  }, []);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -198,7 +213,7 @@ function Login() {
 
       if (res.ok) {
 
-        
+        clearTimeout(timerRef.current);
 
         navigate(
           "/contractor/verify_otp",
@@ -210,9 +225,8 @@ function Login() {
       } else {
 
         alert(
-          `${
-            data.error ||
-            "Login failed"
+          `${data.error ||
+          "Login failed"
           }`
         );
 
@@ -289,11 +303,10 @@ function Login() {
               type="email"
               placeholder="Registered Email ID"
               value={email}
-              onChange={(e) =>
-                setEmail(
-                  e.target.value.trimStart()
-                )
-              }
+              onChange={(e) => {
+                setEmail(e.target.value.trimStart());
+                resetCredentialTimer();
+              }}
               disabled={loading}
             />
 
@@ -312,11 +325,10 @@ function Login() {
               }
               placeholder="Password"
               value={password}
-              onChange={(e) =>
-                setPassword(
-                  e.target.value
-                )
-              }
+              onChange={(e) => {
+                setPassword(e.target.value);
+                resetCredentialTimer();
+              }}
               disabled={loading}
             />
 
@@ -342,9 +354,12 @@ function Login() {
 
             <span
               className="captcha-get"
-              onClick={generateCaptcha}
+              onClick={() => {
+                generateCaptcha();
+                resetCredentialTimer();
+              }}
             >
-              RECAPTCHA
+              <RefreshCw size={20} />
             </span>
 
           </div>
@@ -354,16 +369,14 @@ function Login() {
             className="captcha-input"
             placeholder="Enter Captcha"
             value={captchaInput}
-            onChange={(e) =>
-              setCaptchaInput(
-                e.target.value.toUpperCase()
-              )
-            }
+            onChange={(e) => {
+              setCaptchaInput(e.target.value.toUpperCase());
+              resetCredentialTimer();
+            }}
           />
 
           <p className="captcha-text">
-            Please enter the characters as shown
-            in the image above.
+            Please enter the letters and numbers exactly as shown in the image above.
           </p>
 
           {/* SUBMIT BUTTON */}

@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, RefreshCw } from "lucide-react";
 import "./css/login.css";
 import { BASE_URLS } from "../api";
 
@@ -15,7 +15,21 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const timerRef = useRef(null);
 
+  const resetCredentialTimer = () => {
+    clearTimeout(timerRef.current);
+
+    timerRef.current = setTimeout(() => {
+      setEmail("");
+      setPassword("");
+      generateCaptcha(); // Refresh captcha automatically
+    }, 60000); // 1 minute
+  };
+
+  useEffect(() => {
+    return () => clearTimeout(timerRef.current);
+  }, []);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -98,6 +112,7 @@ function Login() {
       const data = await res.json();
 
       if (res.ok) {
+        clearTimeout(timerRef.current);
         alert(data.message);
         navigate("/verify-otp", {
           state: { email }
@@ -120,10 +135,10 @@ function Login() {
     <div className="login-wrapper">
       <div className="login-card">
 
-        
+
         <div className="contract-header">
-  
-          
+
+
         </div>
 
         <div className="login-title">
@@ -147,7 +162,10 @@ function Login() {
               type="email"
               placeholder="Registered Email ID"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                resetCredentialTimer();
+              }}
               disabled={loading}
             />
           </div>
@@ -159,27 +177,36 @@ function Login() {
               type={showPassword ? "text" : "password"}
               placeholder="Password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                resetCredentialTimer();
+              }}
               disabled={loading}
             />
-              <span
-    className="hw-icon eye-icon"
-    onClick={() => setShowPassword(!showPassword)}
-    style={{ cursor: "pointer" }}
-  >
-    {showPassword ? "🙈" : "👁️"}
-  </span>
-           
+            <span
+              className="hw-icon eye-icon"
+              onClick={() => setShowPassword(!showPassword)}
+              style={{ cursor: "pointer" }}
+            >
+              {showPassword ? "🙈" : "👁️"}
+            </span>
+
           </div>
 
           {/* CAPTCHA */}
           <div className="captcha-row">
             {captchaImage && (
-  <img src={captchaImage} alt="Captcha" />
-)}
+              <img src={captchaImage} alt="Captcha" />
+            )}
 
-            <span className="captcha-get" onClick={generateCaptcha}>
-              RECAPTCHA
+            <span
+              className="captcha-get"
+              onClick={() => {
+                generateCaptcha();
+                resetCredentialTimer();
+              }}
+            >
+              <RefreshCw size={20} />
             </span>
           </div>
 
@@ -187,11 +214,14 @@ function Login() {
             className="captcha-input"
             placeholder="Enter Captcha"
             value={captchaInput}
-            onChange={(e) => setCaptchaInput(e.target.value.toUpperCase())}
+            onChange={(e) => {
+              setCaptchaInput(e.target.value.toUpperCase());
+              resetCredentialTimer();
+            }}
           />
 
           <p className="captcha-text">
-            Please enter the Numbers as they are shown in the image above.
+            Please enter the letters and numbers exactly as shown in the image above.
           </p>
 
           <button className="go-btn" disabled={loading}>
