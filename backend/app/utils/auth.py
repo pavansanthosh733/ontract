@@ -36,7 +36,7 @@ PUBLIC_ROUTES = [
     "/api/admin/login",
     "/api/admin/verify_otp",
     "/api/admin/dev-login",
-    "/api/admin/resend-otp",
+    "/api/admin/resend_otp",
     "/api/admin/send-otp",
     "/api/workorders/admin/",
     "/api/admin/logout",
@@ -51,6 +51,8 @@ PUBLIC_ROUTES = [
     "/api/forgot",
     "/api/reset-password",
     "/api/verify-reset-otp",
+     "/api/profile",
+    
 
     # ✅ Contractor auth routes
     "/api/contractor/verify_otp",
@@ -120,7 +122,11 @@ def _extract_token():
     2nd: Authorization header (fallback during transition)
     """
     # Primary: httpOnly cookie
-    token = request.cookies.get("access_token")
+    token = (
+        request.cookies.get("access_token") or
+        request.cookies.get("contractor_access_token") or
+        request.cookies.get("admin_access_token")
+      )
     if token:
         return token
 
