@@ -223,7 +223,7 @@ class ContractorController:
         )
         db.session.commit()
 
-        # Create response
+        # Create response for code 200
         response = make_response(jsonify({
             "success": True,
             "message": "OTP verified successfully",
