@@ -233,11 +233,11 @@ class ContractorController:
 
         # Store JWT in HttpOnly cookie
         response.set_cookie(
-            "access_token",
+            "contractor_access_token",
             value=token,
             httponly=True,
-            secure=current_app.config["SESSION_COOKIE_SECURE"],
-            samesite=current_app.config["SESSION_COOKIE_SAMESITE"],
+            secure=True,
+            samesite="None",
             path="/",
             max_age=24 * 60 * 60
         )
