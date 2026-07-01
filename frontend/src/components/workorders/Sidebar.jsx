@@ -3,7 +3,7 @@ import { NavLink } from "react-router-dom";
 import "./css/sidebar.css";
 
 const Sidebar = () => {
-  const [hoveredMenu, setHoveredMenu] = useState(null);
+  const [activeMenu, setActiveMenu] = useState("orders");
   const [isOpen, setIsOpen] = useState(false);
 
   const isMobile = window.innerWidth <= 768;
@@ -15,7 +15,6 @@ const Sidebar = () => {
     }
   }, []);
 
-  const getSymbol = (menu) => (hoveredMenu === menu ? "▼" : "▸");
 
   const handleLinkClick = () => {
     if (isMobile) setIsOpen(false);
@@ -32,23 +31,18 @@ const Sidebar = () => {
         
 
         {/* Work Orders */}
-        <div
-          className="menu-section"
-          onMouseEnter={() => !isMobile && setHoveredMenu("orders")}
-          onMouseLeave={() => !isMobile && setHoveredMenu(null)}
-        >
+        <div className="menu-section">
           <div
             className="menu-title"
-            onClick={() =>
-              isMobile &&
-              setHoveredMenu(hoveredMenu === "orders" ? null : "orders")
-            }
+            onClick={() => setActiveMenu("orders")}
           >
             <span>Work Orders</span>
-            <span className="menu-symbol">{getSymbol("orders")}</span>
+            <span className="menu-symbol">
+              {activeMenu === "orders" ? "▼" : "▸"}
+            </span>
           </div>
 
-          {hoveredMenu === "orders" && (
+          {activeMenu === "orders" && (
             <div className="submenu">
               <NavLink to="/admin/workorder/create-workorder" onClick={handleLinkClick}>
                 Create Work Order

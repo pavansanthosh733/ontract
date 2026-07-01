@@ -111,10 +111,14 @@ const isApk = params.get("source") === "apk";
             path="/forgot_password"
             element={<ForgotPassword setUser={setUser} />}
           />
+          <Route
+  path="/provider_home/profile"
+  element={<ProviderProfile user={user} />}
+/>
 
           {/* Provider nested */}
           <Route path="/provider_home" element={<ProviderHome user={user} />}>
-            <Route path="profile" element={<ProviderProfile user={user} />} />
+
             <Route
               path="services"
               element={<ProviderServices user={user} />}

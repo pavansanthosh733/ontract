@@ -3,7 +3,16 @@ import { NavLink } from "react-router-dom";
 import "./css/sidebar.css";
 
 const Sidebar = () => {
-  const [hoveredMenu, setHoveredMenu] = useState(null);
+  const [activeMenus, setActiveMenus] = useState({
+    setup: true,
+    areaSetup: true,
+  });
+  const toggleMenu = (menu) => {
+    setActiveMenus((prev) => ({
+      ...prev,
+      [menu]: !prev[menu],
+    }));
+  };
   const [isOpen, setIsOpen] = useState(false);
 
   const isMobile = window.innerWidth <= 768;
@@ -15,7 +24,7 @@ const Sidebar = () => {
     }
   }, []);
 
-  const getSymbol = (menu) => (hoveredMenu === menu ? "▼" : "▸");
+  const getSymbol = (menu) => (activeMenus[menu] ? "▼" : "▸");
 
   const handleLinkClick = () => {
     if (isMobile) setIsOpen(false);
@@ -30,23 +39,16 @@ const Sidebar = () => {
       <aside className={`sidebar ${isOpen ? "open" : "closed"}`}>
 
 
-        <div
-          className="menu-section"
-          onMouseEnter={() => !isMobile && setHoveredMenu("setup")}
-          onMouseLeave={() => !isMobile && setHoveredMenu(null)}
-        >
+        <div className="menu-section">
           <div
             className="menu-title"
-            onClick={() =>
-              isMobile &&
-              setHoveredMenu(hoveredMenu === "setup" ? null : "setup")
-            }
+            onClick={() => toggleMenu("setup")}
           >
             <span>Work Orders Setup</span>
             <span className="menu-symbol">{getSymbol("setup")}</span>
           </div>
 
-          {hoveredMenu === "setup" && (
+          {activeMenus.setup && (
             <div className="submenu">
               <NavLink to="/admin/setuppage/category" onClick={handleLinkClick}>
                 Work Category
@@ -70,23 +72,16 @@ const Sidebar = () => {
         <div className="sidebar-divider"></div>
 
         {/* Area Setup */}
-        <div
-          className="menu-section"
-          onMouseEnter={() => !isMobile && setHoveredMenu("areaSetup")}
-          onMouseLeave={() => !isMobile && setHoveredMenu(null)}
-        >
+        <div className="menu-section">
           <div
             className="menu-title"
-            onClick={() =>
-              isMobile &&
-              setHoveredMenu(hoveredMenu === "areaSetup" ? null : "areaSetup")
-            }
+            onClick={() => toggleMenu("areaSetup")}
           >
             <span>Area Setup</span>
             <span className="menu-symbol">{getSymbol("areaSetup")}</span>
           </div>
 
-          {hoveredMenu === "areaSetup" && (
+          {activeMenus.areaSetup && (
             <div className="submenu">
               <NavLink to="/admin/setuppage/region" onClick={handleLinkClick}>
                 Region
