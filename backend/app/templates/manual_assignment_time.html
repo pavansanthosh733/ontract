@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html>
 
 <head>
@@ -17,7 +16,6 @@
     background-color:#ffffff;
 ">
 
-```
 <!-- HEADER -->
 <div style="
     background:linear-gradient(135deg,#667eea,#764ba2);
@@ -47,7 +45,7 @@
         margin:0;
         color:#007bff;
     ">
-        Hello {{ request_data["CONTRACTOR_NAME"] }},
+        Hello {{ request_data["CONTRACTOR_NAME"] | e }},
     </h3>
 
     <p style="
@@ -55,7 +53,7 @@
     ">
         You have been assigned a new work order for area
         <strong>
-            {{ request_data["region_name"] }}
+            {{ request_data["region_name"] | e }}
         </strong>.
     </p>
 
@@ -80,7 +78,7 @@
 
         <td>
             <strong>
-                {{ request_data["workorder"] }}
+                {{ request_data["workorder"] | e }}
             </strong>
         </td>
     </tr>
@@ -91,7 +89,7 @@
         </th>
 
         <td>
-            {{ request_data["region_name"] or 'N/A' }}
+            {{ (request_data["region_name"] or "N/A") | e }}
         </td>
     </tr>
 
@@ -101,7 +99,7 @@
         </th>
 
         <td>
-            {{ request_data["state_name"] or 'N/A' }}
+            {{ (request_data["state_name"] or "N/A") | e }}
         </td>
     </tr>
 
@@ -111,7 +109,7 @@
         </th>
 
         <td>
-            {{ request_data["city_name"] or 'N/A' }}
+            {{ (request_data["city_name"] or "N/A") | e }}
         </td>
     </tr>
 
@@ -121,7 +119,7 @@
         </th>
 
         <td>
-            {{ request_data["client"] or 'N/A' }}
+            {{ (request_data["client"] or "N/A") | e }}
         </td>
     </tr>
 
@@ -131,7 +129,7 @@
         </th>
 
         <td>
-            {{ request_data["category_name"] or 'N/A' }}
+            {{ (request_data["category_name"] or "N/A") | e }}
         </td>
     </tr>
 
@@ -141,7 +139,7 @@
         </th>
 
         <td>
-            {{ request_data["item_name"] or 'N/A' }}
+            {{ (request_data["item_name"] or "N/A") | e }}
         </td>
     </tr>
 
@@ -151,7 +149,7 @@
         </th>
 
         <td>
-            {{ request_data["type_name"] or 'N/A' }}
+            {{ (request_data["type_name"] or "N/A") | e }}
         </td>
     </tr>
 
@@ -161,11 +159,9 @@
         </th>
 
         <td>
-            {{ request_data["description_name"] or 'N/A' }}
+            {{ (request_data["description_name"] or "N/A") | e }}
         </td>
     </tr>
-
-    
 
     <tr>
         <th align="left" style="background:#f8f9fa;">
@@ -173,7 +169,7 @@
         </th>
 
         <td>
-            {{ request_data["address"] or 'N/A' }}
+            {{ (request_data["address"] or "N/A") | e }}
         </td>
     </tr>
 
@@ -183,7 +179,7 @@
         </th>
 
         <td>
-            {{ request_data["ticket_assignment_type"] or 'N/A' }}
+            {{ (request_data["ticket_assignment_type"] or "N/A") | e }}
         </td>
     </tr>
 
@@ -193,7 +189,7 @@
         </th>
 
         <td>
-            {{ request_data["requested_time_close"] or 'N/A' }}
+            {{ (request_data["requested_time_close"] or "N/A") | e }}
         </td>
     </tr>
 
@@ -203,7 +199,7 @@
         </th>
 
         <td>
-            {{ request_data["remarks"] or 'N/A' }}
+            {{ (request_data["remarks"] or "N/A") | e }}
         </td>
     </tr>
 
@@ -213,7 +209,7 @@
         </th>
 
         <td>
-            {{ request_data["detailed_description"] or 'N/A' }}
+            {{ (request_data["detailed_description"] or "N/A") | e }}
         </td>
     </tr>
 
@@ -237,7 +233,7 @@
         Please respond:
     </p>
 
-    <a href="{{ response_url }}"
+    <a href="{{ response_url | e }}"
        style="
             background:linear-gradient(135deg,#667eea,#764ba2);
             color:white;
@@ -264,7 +260,7 @@
 
         Important:
         Link expires in
-        <strong>{{ expiry_minutes }}</strong>
+        <strong>{{ expiry_minutes | e }}</strong>
         minutes.
 
     </p>
@@ -285,7 +281,6 @@
 ">
     Please give your response on time.
 </p>
-
 
 </body>
 </html>

@@ -31,75 +31,84 @@
   <!-- GREETING -->
   <div style="background:#f0f8ff;padding:15px;border-left:4px solid #007bff;margin-bottom:20px;">
     <h3 style="margin:0;color:#007bff;">
-      Hello {{ request_data.get("name", "Contractor") }},
+      Hello {{ request_data.get("name", "Contractor") | e }},
     </h3>
+
     <p style="margin:5px 0 0 0;">
       You have been assigned a work order in
-      <strong>{{ request_data.get("city", "N/A") }},
-      {{ request_data.get("state", "N/A") }}</strong>.
+      <strong>
+        {{ request_data.get("city", "N/A") | e }},
+        {{ request_data.get("state", "N/A") | e }}
+      </strong>.
     </p>
   </div>
 
   <!-- DETAILS TABLE -->
-  <table border="1" cellspacing="0" cellpadding="12"
+  <table border="1"
+         cellspacing="0"
+         cellpadding="12"
          style="border-collapse:collapse;width:100%;max-width:700px;margin-bottom:25px;border:1px solid #ddd;">
 
     <tr style="background:#f8f9fa;">
       <th align="left" style="width:40%;">Work Order</th>
-      <td><strong>{{ request_data.get("workorder", "N/A") }}</strong></td>
+      <td><strong>{{ request_data.get("workorder", "N/A") | e }}</strong></td>
     </tr>
 
     <tr>
       <th align="left" style="background:#f8f9fa;">Region</th>
-      <td>{{ request_data.get("region", "N/A") }}</td>
+      <td>{{ request_data.get("region", "N/A") | e }}</td>
     </tr>
 
     <tr>
       <th align="left" style="background:#f8f9fa;">State</th>
-      <td>{{ request_data.get("state", "N/A") }}</td>
+      <td>{{ request_data.get("state", "N/A") | e }}</td>
     </tr>
 
     <tr>
       <th align="left" style="background:#f8f9fa;">City</th>
-      <td>{{ request_data.get("city", "N/A") }}</td>
+      <td>{{ request_data.get("city", "N/A") | e }}</td>
     </tr>
 
     <tr>
       <th align="left" style="background:#f8f9fa;">Trade</th>
-      <td>{{ request_data.get("category_name", "N/A") }}</td>
+      <td>{{ request_data.get("category_name", "N/A") | e }}</td>
     </tr>
 
     <tr>
       <th align="left" style="background:#f8f9fa;">Item</th>
-      <td>{{ request_data.get("item_name", "N/A") }}</td>
+      <td>{{ request_data.get("item_name", "N/A") | e }}</td>
     </tr>
 
     <tr>
       <th align="left" style="background:#f8f9fa;">Type</th>
-      <td>{{ request_data.get("type_name", "N/A") }}</td>
+      <td>{{ request_data.get("type_name", "N/A") | e }}</td>
     </tr>
 
     <tr>
       <th align="left" style="background:#f8f9fa;">Description</th>
-      <td>{{ request_data.get("description_name", "N/A") }}</td>
+      <td>{{ request_data.get("description_name", "N/A") | e }}</td>
     </tr>
 
   </table>
 
   <!-- ACTION -->
   <div style="margin:30px 0;text-align:center;padding:20px;background:#f8f9fa;border-radius:8px;">
+
     <p style="font-size:16px;margin-bottom:15px;color:#333;">
       <strong>Please confirm your availability:</strong>
     </p>
 
-    <a href="{{ response_url }}"
+    <a href="{{ response_url | e }}"
        style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:14px 35px;text-decoration:none;border-radius:6px;display:inline-block;font-size:16px;font-weight:600;box-shadow:0 4px 6px rgba(0,0,0,.2);">
       Confirm / Reject Assignment
     </a>
 
     <p style="margin-top:15px;font-size:13px;color:#dc3545;">
-      Important: Link expires in <strong>{{ expiry_minutes }}</strong> minutes.
+      Important: Link expires in
+      <strong>{{ expiry_minutes | e }}</strong>
+      minutes.
     </p>
+
   </div>
 
   <hr style="border:none;border-top:1px solid #ddd;margin:30px 0;">
