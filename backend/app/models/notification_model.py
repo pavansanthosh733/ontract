@@ -6,14 +6,13 @@ class NotificationModel:
     @staticmethod
     def get_all(email):
         sql = text("""
-            SELECT message_id, message, sent_at, is_read, notification_type
-            FROM admin_messages_t
-            WHERE email_id = :email
-            ORDER BY sent_at DESC
+            SELECT message_id,recipient_type,title,message,notification_type,reference_type,
+            reference_id,action_url,sent_at,read_at,is_read FROM admin_messages_t
+            WHERE email_id = :email ORDER BY sent_at DESC
         """)
 
         rows = db.session.execute(sql, {"email": email}).fetchall()
-        return [dict(r._mapping) for r in rows]   # FIXED
+        return [dict(r._mapping) for r in rows]D
 
     @staticmethod
     def unread_count(email):
