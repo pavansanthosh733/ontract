@@ -85,7 +85,7 @@ function Notifications({ user }) {
   };
 
   // --------------------------
-  // MARK ALL AS READ
+  // MARK ALL
   // --------------------------
   const markAllAsRead = async () => {
     const unread = notifications.filter((n) => !n.is_read);
@@ -153,51 +153,52 @@ function Notifications({ user }) {
   return (
     <div className="container mt-4">
 
+      <h2 className="fw-bold mb-4">Notifications</h2>
+
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="fw-bold">Notifications</h2>
+
+        <ul className="nav nav-pills m-0">
+
+          <li className="nav-item me-2">
+            <button
+              className={`btn ${
+                activeTab === "unread"
+                  ? "btn-primary"
+                  : "btn-outline-primary"
+              }`}
+              onClick={() => setActiveTab("unread")}
+            >
+              🔴 Unread ({unreadNotifications.length})
+            </button>
+          </li>
+
+          <li className="nav-item">
+            <button
+              className={`btn ${
+                activeTab === "read"
+                  ? "btn-success"
+                  : "btn-outline-success"
+              }`}
+              onClick={() => setActiveTab("read")}
+            >
+              ✅ Read ({readNotifications.length})
+            </button>
+          </li>
+
+        </ul>
 
         {activeTab === "unread" &&
           unreadNotifications.length > 0 && (
             <button
-              className="btn btn-primary"
+              className="btn btn-outline-primary"
               onClick={markAllAsRead}
             >
-              Mark All as Read
+              ✓ Mark All as Read
             </button>
           )}
+
       </div>
 
-      {/* Tabs */}
-
-      <ul className="nav nav-pills mb-4">
-
-        <li className="nav-item me-3">
-          <button
-            className={`btn ${
-              activeTab === "unread"
-                ? "btn-primary"
-                : "btn-outline-primary"
-            }`}
-            onClick={() => setActiveTab("unread")}
-          >
-            🔴 Unread ({unreadNotifications.length})
-          </button>
-        </li>
-
-        <li className="nav-item">
-          <button
-            className={`btn ${
-              activeTab === "read"
-                ? "btn-success"
-                : "btn-outline-success"
-            }`}
-            onClick={() => setActiveTab("read")}
-          >
-            ✅ Read ({readNotifications.length})
-          </button>
-        </li>
-
-      </ul>
 
       {displayedNotifications.length === 0 ? (
         <div className="alert alert-info text-center">
