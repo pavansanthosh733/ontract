@@ -161,7 +161,8 @@ class AdminModel:
         if data["locked_until"] and data["locked_until"] > current_time:
             return True
 
-        # Lock expired → reset automatically
+        # Lock expired → reset automatically it will done now for deployment 
+        
         if data["locked_until"] and data["locked_until"] <= current_time:
 
             db.session.execute(text("""
