@@ -108,24 +108,46 @@ class ProviderController:
 
     @staticmethod
     def login(email, password):
+
+        if not email or not password:
+            return {"error": "Email and password required"}, 400
+
+        # Check lock
+        if ProviderModel.is_login_locked(email):
+            return {
+                "error": "Too many failed login attempts. Please try again after 5 minutes."
+            }, 429
+
         provider = ProviderModel.get_provider_login(email)
 
         if not provider:
-            return {"error": "User not found"}, 404
+            ProviderModel.record_failed_login(email)
+            return {"error": "Invalid credentials"}, 401
 
-        # Check password
+        # Password check
         if not bcrypt.checkpw(password.encode(), provider['password_hash'].encode()):
+            ProviderModel.record_failed_login(email)
             return {"error": "Invalid credentials"}, 401
 
         if not provider['active_status']:
             return {"error": "Account not activated"}, 401
 
-        # OTP flow remains the same
+        if provider.get("service_type") != 0:
+            return {"error": "Invalid credentials"}, 401
+
+        # Success -> Reset failed attempts
+        ProviderModel.reset_login_attempts(email)
+
         otp = ''.join(random.choices(string.digits, k=6))
         ProviderModel.insert_otp(email, otp)
         send_otp_email(email, otp)
 
-        return {"message": "OTP sent to email"}, 200
+        return {
+            "message": "OTP sent to email"
+        }, 200
+    
+    
+    
     @staticmethod
     def verify_otp(email, otp):
 

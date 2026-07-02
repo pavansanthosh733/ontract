@@ -95,6 +95,104 @@ class ProviderModel:
     # ============================================================
     #  SECTION 2 — OTP (NO CHANGES REQUIRED)
     # ============================================================
+    
+    
+    
+    
+    @staticmethod
+    def record_failed_login(email):
+
+        row = db.session.execute(text("""
+            SELECT failed_attempts FROM provider_login_attempts_t WHERE email = :email
+        """), {
+            "email": email
+        }).fetchone()
+
+        if row:
+
+            attempts = row._mapping["failed_attempts"] + 1
+
+            if attempts >= 5:
+
+                db.session.execute(text("""
+                    UPDATE provider_login_attempts_t SET failed_attempts = :attempts,
+                    locked_until = timezone('Asia/Kolkata', NOW()) + INTERVAL '5 minutes',
+                    updated_at = timezone('Asia/Kolkata', NOW()) WHERE email = :email
+                """), {
+                    "attempts": attempts,
+                    "email": email
+                })
+
+            else:
+
+                db.session.execute(text("""
+                    UPDATE provider_login_attempts_t SET failed_attempts = :attempts,
+                    updated_at = timezone('Asia/Kolkata', NOW()) WHERE email = :email
+                """), {
+                    "attempts": attempts,
+                    "email": email
+                })
+
+        else:
+
+            db.session.execute(text("""
+                INSERT INTO provider_login_attempts_t(email,failed_attempts,updated_at)
+                VALUES(:email,1,timezone('Asia/Kolkata', NOW()))
+            """), {"email": email})
+
+        db.session.commit()
+
+    
+    @staticmethod
+    def reset_login_attempts(email):
+
+        db.session.execute(text("""
+            UPDATE provider_login_attempts_t SET failed_attempts = 0,locked_until = NULL,
+            updated_at = timezone('Asia/Kolkata', NOW()) WHERE email = :email
+        """), {
+            "email": email
+        })
+
+        db.session.commit()
+
+    
+    @staticmethod
+    def is_login_locked(email):
+
+        row = db.session.execute(text("""
+            SELECT failed_attempts,locked_until FROM provider_login_attempts_t
+            WHERE email = :email
+        """), {
+            "email": email
+        }).fetchone()
+
+        if not row:
+            return False
+
+        data = row._mapping
+
+        if data["locked_until"]:
+
+            now = db.session.execute(
+                text("SELECT timezone('Asia/Kolkata', NOW())")
+            ).scalar()
+
+            if data["locked_until"] > now:
+                return True
+
+            db.session.execute(text("""
+                UPDATE provider_login_attempts_t SET failed_attempts = 0,locked_until = NULL,
+                updated_at = timezone('Asia/Kolkata', NOW()) WHERE email = :email
+            """), {
+                "email": email
+            })
+
+            db.session.commit()
+
+        return False
+    
+    
+    
 
     @staticmethod
     def insert_otp(email, otp):
