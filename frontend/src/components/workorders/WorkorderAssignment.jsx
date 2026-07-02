@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import "./css/contractor.css";
 import { apiGet } from "../../api";
 
@@ -12,9 +12,56 @@ const WorkorderAssignment = () => {
   const [status, setStatus] = useState("All");
   const [showResults, setShowResults] = useState(false);
 
-  /* ================= FETCH ASSIGNMENTS ================= */
-  const fetchAssignments = async () => {
-    if (!fromDate || !toDate) {
+  // ✅ NEW: active quick tab
+  const [activeQuickFilter, setActiveQuickFilter] = useState("today");
+
+  // ✅ NEW: per-column text filters
+  const [columnFilters, setColumnFilters] = useState({
+    workorder: "",
+    contractor: "",
+    assignedTime: "",
+    status: "",
+    expiryTime: "",
+  });
+
+  /* ================= DATE RANGE HELPERS ================= */
+  const toInputDate = (d) => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const getTodayRange = () => {
+    const today = new Date();
+    const val = toInputDate(today);
+    return { from: val, to: val };
+  };
+
+  const getThisWeekRange = () => {
+    const today = new Date();
+    const day = today.getDay(); // 0 = Sunday
+    const diffToMonday = day === 0 ? 6 : day - 1;
+
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - diffToMonday);
+
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    return { from: toInputDate(monday), to: toInputDate(sunday) };
+  };
+
+  const getThisMonthRange = () => {
+    const today = new Date();
+    const first = new Date(today.getFullYear(), today.getMonth(), 1);
+    const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    return { from: toInputDate(first), to: toInputDate(last) };
+  };
+
+  /* ================= ✅ NEW: CORE RANGE FETCH ================= */
+  const fetchAssignmentsForRange = useCallback(async (from, to, statusVal) => {
+    if (!from || !to) {
       alert("Please select From Date and To Date");
       return;
     }
@@ -24,9 +71,9 @@ const WorkorderAssignment = () => {
       setError(null);
 
       const params = new URLSearchParams();
-      params.append("from", fromDate);
-      params.append("to", toDate);
-      if (status !== "All") params.append("status", status);
+      params.append("from", from);
+      params.append("to", to);
+      if (statusVal && statusVal !== "All") params.append("status", statusVal);
 
       const res = await apiGet(
         `/api/workorders/workorder-lifecycle?${params.toString()}`
@@ -40,17 +87,96 @@ const WorkorderAssignment = () => {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  /* ================= FETCH ASSIGNMENTS (Submit button, unchanged behavior) ================= */
+  const fetchAssignments = async () => {
+    if (!fromDate || !toDate) {
+      alert("Please select From Date and To Date");
+      return;
+    }
+    setActiveQuickFilter("custom");
+    await fetchAssignmentsForRange(fromDate, toDate, status);
   };
 
-  /* ================= RESET FILTERS (ONLY ONCE) ================= */
+  /* ================= ✅ NEW: QUICK FILTER TAB HANDLER ================= */
+  const handleQuickFilter = useCallback(
+    (type) => {
+      let range;
+      if (type === "today") range = getTodayRange();
+      else if (type === "week") range = getThisWeekRange();
+      else if (type === "month") range = getThisMonthRange();
+      else return;
+
+      setFromDate(range.from);
+      setToDate(range.to);
+      setActiveQuickFilter(type);
+      fetchAssignmentsForRange(range.from, range.to, status);
+    },
+    [status, fetchAssignmentsForRange]
+  );
+
+  /* ================= ✅ NEW: DEFAULT LOAD = TODAY ================= */
+  useEffect(() => {
+    handleQuickFilter("today");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* ================= RESET FILTERS (now resets to Today) ================= */
   const resetFilters = () => {
-    setFromDate("");
-    setToDate("");
     setStatus("All");
-    setRows([]);
-    setShowResults(false);
     setError(null);
+    setColumnFilters({
+      workorder: "",
+      contractor: "",
+      assignedTime: "",
+      status: "",
+      expiryTime: "",
+    });
+    handleQuickFilter("today");
   };
+
+  /* ================= ✅ NEW: COLUMN FILTER HANDLER ================= */
+  const handleColumnFilterChange = (e) => {
+    const { name, value } = e.target;
+    setColumnFilters((prev) => ({ ...prev, [name]: value }));
+  };
+
+  /* ================= ✅ NEW: APPLY COLUMN FILTERS ================= */
+  const displayedRows = rows.filter((row) => {
+    const workorderMatch = (row.WORKORDER_ID || "")
+      .toString()
+      .toLowerCase()
+      .includes(columnFilters.workorder.toLowerCase());
+
+    const contractorMatch = (row.company_name || row.name || "-")
+      .toString()
+      .toLowerCase()
+      .includes(columnFilters.contractor.toLowerCase());
+
+    const assignedTimeMatch = formatDate(row.assigned_at)
+      .toString()
+      .toLowerCase()
+      .includes(columnFilters.assignedTime.toLowerCase());
+
+    const statusMatch = (row.assignment_status || "")
+      .toString()
+      .toLowerCase()
+      .includes(columnFilters.status.toLowerCase());
+
+    const expiryTimeMatch = formatDate(row.expiry_time)
+      .toString()
+      .toLowerCase()
+      .includes(columnFilters.expiryTime.toLowerCase());
+
+    return (
+      workorderMatch &&
+      contractorMatch &&
+      assignedTimeMatch &&
+      statusMatch &&
+      expiryTimeMatch
+    );
+  });
 
   return (
     <div className="workorders-page">
@@ -59,13 +185,44 @@ const WorkorderAssignment = () => {
         <div className="dashboard-header">Work Orders Assignment</div>
 
         <div className="dashboard-content">
+
+          {/* ✅ NEW: QUICK FILTER TABS */}
+          <div className="quick-filter-tabs">
+            <button
+              type="button"
+              className={`quick-tab-btn ${activeQuickFilter === "today" ? "active" : ""}`}
+              onClick={() => handleQuickFilter("today")}
+            >
+              Today
+            </button>
+
+            <button
+              type="button"
+              className={`quick-tab-btn ${activeQuickFilter === "week" ? "active" : ""}`}
+              onClick={() => handleQuickFilter("week")}
+            >
+              This Week
+            </button>
+
+            <button
+              type="button"
+              className={`quick-tab-btn ${activeQuickFilter === "month" ? "active" : ""}`}
+              onClick={() => handleQuickFilter("month")}
+            >
+              This Month
+            </button>
+          </div>
+
           <div className="dashboard-filters">
             <div>
               <label>From Date:</label>
               <input
                 type="date"
                 value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
+                onChange={(e) => {
+                  setFromDate(e.target.value);
+                  setActiveQuickFilter("custom");
+                }}
               />
             </div>
 
@@ -74,7 +231,10 @@ const WorkorderAssignment = () => {
               <input
                 type="date"
                 value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
+                onChange={(e) => {
+                  setToDate(e.target.value);
+                  setActiveQuickFilter("custom");
+                }}
               />
             </div>
 
@@ -124,17 +284,71 @@ const WorkorderAssignment = () => {
                   <th>Status</th>
                   <th>Expiry Time</th>
                 </tr>
+
+                {/* ✅ NEW: COLUMN FILTER ROW */}
+                <tr>
+                  <th>
+                    <input
+                      type="text"
+                      name="workorder"
+                      placeholder="Filter..."
+                      value={columnFilters.workorder}
+                      onChange={handleColumnFilterChange}
+                      className="wo-filter-input"
+                    />
+                  </th>
+                  <th>
+                    <input
+                      type="text"
+                      name="contractor"
+                      placeholder="Filter..."
+                      value={columnFilters.contractor}
+                      onChange={handleColumnFilterChange}
+                      className="wo-filter-input"
+                    />
+                  </th>
+                  <th>
+                    <input
+                      type="text"
+                      name="assignedTime"
+                      placeholder="Filter..."
+                      value={columnFilters.assignedTime}
+                      onChange={handleColumnFilterChange}
+                      className="wo-filter-input"
+                    />
+                  </th>
+                  <th>
+                    <input
+                      type="text"
+                      name="status"
+                      placeholder="Filter..."
+                      value={columnFilters.status}
+                      onChange={handleColumnFilterChange}
+                      className="wo-filter-input"
+                    />
+                  </th>
+                  <th>
+                    <input
+                      type="text"
+                      name="expiryTime"
+                      placeholder="Filter..."
+                      value={columnFilters.expiryTime}
+                      onChange={handleColumnFilterChange}
+                      className="wo-filter-input"
+                    />
+                  </th>
+                </tr>
               </thead>
 
               <tbody>
-                {rows.length === 0 ? (
+                {displayedRows.length === 0 ? (
                   <tr>
                     <td colSpan="5" style={{ textAlign: "center" }}>
                       No data found
                     </td>
                   </tr>
                 ) : (
-                  rows.map((row, index) => (
+                  displayedRows.map((row, index) => (
                     <tr key={index}>
                       <td>{row.WORKORDER_ID}</td>
                       <td>{row.company_name || row.name || "-"}</td>

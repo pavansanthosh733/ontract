@@ -18,6 +18,11 @@ const WorkOrderDetails = () => {
     maxPrice: "",
   });
 
+  // ✅ NEW: reason text per contractor row, keyed by provider_id
+  const [reasonByContractor, setReasonByContractor] = useState({});
+  // ✅ NEW: validation error per contractor row
+  const [reasonErrorByContractor, setReasonErrorByContractor] = useState({});
+
   /* please check the filters */
 
   useEffect(() => {
@@ -122,19 +127,32 @@ const WorkOrderDetails = () => {
   );
 };
 
+  // ✅ NEW: updates the reason text for a specific contractor row
+  const handleReasonChange = (providerId, value) => {
+    setReasonByContractor((prev) => ({ ...prev, [providerId]: value }));
+    if (reasonErrorByContractor[providerId]) {
+      setReasonErrorByContractor((prev) => ({ ...prev, [providerId]: "" }));
+    }
+  };
+
+  // ✅ NEW: reads that row's reason input, validates, then assigns
   const handleAssignWithReason = async (contractor) => {
-  const reason = window.prompt(
-    "Please enter reason for assigning this contractor:"
-  );
+    const reason = (reasonByContractor[contractor.provider_id] || "").trim();
 
-  if (!reason || !reason.trim()) {
-    return;
-  }
+    if (!reason) {
+      setReasonErrorByContractor((prev) => ({
+        ...prev,
+        [contractor.provider_id]: "Reason is required",
+      }));
+      return;
+    }
 
-  await saveAssignmentAudit(contractor, reason);
+    await saveAssignmentAudit(contractor, reason);
+    await handleAssignContractor(contractor);
 
-  await handleAssignContractor(contractor);
-};
+    // clear that row's input after successful assignment
+    setReasonByContractor((prev) => ({ ...prev, [contractor.provider_id]: "" }));
+  };
 
   const handleAssignContractor = async (contractor) => {
     if (!details) return;
@@ -271,13 +289,33 @@ const WorkOrderDetails = () => {
                           ({c.total_ratings || 0})
                         </td>
                         <td>
-                          <button
-                            className="blue-btn small-btn"
-                            onClick={() => handleAssignWithReason(c)}
-                            disabled={savingId === c.provider_id}
-                          >
-                            {savingId === c.provider_id ? "Assigning..." : "Assign"}
-                          </button>
+                          {/* ✅ NEW: inline reason input beside Assign button */}
+                          <div className="assign-action-cell">
+                            <input
+                              type="text"
+                              className="reason-inline-input"
+                              placeholder="Reason..."
+                              value={reasonByContractor[c.provider_id] || ""}
+                              onChange={(e) =>
+                                handleReasonChange(c.provider_id, e.target.value)
+                              }
+                              disabled={savingId === c.provider_id}
+                            />
+
+                            <button
+                              className="blue-btn small-btn"
+                              onClick={() => handleAssignWithReason(c)}
+                              disabled={savingId === c.provider_id}
+                            >
+                              {savingId === c.provider_id ? "Assigning..." : "Assign"}
+                            </button>
+                          </div>
+
+                          {reasonErrorByContractor[c.provider_id] && (
+                            <div className="reason-inline-error">
+                              {reasonErrorByContractor[c.provider_id]}
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))
