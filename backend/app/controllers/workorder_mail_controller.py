@@ -63,6 +63,36 @@ def handle_send_acceptance_mail(workorder_code, request_data, base_url):
         insert_workorder_assignment(workorder=request_data["workorder"],provider_id=request_data["CONTRACTOR_ID"],
             expiry_times=expiry_minutes
         )
+        
+        # SAVE DATABASE NOTIFICATION
+        # =====================================================
+
+        from app.models.provider_model import ProviderModel
+        from app.models.admin_model import AdminModel
+
+        user = ProviderModel.get_user_details_by_uid(
+            request_data["CONTRACTOR_ID"]
+        )
+
+        if user:
+
+            if str(user["service_type"]) == "0":
+                recipient_type = "provider"
+                action_url = "/provider_home/workorders"
+            else:
+                recipient_type = "contractor"
+                action_url = "/contractor/dashboard/companyworkorders"
+
+            AdminModel.insert_admin_message(
+                email=user["email_id"],
+                recipient_type=recipient_type,
+                title="New Work Order Assigned",
+                message=f"Work Order {request_data['workorder']} has been assigned to you.",
+                notification_type="workorder_assigned",
+                reference_type="workorder",
+                reference_id=request_data["id"],
+                action_url=action_url
+            )
 
         # =====================================================
         # 🔥 🔔 PUSH NOTIFICATION START

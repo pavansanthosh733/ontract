@@ -736,3 +736,67 @@ def build_withdraw_notification_html_contractor(workorder, reason):
         workorder=workorder,
         reason=reason
     )
+    
+    
+    
+def build_rfq_email_html(rfq):
+
+    return render_template(
+        "rfq_notification.html",
+        rfq=rfq
+    )
+
+def send_rfq_email(recipient,html_body,rfq_no):
+
+    msg = MIMEMultipart("mixed")
+
+    msg["Subject"] = (f"New RFQ Published - {rfq_no}")
+    msg["From"] = EMAIL_USER
+    msg["To"] = recipient
+    related = MIMEMultipart("related")
+    alt = MIMEMultipart("alternative")
+
+    alt.attach(MIMEText(html_body, "html"))
+    related.attach(alt)
+    msg.attach(related)
+
+    try:
+
+        server = smtplib.SMTP(SMTP_HOST,SMTP_PORT)
+
+        if SMTP_USE_TLS:
+            server.starttls()
+
+        server.login(EMAIL_USER,EMAIL_PASS)
+        server.send_message(msg)
+        server.quit()
+        logging.info(f"RFQ Mail Sent: {recipient}")
+        return "SENT"
+
+    except Exception as e:
+
+        logging.error(f"RFQ Mail Failed: {str(e)}")
+        return "FAILED"
+
+def get_all_rfq_contractors():
+
+    try:
+
+        query = text("""
+            SELECT user_uid,name,email_id FROM users_t
+            WHERE email_id IS NOT NULL
+        """)
+
+        result = db.session.execute(query).mappings().fetchall()
+
+        return [dict(row) for row in result]
+
+    except Exception as e:
+
+        logging.error(
+            f"Error fetching contractors: {str(e)}"
+        )
+
+        return []
+
+
