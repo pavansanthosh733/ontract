@@ -643,16 +643,28 @@ class AdminModel:
 
     # ======================= NOTIFICATIONS =======================
     @staticmethod
-    def insert_admin_message(email, message, notification_type):
+    def insert_admin_message(email,recipient_type,title,message,notification_type,reference_type=None,
+        reference_id=None,
+        action_url=None
+    ):
         sql = text("""
-            INSERT INTO admin_messages_t (email_id, message, sent_at, is_read, notification_type)
-            VALUES (:email, :msg, NOW(), FALSE, :ntype)
+            INSERT INTO admin_messages_t (email_id,recipient_type,title,message,notification_type,
+            reference_type,reference_id,action_url,is_read,sent_at) VALUES (:email,
+            :recipient_type,:title,:message,:notification_type,:reference_type,:reference_id,
+            :action_url,FALSE,NOW())
         """)
+
         db.session.execute(sql, {
             "email": email,
-            "msg": message,
-            "ntype": notification_type
+            "recipient_type": recipient_type,
+            "title": title,
+            "message": message,
+            "notification_type": notification_type,
+            "reference_type": reference_type,
+            "reference_id": reference_id,
+            "action_url": action_url
         })
+
         db.session.commit()
 
  
