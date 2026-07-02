@@ -98,7 +98,7 @@ class ProviderModel:
     
     
     
-    
+    #provider login attempts
     @staticmethod
     def record_failed_login(email):
 
