@@ -20,13 +20,14 @@ import {
   Tooltip,
 } from "recharts";
 import { Link } from "react-router-dom";
-import { apiGet } from "../api";
+import { apiGet, apiPost } from "../api";
 import { useUser } from "../context/UserContext";
 import "./css/ProviderHome.css";
 
 function ProviderDashboardHome() {
   const { user } = useUser();
   const [completedOrders, setCompletedOrders] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
   const [serviceCoverage, setServiceCoverage] = useState({
     regions: [],
     services: [],
@@ -59,6 +60,33 @@ function ProviderDashboardHome() {
       }
     };
 
+    const fetchPendingCount = async () => {
+      if (!user?.user_uid) return;
+
+      try {
+        const response = await apiPost("/api/workorders/provider/workorders/pending",
+          {
+            provider_id: user.user_uid,
+          }
+        );
+
+        if (Array.isArray(response)) {
+          setPendingCount(response.length);
+        }
+        else if (Array.isArray(response.data)) {
+          setPendingCount(response.data.length);
+        }
+        else if (Array.isArray(response.workorders)) {
+          setPendingCount(response.workorders.length);
+        }
+        else {
+          setPendingCount(response.count || 0);
+        }
+      } catch (err) {
+        console.error("Failed to fetch pending count:", err);
+      }
+    };
+
     const fetchServiceCoverageDetails = async () => {
       try {
         const data = await apiGet(`/api/dashboard/service-coverage-details?user_uid=${user.user_uid}`);
@@ -75,6 +103,7 @@ function ProviderDashboardHome() {
 
     fetchCompletedOrders();
     fetchServiceCoverageDetails();
+    fetchPendingCount();
   }, [user]);
 
   return (
@@ -89,8 +118,17 @@ function ProviderDashboardHome() {
                         <Link to="/provider_home/providerrating" className="btn btn-primary btn-action">
               <FaClipboardList className="me-2" />Rating Section
             </Link>
-            <Link to="/provider_home/workorders" className="btn btn-primary btn-action">
-              <FaClipboardList className="me-2" /> WORK ORDERS
+            <Link to="/provider_home/workorders" className="btn btn-primary btn-action position-relative"
+            >
+              <FaClipboardList className="me-2" />
+              WORK ORDERS
+
+              <span
+                className="badge bg-danger ms-2"
+                style={{ fontSize: "12px" }}
+              >
+                {pendingCount}
+              </span>
             </Link>
           </div>
         </div>
