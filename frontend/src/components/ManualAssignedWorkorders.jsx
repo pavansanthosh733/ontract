@@ -10,6 +10,15 @@ function ManualAssignedWorkorders() {
   const [showModal, setShowModal] = useState(false);
   const [selectedAudit, setSelectedAudit] = useState(null);
 
+  // ✅ NEW: filter state — one key per column
+  const [filters, setFilters] = useState({
+    workorder: "",
+    contractor: "",
+    reason: "",
+    suggestedCount: "",
+    createdAt: "",
+  });
+
   /* =====================================================
      FETCH AUDIT DATA
   ===================================================== */
@@ -46,6 +55,52 @@ function ManualAssignedWorkorders() {
   useEffect(() => {
     fetchAuditData();
   }, []);
+
+  /* =====================================================
+     HANDLE FILTER CHANGE
+  ===================================================== */
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters({ ...filters, [name]: value });
+  };
+
+  /* =====================================================
+     APPLY FILTERS
+  ===================================================== */
+  const filteredData = data.filter((row) => {
+    const workorderMatch = (row.workorder || "")
+      .toString()
+      .toLowerCase()
+      .includes(filters.workorder.toLowerCase());
+
+    const contractorMatch = (row.selected_contractor?.contractor_name || "")
+      .toLowerCase()
+      .includes(filters.contractor.toLowerCase());
+
+    const reasonMatch = (row.assignment_reason || "")
+      .toLowerCase()
+      .includes(filters.reason.toLowerCase());
+
+    const suggestedCountMatch = (row.suggested_contractors?.length ?? "")
+      .toString()
+      .toLowerCase()
+      .includes(filters.suggestedCount.toLowerCase());
+
+    const createdAtMatch = row.created_at
+      ? new Date(row.created_at)
+          .toLocaleString()
+          .toLowerCase()
+          .includes(filters.createdAt.toLowerCase())
+      : filters.createdAt === "";
+
+    return (
+      workorderMatch &&
+      contractorMatch &&
+      reasonMatch &&
+      suggestedCountMatch &&
+      createdAtMatch
+    );
+  });
 
   /* =====================================================
      HANDLE WORKORDER CLICK  - OPEN MODAL
@@ -106,63 +161,129 @@ function ManualAssignedWorkorders() {
                       Created At
                     </th>
                   </tr>
+
+                  {/* ✅ NEW: FILTER ROW */}
+                  <tr>
+                    <th>
+                      <input
+                        type="text"
+                        name="workorder"
+                        placeholder="Filter workorder..."
+                        value={filters.workorder}
+                        onChange={handleFilterChange}
+                        className="audit-filter-input"
+                      />
+                    </th>
+
+                    <th>
+                      <input
+                        type="text"
+                        name="contractor"
+                        placeholder="Filter contractor..."
+                        value={filters.contractor}
+                        onChange={handleFilterChange}
+                        className="audit-filter-input"
+                      />
+                    </th>
+
+                    <th>
+                      <input
+                        type="text"
+                        name="reason"
+                        placeholder="Filter reason..."
+                        value={filters.reason}
+                        onChange={handleFilterChange}
+                        className="audit-filter-input"
+                      />
+                    </th>
+
+                    <th>
+                      <input
+                        type="text"
+                        name="suggestedCount"
+                        placeholder="Filter count..."
+                        value={filters.suggestedCount}
+                        onChange={handleFilterChange}
+                        className="audit-filter-input"
+                      />
+                    </th>
+
+                    <th>
+                      <input
+                        type="text"
+                        name="createdAt"
+                        placeholder="Filter date..."
+                        value={filters.createdAt}
+                        onChange={handleFilterChange}
+                        className="audit-filter-input"
+                      />
+                    </th>
+                  </tr>
                 </thead>
 
                 <tbody>
 
-                  {data.map(
-                    (row) => (
-                      <tr
-                        key={
-                          row.audit_id
-                        }
-                      >
+                  {filteredData.length > 0 ? (
+                    filteredData.map(
+                      (row) => (
+                        <tr
+                          key={
+                            row.audit_id
+                          }
+                        >
 
-                        <td
-                          className="workorder-link"
-                          onClick={() =>
-                            handleWorkorderClick(
+                          <td
+                            className="workorder-link"
+                            onClick={() =>
+                              handleWorkorderClick(
+                                row
+                              )
+                            }
+                          >
+                            {
+                              row.workorder
+                            }
+                          </td>
+
+                          <td>
+                            {
                               row
-                            )
-                          }
-                        >
-                          {
-                            row.workorder
-                          }
-                        </td>
+                                .selected_contractor
+                                ?.contractor_name
+                            }
+                          </td>
 
-                        <td>
-                          {
-                            row
-                              .selected_contractor
-                              ?.contractor_name
-                          }
-                        </td>
+                          <td
+                            className="reason-cell"
+                          >
+                            {
+                              row.assignment_reason
+                            }
+                          </td>
 
-                        <td
-                          className="reason-cell"
-                        >
-                          {
-                            row.assignment_reason
-                          }
-                        </td>
+                          <td>
+                            {
+                              row
+                                .suggested_contractors
+                                ?.length
+                            }
+                          </td>
 
-                        <td>
-                          {
-                            row
-                              .suggested_contractors
-                              ?.length
-                          }
-                        </td>
+                          <td>
+                            {new Date(
+                              row.created_at
+                            ).toLocaleString()}
+                          </td>
 
-                        <td>
-                          {new Date(
-                            row.created_at
-                          ).toLocaleString()}
-                        </td>
-
-                      </tr>
+                        </tr>
+                      )
                     )
+                  ) : (
+                    <tr>
+                      <td colSpan="5" className="text-center py-3 text-muted">
+                        No matching records found
+                      </td>
+                    </tr>
                   )}
 
                 </tbody>
