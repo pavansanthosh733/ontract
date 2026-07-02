@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { apiPost } from "../api";
 import "./css/WorkOrderPage.css";
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import { BASE_URL } from "../api";
 
 function ProviderWorkOrders() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, authReady } = useUser();
   const [data, setData] = useState([]);
   const [details, setDetails] = useState(null);
@@ -21,6 +22,7 @@ function ProviderWorkOrders() {
   const [openImages, setOpenImages] = useState([]);
   const [openSubmitting, setOpenSubmitting] = useState(false);
   const [previewMedia, setPreviewMedia] = useState(null);
+  const cleanRemarks = (value) => {return value.replace(/[^A-Za-z0-9.,&()\-/'\n ]/g, "");};
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 const handleImageChange = (e) => {
@@ -60,13 +62,32 @@ useEffect(() => {
   console.groupEnd();
 }, [authReady, user, navigate]);
 
-
+  
 
   useEffect(() => {
-    if (!user?.user_uid) return;
-    fetchWorkorders(activeTab);
-  }, [user, activeTab]);
+      if (!user?.user_uid) return;
+      fetchWorkorders(activeTab);
+    }, [user, activeTab]);
+    
+    useEffect(() => {
+    if (
+      location.state?.openDetails &&
+      location.state?.workorderId &&
+      data.length > 0
+    ) {
+      const row = data.find(
+        (item) =>
+          item.WORKORDER_ID === location.state.workorderId ||
+          item.workorder_id === location.state.workorderId ||
+          item.workorder === location.state.workorderId
+      );
 
+      if (row) {
+        handleWorkorderClick(row);
+      }
+    }
+  }, [data, location.state]);
+  
   const fetchWorkorders = async (tab) => {
     try {
       let url = "/api/workorders/provider/workorders/pending";
@@ -594,7 +615,7 @@ Purchase Order sent to contractor email`
                         rows="3"
                         value={contractorRemarks}
                         onChange={(e) =>
-                          setContractorRemarks(e.target.value)
+                          setContractorRemarks(cleanRemarks(e.target.value))
                         }
                       />
                     </div>
@@ -682,7 +703,7 @@ Purchase Order sent to contractor email`
                       <textarea
                         rows="3"
                         value={openRemarks}
-                        onChange={(e) => setOpenRemarks(e.target.value)}
+                        onChange={(e) => setOpenRemarks(cleanRemarks(e.target.value))}
                       />
                     </div>
 
