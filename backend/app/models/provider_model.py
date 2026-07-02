@@ -803,3 +803,17 @@ class ProviderModel:
         row = db.session.execute(sql, {"user_uid": user_uid}).fetchone()
         return dict(row._mapping) if row else None
     
+    @staticmethod
+    def get_user_details_by_uid(user_uid):
+        sql = text("""
+            SELECT user_uid,email_id,service_type,name FROM users_t
+            WHERE user_uid = :user_uid
+        """)
+
+        row = db.session.execute(sql,{"user_uid": user_uid}).fetchone()
+
+        if not row:
+            return None
+
+        return dict(row._mapping)
+    
