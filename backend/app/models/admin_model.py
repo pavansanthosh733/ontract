@@ -236,7 +236,7 @@ class AdminModel:
 
 
 
-
+#admin model for deployment for the otp verification and deletion of the otp code from the database
 
     @staticmethod
     def verify_otp(email, otp):
