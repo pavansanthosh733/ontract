@@ -25,16 +25,35 @@ class AdminController:
         if not email or not password:
             return {"error": "Email and password required"}, 400
 
+        # Step 1: Check if account is locked
+        if AdminModel.is_login_locked(email):
+            return {
+                "error": "Too many failed login attempts. Please try again after 5 minutes."
+            }, 429
+
+        # Step 2: Check if admin exists
         admin = AdminModel.get_admin_by_email(email)
 
-        if not admin or not bcrypt.checkpw(password.encode(), admin['password_hash'].encode()):
+        if not admin:
+            AdminModel.record_failed_login(email)
             return {"error": "Invalid credentials"}, 401
 
+        # Step 3: Verify password
+        if not bcrypt.checkpw(password.encode(), admin["password_hash"].encode()):
+            AdminModel.record_failed_login(email)
+            return {"error": "Invalid credentials"}, 401
+
+        # Step 4: Successful login → reset failed attempts
+        AdminModel.reset_login_attempts(email)
+
+        # Step 5: Generate OTP
         otp = ''.join(random.choices(string.digits, k=6))
         AdminModel.save_otp(email, otp)
         send_admin_otp_email(email, otp)
-        return {"message": "OTP sent to email"}, 200
 
+        return {
+            "message": "OTP sent to email"
+        }, 200
     
     @staticmethod
     def verify_otp(email, otp):
@@ -82,20 +101,21 @@ class AdminController:
         response = make_response(jsonify({
             "success": True,
             "message": "OTP verified successfully",
-            "admin": admin_data
+            "admin": admin_data,
+            "access_token": access_token 
         }))
 
         # -----------------------------
         # SET COOKIE
         # -----------------------------
         response.set_cookie(
-            "access_token",
-            value=access_token,
-            httponly=True,
-            secure=True,      # True in production HTTPS
-            samesite="None",    # Strict in production if desired
-            path="/",
-            max_age=8 * 60 * 60
+                "admin_access_token",
+                value=access_token,
+                httponly=True,
+                secure=True,
+                samesite="None",
+                path="/",
+                max_age=8 * 60 * 60
         )
 
         return response
@@ -111,7 +131,7 @@ class AdminController:
         import jwt
         from datetime import datetime, timezone
 
-        token = request.cookies.get("access_token")
+        token = request.cookies.get("admin_access_token")
 
         if not token:
             return {
@@ -150,10 +170,11 @@ class AdminController:
         }))
 
         response.delete_cookie(
-            "access_token",
+            "admin_access_token",
             path="/",
-            samesite="None",    # ✅ add this
-            secure=True         # ✅ add this
+            httponly=True,
+            secure=True,
+            samesite="None"
         )
 
         return response, 200
@@ -251,7 +272,16 @@ class AdminController:
             )
 
 
-        AdminModel.insert_admin_message(email, msg, "approval")
+        AdminModel.insert_admin_message(
+            email=email,
+            recipient_type="provider",
+            title="Provider Profile Approved",
+            message=msg,
+            notification_type="approval",
+            reference_type="provider",
+            reference_id=user_uid,
+            action_url="/provider_home/providerupdateprofile"
+        )
 
         try:
             send_email(email, "Profile Approved", msg, pdf_path)
@@ -266,7 +296,15 @@ class AdminController:
         if not AdminModel.reject_provider(email):
             return {"error": "Provider not found or not pending"}, 404
         msg = "Your provider profile has been rejected. Please contact admin for more details."
-        AdminModel.insert_admin_message(email, msg, "rejection")
+        AdminModel.insert_admin_message(
+            email=email,
+            recipient_type="provider",
+            title="Provider Profile Rejected",
+            message=msg,
+            notification_type="rejection",
+            reference_type="provider",
+            action_url="/provider_home/providerupdateprofile"
+        )
         send_email(email, "Profile Rejected", msg)
         return {"message": "Provider rejected"}, 200
 
@@ -274,7 +312,15 @@ class AdminController:
     def send_message_provider(email, message):
         if not email or not message:
             return {"error": "Email and message required"}, 400
-        AdminModel.insert_admin_message(email, message, "message")
+        AdminModel.insert_admin_message(
+            email=email,
+            recipient_type="provider",
+            title="Message From Admin",
+            message=message,
+            notification_type="message",
+            reference_type="provider",
+            action_url="/provider_home/notifications"
+        )
         send_email(email, "Message from Ontract Admin", message)
         return {"message": "Message sent and saved"}, 200
 
@@ -381,7 +427,16 @@ class AdminController:
                 "Please proceed to submit company bank details."
             )
     
-        AdminModel.insert_admin_message(email, msg, "approval")
+        AdminModel.insert_admin_message(
+            email=email,
+            recipient_type="contractor",
+            title="Company Approved",
+            message=msg,
+            notification_type="approval",
+            reference_type="company",
+            reference_id=company_id,
+            action_url="/contractor/dashboard/profile"
+        )
 
         try:
             send_email(email, "Company Approved", msg, pdf_path)
@@ -396,7 +451,15 @@ class AdminController:
         if not AdminModel.reject_contractor(email):
             return {"error": "Not found or already processed"}, 404
         msg = "Your company registration has been rejected. Contact admin for details."
-        AdminModel.insert_admin_message(email, msg, "rejection")
+        AdminModel.insert_admin_message(
+            email=email,
+            recipient_type="contractor",
+            title="Company Rejected",
+            message=msg,
+            notification_type="rejection",
+            reference_type="company",
+            action_url="/contractor/dashboard/profile"
+        )
         send_email(email, "Company Rejected", msg)
         return {"message": "Contractor rejected"}, 200
 
@@ -404,7 +467,15 @@ class AdminController:
     def send_message_contractor(email, message):
         if not email or not message:
             return {"error": "Email and message required"}, 400
-        AdminModel.insert_admin_message(email, message, "message")
+        AdminModel.insert_admin_message(
+            email=email,
+            recipient_type="contractor",
+            title="Message From Admin",
+            message=message,
+            notification_type="message",
+            reference_type="company",
+            action_url="/contractor/dashboard/notifications"
+        )
         send_email(email, "Message from Admin", message)
         return {"message": "Message sent"}, 200
 

@@ -6,6 +6,8 @@ import re
 import io
 from flask import current_app
 from app.utils.encrypt_utils import decrypt_value
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 
 SIMILARITY_THRESHOLD = 0.70
@@ -132,6 +134,108 @@ class AdminModel:
             {"email": email, "otp": otp}
         )
         db.session.commit()
+        
+        
+        
+        
+        
+    @staticmethod
+    def is_login_locked(email):
+
+        sql = text("""
+            SELECT failed_attempts, locked_until FROM admin_login_attempts_t
+            WHERE email = :email
+        """)
+
+        row = db.session.execute(sql, {"email": email}).fetchone()
+
+        if not row:
+            return False
+
+        data = row._mapping
+
+        current_time = db.session.execute(
+            text("SELECT timezone('Asia/Kolkata', NOW())")
+        ).scalar()
+
+        if data["locked_until"] and data["locked_until"] > current_time:
+            return True
+
+        # Lock expired → reset automatically
+        if data["locked_until"] and data["locked_until"] <= current_time:
+
+            db.session.execute(text("""
+                UPDATE admin_login_attempts_t SET failed_attempts = 0,locked_until = NULL,
+                updated_at = timezone('Asia/Kolkata', NOW()) WHERE email = :email
+            """), {
+                "email": email
+            })
+
+            db.session.commit()
+
+        return False
+    
+
+    @staticmethod
+    def record_failed_login(email):
+
+        sql = text("""
+            SELECT failed_attempts FROM admin_login_attempts_t WHERE email = :email
+        """)
+
+        row = db.session.execute(sql, {"email": email}).fetchone()
+
+        if row:
+
+            attempts = row._mapping["failed_attempts"] + 1
+
+            if attempts >= 5:
+
+                db.session.execute(text("""
+                    UPDATE admin_login_attempts_t SET failed_attempts = :attempts,
+                    locked_until = timezone('Asia/Kolkata', NOW()) + INTERVAL '5 minutes',
+                    updated_at = timezone('Asia/Kolkata', NOW()) WHERE email = :email
+                """), {
+                    "attempts": attempts,
+                    "email": email
+                })
+
+            else:
+
+                db.session.execute(text("""
+                    UPDATE admin_login_attempts_t SET failed_attempts = :attempts,
+                    updated_at = timezone('Asia/Kolkata', NOW()) WHERE email = :email
+                """), {
+                    "attempts": attempts,
+                    "email": email
+                })
+
+        else:
+
+            db.session.execute(text("""
+                INSERT INTO admin_login_attempts_t (email,failed_attempts,updated_at)
+                VALUES (:email,1,timezone('Asia/Kolkata', NOW()))
+            """), {
+                "email": email
+            })
+
+        db.session.commit()
+
+    @staticmethod
+    def reset_login_attempts(email):
+
+        db.session.execute(text("""
+            UPDATE admin_login_attempts_t SET failed_attempts = 0,locked_until = NULL,
+            updated_at = timezone('Asia/Kolkata', NOW()) WHERE email = :email
+        """), {
+            "email": email
+        })
+
+        db.session.commit()
+
+
+
+
 
     @staticmethod
     def verify_otp(email, otp):
