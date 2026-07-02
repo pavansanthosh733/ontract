@@ -127,53 +127,49 @@ class ContractorController:
     # ---------------- Login ----------------
     @staticmethod
     def login(email, password):
-        
-    
+
+        # Validate input
+        if not email or not password:
+            return {"error": "Email and Password are required"}, 400
+
+        # Check if account is locked
+        if ContractorModel.is_login_locked(email):
+            return {
+                "error": "Too many failed login attempts. Please try again after 5 minutes."
+            }, 429
+
+        # Fetch contractor
         contractor = ContractorModel.get_contractor_by_email(email)
-    
-        
-    
         if not contractor:
-            
+            ContractorModel.record_failed_login(email)
             return {"error": "Invalid credentials"}, 401
-    
-      
-    
-        # service type validation
+
+        # Service type validation
         if contractor.get("service_type") is not None and contractor["service_type"] != 1:
-           
+            ContractorModel.record_failed_login(email)
             return {"error": "Invalid credentials"}, 401
-    
-        # password check
-        password_match = bcrypt.checkpw(
-            password.encode(),
-            contractor["password_hash"].encode()
-        )
-    
-        
-    
+
+        # Password validation
+        password_match = bcrypt.checkpw(password.encode(),contractor["password_hash"].encode())
+
         if not password_match:
-            
+            ContractorModel.record_failed_login(email)
             return {"error": "Invalid credentials"}, 401
-    
+
+        # Account activation check
         if not contractor["active_status"]:
             return {
                 "error": "Account not activated. Please check your registered email and activate your account before login."
             }, 401
-    
+
+        ContractorModel.reset_login_attempts(email)
         otp = ''.join(random.choices(string.digits, k=6))
-        
-    
         ContractorModel.save_otp(email, otp)
         send_contractor_otp_email(email, otp)
-    
-        
-        
-    
-        return {"message": "OTP sent to contractor email"}, 200
+        return {
+            "message": "OTP sent to contractor email"
+        }, 200
 
-# ---------------- Verify OTP ----------------
-   
 
     @staticmethod
     def verify_otp(data):
