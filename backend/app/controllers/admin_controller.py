@@ -461,7 +461,7 @@ class AdminController:
             action_url="/contractor/dashboard/profile"
         )
         send_email(email, "Company Rejected", msg)
-        return {"message": "Contractor rejected"}, 200
+        return {"message": "Contractor rejected"}, 200  #commnet added for deployment
 
     @staticmethod
     def send_message_contractor(email, message):
