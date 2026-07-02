@@ -21,7 +21,7 @@ import {
 } from "recharts";
 import "./css/CompanyDashboardHome.css";
 
-import { apiGet } from "../../api";
+import { apiGet, apiPost } from "../../api";
 import { useContractor } from "../../context/ContractorContext";
 import { useNavigate } from "react-router-dom";
 
@@ -34,6 +34,7 @@ const { contractor, loading } = useContractor();
   const companyName = contractor?.company_name || "Your Company";
 
   const [completedOrders, setCompletedOrders] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
   const navigate = useNavigate();
   const [serviceCoverage, setServiceCoverage] = useState({
     regions: [],
@@ -80,6 +81,7 @@ const { contractor, loading } = useContractor();
 
     fetchCompletedOrders(contractor.user_uid);
     fetchServiceCoverageDetails(contractor.user_uid);
+    fetchPendingWorkOrders();
   }, [contractor, loading]);
 
   /* =========================
@@ -112,7 +114,29 @@ const { contractor, loading } = useContractor();
       console.error("❌ Failed to fetch service coverage:", err.message);
     }
   };
+  
+   const fetchPendingWorkOrders = async () => {
+      try {
+        const response = await apiPost(
+          "/api/workorders/provider/workorders/pending",
+          {
+            provider_id: contractor.user_uid,
+          }
+        );
 
+        if (Array.isArray(response)) {
+          setPendingCount(response.length);
+        } else if (Array.isArray(response.data)) {
+          setPendingCount(response.data.length);
+        } else if (Array.isArray(response.workorders)) {
+          setPendingCount(response.workorders.length);
+        } else {
+          setPendingCount(response.count || 0);
+        }
+      } catch (err) {
+        console.error("Failed to fetch pending work orders:", err);
+      }
+    };
   /* =========================
      STATIC CHART DATA
      ========================= */
@@ -148,8 +172,13 @@ const { contractor, loading } = useContractor();
         </Link>
 
         <Link to="/contractor/dashboard/companyworkorders" className="workorder-pill">
-          <FaClipboardList className="me-2" />
-          WorkOrders
+          <FaClipboardList className="me-2" />WorkOrders
+          <span
+            className="badge bg-danger ms-2"
+            style={{ fontSize: "12px" }}
+          >
+            {pendingCount}
+          </span>
         </Link>
       </div>
 
