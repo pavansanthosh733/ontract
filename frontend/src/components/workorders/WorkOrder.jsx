@@ -1,6 +1,7 @@
 // ==============================================
 // src/pages/admin/WorkOrders.jsx
 // WITHDRAW ONLY FOR ACCEPTED STATUS
+// + DEFAULT TODAY LOAD + QUICK DATE TABS + COLUMN FILTERS
 // ==============================================
 
 import React, { useCallback, useEffect, useState } from "react";
@@ -17,6 +18,9 @@ const WorkOrders = () => {
   const [toDate, setToDate] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [showResults, setShowResults] = useState(false);
+
+  // ✅ NEW: tracks which quick-filter tab is active (today/week/month/custom)
+  const [activeQuickFilter, setActiveQuickFilter] = useState("today");
 
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
@@ -37,6 +41,19 @@ const WorkOrders = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  // ✅ NEW: per-column text filters
+  const [columnFilters, setColumnFilters] = useState({
+    workorder: "",
+    category: "",
+    region: "",
+    status: "",
+    requestedTime: "",
+    createdAt: "",
+    sla: "",
+    assignmentType: "",
+    contractor: "",
+  });
+
   const withdrawReasons = [
     "Wrong Assignment",
     "Contractor Not Available",
@@ -49,26 +66,59 @@ const WorkOrders = () => {
 
   // -----------------------------------
   // ONLY ACCEPTED workorders can be withdrawn
-  // Checks both details.status (from modal API)
-  // and falls back to the row status from the table
   // -----------------------------------
   const canWithdraw = (status) =>
     (status || "").toString().toUpperCase() === "ACCEPTED";
 
   // -----------------------------------
-  // PAGINATION DERIVED DATA
+  // ✅ NEW: DATE RANGE HELPERS (yyyy-mm-dd for <input type="date">)
   // -----------------------------------
-  const totalPages = Math.ceil(workorders.length / itemsPerPage);
-  const paginatedWorkorders = workorders.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const toInputDate = (d) => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const getTodayRange = () => {
+    const today = new Date();
+    const val = toInputDate(today);
+    return { from: val, to: val };
+  };
+
+  const getThisWeekRange = () => {
+    const today = new Date();
+    const day = today.getDay(); // 0 = Sunday
+    const diffToMonday = day === 0 ? 6 : day - 1;
+
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - diffToMonday);
+
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    return { from: toInputDate(monday), to: toInputDate(sunday) };
+  };
+
+  const getThisMonthRange = () => {
+    const today = new Date();
+    const first = new Date(today.getFullYear(), today.getMonth(), 1);
+    const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    return { from: toInputDate(first), to: toInputDate(last) };
+  };
 
   // -----------------------------------
-  // FETCH FILTERED WORKORDERS
+  // PAGINATION DERIVED DATA
+  // (now based on filteredWorkorders, see below)
   // -----------------------------------
-  const fetchFilteredWorkOrders = useCallback(async () => {
-    if (!fromDate || !toDate) {
+
+  // -----------------------------------
+  // ✅ NEW: CORE FETCH — accepts explicit from/to/status so it can be
+  // called immediately after a quick-filter click without waiting on
+  // async setState to resolve.
+  // -----------------------------------
+  const fetchWorkOrdersForRange = useCallback(async (from, to, status) => {
+    if (!from || !to) {
       setModalMessage("⚠️ Please select both From Date and To Date.");
       setShowModal(true);
       return;
@@ -79,20 +129,18 @@ const WorkOrders = () => {
       setError(null);
 
       const params = new URLSearchParams();
-      params.append("from", fromDate);
-      params.append("to", toDate);
+      params.append("from", from);
+      params.append("to", to);
 
-      if (statusFilter !== "All") {
-        params.append("status", statusFilter);
+      if (status && status !== "All") {
+        params.append("status", status);
       }
 
       const data = await apiGet(`/api/workorders/filter?${params.toString()}`);
 
       if (!Array.isArray(data) || data.length === 0) {
-        setModalMessage("📭 No workorders found for the selected filters.");
-        setShowModal(true);
-        setShowResults(false);
         setWorkorders([]);
+        setShowResults(true); // ✅ still show table (empty state), not a popup, for default loads
       } else {
         setWorkorders(data);
         setCurrentPage(1);
@@ -103,28 +151,79 @@ const WorkOrders = () => {
     } finally {
       setLoading(false);
     }
-  }, [fromDate, toDate, statusFilter]);
+  }, []);
 
+  // -----------------------------------
+  // FETCH FILTERED WORKORDERS (Submit button — uses current state)
+  // -----------------------------------
+  const fetchFilteredWorkOrders = useCallback(async () => {
+    await fetchWorkOrdersForRange(fromDate, toDate, statusFilter);
+  }, [fromDate, toDate, statusFilter, fetchWorkOrdersForRange]);
+
+  // -----------------------------------
+  // ✅ NEW: QUICK FILTER TAB HANDLER (Today / This Week / This Month)
+  // -----------------------------------
+  const handleQuickFilter = useCallback(
+    (type) => {
+      let range;
+      if (type === "today") range = getTodayRange();
+      else if (type === "week") range = getThisWeekRange();
+      else if (type === "month") range = getThisMonthRange();
+      else return;
+
+      setFromDate(range.from);
+      setToDate(range.to);
+      setActiveQuickFilter(type);
+      fetchWorkOrdersForRange(range.from, range.to, statusFilter);
+    },
+    [statusFilter, fetchWorkOrdersForRange]
+  );
+
+  // ✅ NEW: mark as "custom" when user manually submits with their own dates
+  const handleSubmitClick = () => {
+    setActiveQuickFilter("custom");
+    fetchFilteredWorkOrders();
+  };
+
+  // -----------------------------------
+  // ✅ NEW: DEFAULT LOAD — show today's workorders on page load
+  // -----------------------------------
+  useEffect(() => {
+    handleQuickFilter("today");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // -----------------------------------
+  // AUTO REFRESH (unchanged, still works for quick filters & custom range)
+  // -----------------------------------
   useEffect(() => {
     if (!showResults || !fromDate || !toDate) return;
 
     const intervalId = setInterval(() => {
-      fetchFilteredWorkOrders();
+      fetchWorkOrdersForRange(fromDate, toDate, statusFilter);
     }, 60000);
 
     return () => clearInterval(intervalId);
-  }, [showResults, fromDate, toDate, statusFilter, fetchFilteredWorkOrders]);
+  }, [showResults, fromDate, toDate, statusFilter, fetchWorkOrdersForRange]);
 
   // -----------------------------------
   // RESET
   // -----------------------------------
   const resetFilters = () => {
-    setFromDate("");
-    setToDate("");
     setStatusFilter("All");
-    setWorkorders([]);
-    setShowResults(false);
-    setCurrentPage(1);
+    setColumnFilters({
+      workorder: "",
+      category: "",
+      region: "",
+      status: "",
+      requestedTime: "",
+      createdAt: "",
+      sla: "",
+      assignmentType: "",
+      contractor: "",
+    });
+    // ✅ Reset now falls back to "today" instead of a blank state
+    handleQuickFilter("today");
   };
 
   // -----------------------------------
@@ -205,8 +304,6 @@ const WorkOrders = () => {
 
   // -----------------------------------
   // FETCH SINGLE WORKORDER DETAILS
-  // We also pass the row's status from the table
-  // so withdraw works even if API doesn't return status
   // -----------------------------------
   const handleWorkorderClick = async (wo) => {
     try {
@@ -221,8 +318,6 @@ const WorkOrders = () => {
 
       const detailData = res?.[0] || null;
 
-      // ✅ If API doesn't return status, use the status
-      // from the table row as fallback
       if (detailData && !detailData.status) {
         detailData.status = wo.status;
       }
@@ -262,11 +357,94 @@ const WorkOrders = () => {
 
       alert("Workorder withdrawn successfully");
       setShowDetailsModal(false);
-      fetchFilteredWorkOrders();
+      fetchWorkOrdersForRange(fromDate, toDate, statusFilter);
     } catch (err) {
       alert(err.message);
     }
   };
+
+  // -----------------------------------
+  // ✅ NEW: COLUMN FILTER HANDLER
+  // -----------------------------------
+  const handleColumnFilterChange = (e) => {
+    const { name, value } = e.target;
+    setColumnFilters((prev) => ({ ...prev, [name]: value }));
+    setCurrentPage(1);
+  };
+
+  // -----------------------------------
+  // ✅ NEW: APPLY COLUMN FILTERS (before pagination)
+  // -----------------------------------
+  const filteredWorkorders = workorders.filter((wo) => {
+    const status = wo.status || "UNKNOWN";
+    const { text: slaText } = formatSlaDuration(wo.requested_time_close);
+
+    const workorderMatch = (wo.workorder || "")
+      .toString()
+      .toLowerCase()
+      .includes(columnFilters.workorder.toLowerCase());
+
+    const categoryMatch = (wo.category_name || wo.category || "")
+      .toString()
+      .toLowerCase()
+      .includes(columnFilters.category.toLowerCase());
+
+    const regionMatch = (wo.region_name || wo.region || "")
+      .toString()
+      .toLowerCase()
+      .includes(columnFilters.region.toLowerCase());
+
+    const statusMatch = status
+      .toString()
+      .toLowerCase()
+      .includes(columnFilters.status.toLowerCase());
+
+    const requestedTimeMatch = formatDate(wo.requested_time_close)
+      .toString()
+      .toLowerCase()
+      .includes(columnFilters.requestedTime.toLowerCase());
+
+    const createdAtMatch = formatDate(wo.created_t)
+      .toString()
+      .toLowerCase()
+      .includes(columnFilters.createdAt.toLowerCase());
+
+    const slaMatch = slaText
+      .toString()
+      .toLowerCase()
+      .includes(columnFilters.sla.toLowerCase());
+
+    const assignmentTypeMatch = (wo.ticket_assignment_type || "N/A")
+      .toString()
+      .toLowerCase()
+      .includes(columnFilters.assignmentType.toLowerCase());
+
+    const contractorMatch = (wo.company_name || wo.contractor_name || "Not Assigned")
+      .toString()
+      .toLowerCase()
+      .includes(columnFilters.contractor.toLowerCase());
+
+    return (
+      workorderMatch &&
+      categoryMatch &&
+      regionMatch &&
+      statusMatch &&
+      requestedTimeMatch &&
+      createdAtMatch &&
+      slaMatch &&
+      assignmentTypeMatch &&
+      contractorMatch
+    );
+  });
+
+  // -----------------------------------
+  // PAGINATION DERIVED DATA (now from filteredWorkorders)
+  // -----------------------------------
+  const totalPages = Math.ceil(filteredWorkorders.length / itemsPerPage);
+  const paginatedWorkorders = filteredWorkorders.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   return (
     <div className="workorders-page">
@@ -279,6 +457,34 @@ const WorkOrders = () => {
         </div>
 
         <div className="dashboard-content">
+
+          {/* ✅ NEW: QUICK FILTER TABS */}
+          <div className="quick-filter-tabs">
+            <button
+              type="button"
+              className={`quick-tab-btn ${activeQuickFilter === "today" ? "active" : ""}`}
+              onClick={() => handleQuickFilter("today")}
+            >
+              Today
+            </button>
+
+            <button
+              type="button"
+              className={`quick-tab-btn ${activeQuickFilter === "week" ? "active" : ""}`}
+              onClick={() => handleQuickFilter("week")}
+            >
+              This Week
+            </button>
+
+            <button
+              type="button"
+              className={`quick-tab-btn ${activeQuickFilter === "month" ? "active" : ""}`}
+              onClick={() => handleQuickFilter("month")}
+            >
+              This Month
+            </button>
+          </div>
+
           <div className="dashboard-filters">
 
             <div>
@@ -288,7 +494,10 @@ const WorkOrders = () => {
                 value={fromDate}
                 min="2000-01-01"
                 max="2099-12-31"
-                onChange={(e) => setFromDate(e.target.value)}
+                onChange={(e) => {
+                  setFromDate(e.target.value);
+                  setActiveQuickFilter("custom");
+                }}
               />
             </div>
 
@@ -299,7 +508,10 @@ const WorkOrders = () => {
                 value={toDate}
                 min="2000-01-01"
                 max="2099-12-31"
-                onChange={(e) => setToDate(e.target.value)}
+                onChange={(e) => {
+                  setToDate(e.target.value);
+                  setActiveQuickFilter("custom");
+                }}
               />
             </div>
 
@@ -320,7 +532,7 @@ const WorkOrders = () => {
             <div className="dashboard-btn-group">
               <button
                 className="btn btn-green"
-                onClick={fetchFilteredWorkOrders}
+                onClick={handleSubmitClick}
               >
                 🔍 Submit
               </button>
@@ -381,52 +593,154 @@ const WorkOrders = () => {
                       <th>Assignment Type</th>
                       <th>Contractor</th>
                     </tr>
+
+                    {/* ✅ NEW: COLUMN FILTER ROW */}
+                    <tr>
+                      <th>
+                        <input
+                          type="text"
+                          name="workorder"
+                          placeholder="Filter..."
+                          value={columnFilters.workorder}
+                          onChange={handleColumnFilterChange}
+                          className="wo-filter-input"
+                        />
+                      </th>
+                      <th>
+                        <input
+                          type="text"
+                          name="category"
+                          placeholder="Filter..."
+                          value={columnFilters.category}
+                          onChange={handleColumnFilterChange}
+                          className="wo-filter-input"
+                        />
+                      </th>
+                      <th>
+                        <input
+                          type="text"
+                          name="region"
+                          placeholder="Filter..."
+                          value={columnFilters.region}
+                          onChange={handleColumnFilterChange}
+                          className="wo-filter-input"
+                        />
+                      </th>
+                      <th>
+                        <input
+                          type="text"
+                          name="status"
+                          placeholder="Filter..."
+                          value={columnFilters.status}
+                          onChange={handleColumnFilterChange}
+                          className="wo-filter-input"
+                        />
+                      </th>
+                      <th>
+                        <input
+                          type="text"
+                          name="requestedTime"
+                          placeholder="Filter..."
+                          value={columnFilters.requestedTime}
+                          onChange={handleColumnFilterChange}
+                          className="wo-filter-input"
+                        />
+                      </th>
+                      <th>
+                        <input
+                          type="text"
+                          name="createdAt"
+                          placeholder="Filter..."
+                          value={columnFilters.createdAt}
+                          onChange={handleColumnFilterChange}
+                          className="wo-filter-input"
+                        />
+                      </th>
+                      <th>
+                        <input
+                          type="text"
+                          name="sla"
+                          placeholder="Filter..."
+                          value={columnFilters.sla}
+                          onChange={handleColumnFilterChange}
+                          className="wo-filter-input"
+                        />
+                      </th>
+                      <th>
+                        <input
+                          type="text"
+                          name="assignmentType"
+                          placeholder="Filter..."
+                          value={columnFilters.assignmentType}
+                          onChange={handleColumnFilterChange}
+                          className="wo-filter-input"
+                        />
+                      </th>
+                      <th>
+                        <input
+                          type="text"
+                          name="contractor"
+                          placeholder="Filter..."
+                          value={columnFilters.contractor}
+                          onChange={handleColumnFilterChange}
+                          className="wo-filter-input"
+                        />
+                      </th>
+                    </tr>
                   </thead>
 
                   <tbody>
-                    {paginatedWorkorders.map((wo) => {
-                      const status = wo.status || "UNKNOWN";
-                      const isClosed =
-                        (status || "").toString().toUpperCase() === "CLOSED";
+                    {paginatedWorkorders.length > 0 ? (
+                      paginatedWorkorders.map((wo) => {
+                        const status = wo.status || "UNKNOWN";
+                        const isClosed =
+                          (status || "").toString().toUpperCase() === "CLOSED";
 
-                      const { text: slaText, breached: isSlaBreached } =
-                        formatSlaDuration(wo.requested_time_close);
+                        const { text: slaText, breached: isSlaBreached } =
+                          formatSlaDuration(wo.requested_time_close);
 
-                      return (
-                        <tr
-                          key={wo.id}
-                          className={`
-                            ${statusToClass(status)}
-                            ${!isClosed && isSlaBreached ? "sla-breach-row" : ""}
-                          `}
-                        >
-                          <td
-                            className="workorder-link"
-                            onClick={() => handleWorkorderClick(wo)}
+                        return (
+                          <tr
+                            key={wo.id}
+                            className={`
+                              ${statusToClass(status)}
+                              ${!isClosed && isSlaBreached ? "sla-breach-row" : ""}
+                            `}
                           >
-                            {wo.workorder}
-                          </td>
+                            <td
+                              className="workorder-link"
+                              onClick={() => handleWorkorderClick(wo)}
+                            >
+                              {wo.workorder}
+                            </td>
 
-                          <td>{wo.category_name || wo.category || "—"}</td>
+                            <td>{wo.category_name || wo.category || "—"}</td>
 
-                          <td>{wo.region_name || wo.region || "—"}</td>
+                            <td>{wo.region_name || wo.region || "—"}</td>
 
-                          <td className={`status ${status.toLowerCase()}`}>
-                            {status}
-                          </td>
+                            <td className={`status ${status.toLowerCase()}`}>
+                              {status}
+                            </td>
 
-                          <td>{formatDate(wo.requested_time_close)}</td>
+                            <td>{formatDate(wo.requested_time_close)}</td>
 
-                          <td>{formatDate(wo.created_t)}</td>
+                            <td>{formatDate(wo.created_t)}</td>
 
-                          <td>{slaText}</td>
+                            <td>{slaText}</td>
 
-                          <td>{wo.ticket_assignment_type || "N/A"}</td>
+                            <td>{wo.ticket_assignment_type || "N/A"}</td>
 
-                          <td>{wo.company_name || wo.contractor_name || "Not Assigned"}</td>
-                        </tr>
-                      );
-                    })}
+                            <td>{wo.company_name || wo.contractor_name || "Not Assigned"}</td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan="9" className="text-center py-3">
+                          No matching records found
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
 
@@ -563,7 +877,6 @@ const WorkOrders = () => {
                   {/* ========================================= */}
                   {/* WITHDRAW SECTION                          */}
                   {/* Shown ONLY when status === "ACCEPTED"     */}
-                  {/* Status comes from API or table row        */}
                   {/* ========================================= */}
                   {canWithdraw(details.status) && (
                     <>

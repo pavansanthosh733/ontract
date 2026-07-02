@@ -249,3 +249,29 @@
     font-size: 14px;
   }
 }
+
+.quick-filter-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.quick-tab-btn {
+  padding: 6px 16px;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+}
+.quick-tab-btn.active {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+.wo-filter-input {
+  width: 100%;
+  padding: 4px 6px;
+  font-size: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
