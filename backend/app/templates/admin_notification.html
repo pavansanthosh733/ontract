@@ -2,203 +2,209 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Work Order {{ status_text }}</title>
+  <title>Work Order {{ status_text | e }}</title>
 </head>
 <body style="font-family:Arial,sans-serif;line-height:1.6;color:#333;max-width:800px;margin:0 auto;padding:20px;">
-  <div style="background:{{ status_color }};padding:20px;border-radius:8px;margin-bottom:20px;">
-    <h2 style="margin:0;color:white;">{{ '✓ Checkmark' if status_text == 'ACCEPTED' else '✗ Cross' }} Work Order {{ status_text }}</h2>
+
+  <div style="background:{{ status_color | e }};padding:20px;border-radius:8px;margin-bottom:20px;">
+    <h2 style="margin:0;color:white;">
+      {{ '✓ Checkmark' if status_text == 'ACCEPTED' else '✗ Cross' }}
+      Work Order {{ status_text | e }}
+    </h2>
   </div>
 
-  <div style="background:#f8f9fa;padding:15px;border-left:4px solid {{ status_color }};margin-bottom:20px;">
-    <p style="margin:5px 0 0 0;font-size:16px;">Contractor <strong>{{ contractor_name }}</strong> has <strong>{{ status_text.lower() }}</strong> the work order.</p>
+  <div style="background:#f8f9fa;padding:15px;border-left:4px solid {{ status_color | e }};margin-bottom:20px;">
+    <p style="margin:5px 0 0 0;font-size:16px;">
+      Contractor <strong>{{ contractor_name | e }}</strong> has
+      <strong>{{ status_text.lower() | e }}</strong> the work order.
+    </p>
   </div>
 
- 
-    <table border="1"
-       cellspacing="0"
-       cellpadding="12"
-       style="
+  <table border="1"
+         cellspacing="0"
+         cellpadding="12"
+         style="
             border-collapse:collapse;
             width:100%;
             max-width:700px;
             margin-bottom:25px;
             border:1px solid #ddd;
-       ">
+         ">
 
-<tr style="background:#f8f9fa;">
-    <th align="left" style="width:40%;">
+    <tr style="background:#f8f9fa;">
+      <th align="left" style="width:40%;">
         Work Order
-    </th>
+      </th>
 
-    <td>
+      <td>
         <strong>
-            {{ workorder.workorder }}
+          {{ workorder.workorder | e }}
         </strong>
-    </td>
-</tr>
+      </td>
+    </tr>
 
-<tr>
-    <th align="left" style="background:#f8f9fa;">
+    <tr>
+      <th align="left" style="background:#f8f9fa;">
         Region
-    </th>
+      </th>
 
-    <td>
-        {{ workorder.region_name or 'N/A' }}
-    </td>
-</tr>
+      <td>
+        {{ (workorder.region_name or 'N/A') | e }}
+      </td>
+    </tr>
 
-<tr>
-    <th align="left" style="background:#f8f9fa;">
+    <tr>
+      <th align="left" style="background:#f8f9fa;">
         State
-    </th>
+      </th>
 
-    <td>
-        {{ workorder.state_name or 'N/A' }}
-    </td>
-</tr>
+      <td>
+        {{ (workorder.state_name or 'N/A') | e }}
+      </td>
+    </tr>
 
-<tr>
-    <th align="left" style="background:#f8f9fa;">
+    <tr>
+      <th align="left" style="background:#f8f9fa;">
         City
-    </th>
+      </th>
 
-    <td>
-        {{ workorder.city_name or 'N/A' }}
-    </td>
-</tr>
+      <td>
+        {{ (workorder.city_name or 'N/A') | e }}
+      </td>
+    </tr>
 
-<tr>
-    <th align="left" style="background:#f8f9fa;">
+    <tr>
+      <th align="left" style="background:#f8f9fa;">
         Client
-    </th>
+      </th>
 
-    <td>
-        {{ workorder.client or 'N/A' }}
-    </td>
-</tr>
+      <td>
+        {{ (workorder.client or 'N/A') | e }}
+      </td>
+    </tr>
 
-<tr>
-    <th align="left" style="background:#f8f9fa;">
+    <tr>
+      <th align="left" style="background:#f8f9fa;">
         Work Category
-    </th>
+      </th>
 
-    <td>
-        {{ workorder.category_name or 'N/A' }}
-    </td>
-</tr>
+      <td>
+        {{ (workorder.category_name or 'N/A') | e }}
+      </td>
+    </tr>
 
-<tr>
-    <th align="left" style="background:#f8f9fa;">
+    <tr>
+      <th align="left" style="background:#f8f9fa;">
         Work Item
-    </th>
+      </th>
 
-    <td>
-        {{ workorder.item_name or 'N/A' }}
-    </td>
-</tr>
+      <td>
+        {{ (workorder.item_name or 'N/A') | e }}
+      </td>
+    </tr>
 
-<tr>
-    <th align="left" style="background:#f8f9fa;">
+    <tr>
+      <th align="left" style="background:#f8f9fa;">
         Work Type
-    </th>
+      </th>
 
-    <td>
-        {{ workorder.type_name or 'N/A' }}
-    </td>
-</tr>
+      <td>
+        {{ (workorder.type_name or 'N/A') | e }}
+      </td>
+    </tr>
 
-<tr>
-    <th align="left" style="background:#f8f9fa;">
+    <tr>
+      <th align="left" style="background:#f8f9fa;">
         Work Description
-    </th>
+      </th>
 
-    <td>
-        {{ workorder.description_name or 'N/A' }}
-    </td>
-</tr>
+      <td>
+        {{ (workorder.description_name or 'N/A') | e }}
+      </td>
+    </tr>
 
-<tr>
-    <th align="left" style="background:#f8f9fa;">
+    <tr>
+      <th align="left" style="background:#f8f9fa;">
         Address
-    </th>
+      </th>
 
-    <td>
-        {{ workorder.address or 'N/A' }}
-    </td>
-</tr>
+      <td>
+        {{ (workorder.address or 'N/A') | e }}
+      </td>
+    </tr>
 
-<tr>
-    <th align="left" style="background:#f8f9fa;">
+    <tr>
+      <th align="left" style="background:#f8f9fa;">
         Remarks
-    </th>
+      </th>
 
-    <td>
-        {{ workorder.remarks or 'N/A' }}
-    </td>
-</tr>
+      <td>
+        {{ (workorder.remarks or 'N/A') | e }}
+      </td>
+    </tr>
 
-<tr>
-    <th align="left" style="background:#f8f9fa;">
+    <tr>
+      <th align="left" style="background:#f8f9fa;">
         Detailed Description
-    </th>
+      </th>
 
-    <td>
-        {{ workorder.detailed_description or 'N/A' }}
-    </td>
-</tr>
+      <td>
+        {{ (workorder.detailed_description or 'N/A') | e }}
+      </td>
+    </tr>
 
-<tr>
-    <th align="left" style="background:#f8f9fa;">
+    <tr>
+      <th align="left" style="background:#f8f9fa;">
         Contractor
-    </th>
+      </th>
 
-    <td>
-        {{ contractor_name }}
-        (ID: {{ contractor_id }})
-    </td>
-</tr>
+      <td>
+        {{ contractor_name | e }}
+        (ID: {{ contractor_id | e }})
+      </td>
+    </tr>
 
-<tr>
-    <th align="left" style="background:#f8f9fa;">
+    <tr>
+      <th align="left" style="background:#f8f9fa;">
         Status
-    </th>
+      </th>
 
-    <td style="
-        color:{{ status_color }};
-        font-weight:bold;
-    ">
-        {{ status_text }}
-    </td>
-</tr>
+      <td style="
+          color:{{ status_color | e }};
+          font-weight:bold;
+      ">
+        {{ status_text | e }}
+      </td>
+    </tr>
 
-<tr>
-    <th align="left" style="background:#f8f9fa;">
+    <tr>
+      <th align="left" style="background:#f8f9fa;">
         Response Date
-    </th>
+      </th>
 
-    <td>
-        {{ response_date }}
-    </td>
-</tr>
+      <td>
+        {{ response_date | e }}
+      </td>
+    </tr>
 
-{% if remark %}
-<tr>
-    <th align="left" style="background:#f8f9fa;">
+    {% if remark %}
+    <tr>
+      <th align="left" style="background:#f8f9fa;">
         Company Remarks
-    </th>
+      </th>
 
-    <td>
-        {{ remark }}
-    </td>
-</tr>
-{% endif %}
-
-
-
+      <td>
+        {{ remark | e }}
+      </td>
+    </tr>
+    {% endif %}
 
   </table>
 
   <hr style="border:none;border-top:1px solid #ddd;margin:30px 0;">
-  <p style="font-size:12px;color:#777;text-align:center;">Automated notification – do not reply.</p>
+  <p style="font-size:12px;color:#777;text-align:center;">
+    Automated notification – do not reply.
+  </p>
+
 </body>
 </html>

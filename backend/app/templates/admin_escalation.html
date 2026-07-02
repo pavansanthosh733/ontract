@@ -17,7 +17,7 @@
   <!-- INFO MESSAGE -->
   <div style="background:#f8d7da;padding:15px;border-left:4px solid #d9534f;margin-bottom:20px;">
     <p style="margin:0;font-size:16px;">
-      The work order <strong>{{ wr.workorder }}</strong> could not be assigned.
+      The work order <strong>{{ wr.workorder | e }}</strong> could not be assigned.
     </p>
     <p style="margin-top:8px;">
       <strong>Reason:</strong> No contractor accepted this work order or no contractors were not available in this region.
@@ -30,17 +30,17 @@
 
     <tr style="background:#f8f9fa;">
       <th align="left" style="width:40%;">Work Order</th>
-      <td><strong>{{ wr["workorder"] }}</strong></td>
+      <td><strong>{{ wr["workorder"] | e }}</strong></td>
     </tr>
 
     <tr>
       <th align="left" style="background:#f8f9fa;">Region</th>
-      <td>{{ region_name }}</td>
+      <td>{{ region_name | e }}</td>
     </tr>
 
     <tr>
       <th align="left" style="background:#f8f9fa;">Category</th>
-      <td>{{ category_name }}</td>
+      <td>{{ category_name | e }}</td>
     </tr>
 
   </table>
