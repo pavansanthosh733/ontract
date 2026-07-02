@@ -138,7 +138,7 @@ class AdminModel:
         
         
         
-        
+    #admin model file for deploymet    
     @staticmethod
     def is_login_locked(email):
 
