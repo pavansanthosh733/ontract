@@ -85,7 +85,7 @@ function Notifications({ user }) {
   };
 
   // --------------------------
-  // MARK ALL
+  // MARK ALL AS READ
   // --------------------------
   const markAllAsRead = async () => {
     const unread = notifications.filter((n) => !n.is_read);
