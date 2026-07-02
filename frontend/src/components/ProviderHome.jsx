@@ -82,6 +82,9 @@ function ProviderHome() {
         const data = await apiGet(
           `/api/unread_count?email=${encodeURIComponent(userEmail)}`
         );
+
+        console.log("Unread Count API Response:", data);
+
         setUnreadCount(data.count || 0);
       } catch (err) {
         console.error("Error fetching unread count:", err);
@@ -92,6 +95,10 @@ function ProviderHome() {
     const interval = setInterval(fetchUnreadCount, 60000);
     return () => clearInterval(interval);
   }, [userEmail]);
+
+  useEffect(() => {
+    console.log("Unread Count State:", unreadCount);
+  }, [unreadCount]);
 
   const handleLogout = () => {
     localStorage.removeItem("provider_token");
@@ -135,7 +142,16 @@ function ProviderHome() {
               <li className="nav-item">
                 <Link to="/provider_home/notifications" className="nav-link position-relative px-3">
                   <FaBell size={20} className="text-primary" />
-                  {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
+                  <span
+                    style={{
+                      color: "red",
+                      fontSize: "20px",
+                      fontWeight: "bold",
+                      marginLeft: "10px",
+                    }}
+                  >
+                    {unreadCount}
+                  </span>
                 </Link>
               </li>
 
