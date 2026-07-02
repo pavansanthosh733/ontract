@@ -105,7 +105,7 @@ class ProviderController:
         ProviderModel.activate_account(token)
 
         return {"message": "Account activated successfully", "email": user['email_id']}, 200
-
+   #adding coment
     @staticmethod
     def login(email, password):
 
