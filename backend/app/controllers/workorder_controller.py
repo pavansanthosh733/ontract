@@ -162,6 +162,8 @@ def create_workorder():
         data["creation_time_image"] = media_list
 
         workorder, error = WorkOrder.create(data)
+        if isinstance(error, dict):
+            return jsonify(error), 200
         if error:
             return jsonify({"error": error}), 400
 

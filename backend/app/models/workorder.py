@@ -138,7 +138,8 @@ class WorkOrder(db.Model):
             if wo.get("ticket_assignment_type") == "auto":
                 max_amount = cls.max_amount()
                 logging.info(f"check theamount: '{max_amount}'")
-                client_amount = cls.client_amount(wo.get("client"))
+                client_amount = cls.client_amount(wo.get("category"),wo.get("item"),
+                wo.get("type"),wo.get("description"),wo.get("client"))
                 logging.info(f"Client amount: {client_amount}")
                 
                 if max_amount is None or client_amount is None:
@@ -146,7 +147,7 @@ class WorkOrder(db.Model):
                     run_async_with_app_context(cls.send_auto_email_after_creation, wo,client_amount)
 
                 elif client_amount > max_amount:
-                    cls.workorder_insert_admin_notification(wo.get("workorder"))
+                    return None, cls.workorder_insert_admin_notification(wo.get("workorder"))
 
                 else:
                     run_async_with_app_context(cls.send_auto_email_after_creation, wo,client_amount)
@@ -163,6 +164,10 @@ class WorkOrder(db.Model):
             
     @classmethod
     def workorder_insert_admin_notification(cls, workorder):
+        message = (
+            f"Work Order {workorder} exceeds the maximum assignment amount. "
+            "Multiple technicians need to be assigned"
+        )
         sql = text("""
             INSERT INTO admin_notifications_t (workorder, notification_type, message, created_at)
             VALUES (:workorder, 'WORKORDER_ASSIGN',
@@ -179,17 +184,37 @@ class WorkOrder(db.Model):
         # db.session.execute(update_sql, {"workorder": workorder})
 
         db.session.commit()
+        return {
+            "success": False,
+            "validation_type": "WORKORDER_ASSIGN",
+            "message": message
+        }
 
     
     @classmethod
-    def client_amount(cls, client):
-        logging.info(f"checktheclientname: '{client}'")
+    def client_amount(cls, category_id, item_id, type_id, description_id, client):
+
         sql = text("""
-            SELECT price_rm FROM standard_rates_t WHERE client = :client;
+            SELECT sr.price_rm FROM standard_rates_t sr
+            JOIN category_master_t c ON LOWER(TRIM(sr.category)) = LOWER(TRIM(c.category_name))
+            JOIN item_master_t i ON LOWER(TRIM(sr.item)) = LOWER(TRIM(i.item_name))
+            JOIN type_master_t t ON LOWER(TRIM(sr.type)) = LOWER(TRIM(t.type_name))
+            JOIN description_master_t d ON LOWER(TRIM(sr.description)) = LOWER(TRIM(d.description_name))
+            WHERE c.category_id = :category_id AND i.item_id = :item_id
+            AND t.type_id = :type_id AND d.description_id = :description_id
+            AND sr.client = :client AND sr.is_active = TRUE ORDER BY sr.id DESC
+            LIMIT 1
         """)
-        row = db.session.execute(sql, {"client": client}).mappings().first()
-        return row["price_rm"] if row else None
-    
+
+        row = db.session.execute(sql, {
+            "category_id": category_id,
+            "item_id": item_id,
+            "type_id": type_id,
+            "description_id": description_id,
+            "client": client
+        }).mappings().first()
+
+        return float(row["price_rm"]) if row else None
     @classmethod
     def max_amount(cls):
         sql = text("""
@@ -207,7 +232,7 @@ class WorkOrder(db.Model):
             region_id,state_id,city_id):
         logging.info(f"check the input get_provider_for_workorder")
         sql = text("""
-            SELECT a.user_uid,a.email_id,a.name,b.service_rate,c.region_name,d.state_name,e.city_name,
+            SELECT a.user_uid,a.email_id,a.name,b.service_rate,b.service_type,c.region_name,d.state_name,e.city_name,
             f.category_name, g.item_name,h.type_name,i.description_name
             FROM users_t a JOIN services_t b ON a.user_uid = b.user_uid
             JOIN region_master_t c ON b.region = c.region_name
@@ -370,11 +395,9 @@ class WorkOrder(db.Model):
                     admin_sql = text("""
                         INSERT INTO admin_notifications_t
                         (workorder, notification_type, message, created_at)
-                        VALUES (
-                            :workorder,
-                            'WORKORDER_BUDGET_TOO_LOW',
-                            'The provided work order amount is lower than the contractor service rates. No contractors are available for this budget.',
-                            CURRENT_TIMESTAMP
+                        VALUES (:workorder,'WORKORDER_BUDGET_TOO_LOW',
+                        'The provided work order amount is lower than the contractor service rates. No contractors are available for this budget.',
+                        CURRENT_TIMESTAMP
                         )
                     """)
 
@@ -383,7 +406,7 @@ class WorkOrder(db.Model):
                     })
 
                     db.session.commit()
-                    return   # 🔥 STOP HERE (No email, No assignment)
+                    return
 
             # ------------------------------------------------------
             # ✅ EMAIL + ASSIGNMENT CONTINUES HERE
@@ -438,10 +461,70 @@ class WorkOrder(db.Model):
             db.session.commit()
             logging.info("Assignment inserted successfully.")
 
+            # =====================================================
+            # SAVE DATABASE NOTIFICATION
+            # =====================================================
+
+            from app.models.admin_model import AdminModel
+
+            if str(provider["service_type"]) == "0":
+                recipient_type = "provider"
+                action_url = "/provider_home/workorders"
+            else:
+                recipient_type = "contractor"
+                action_url = "/contractor/dashboard/companyworkorders"
+
+            AdminModel.insert_admin_message(
+                email=provider["email_id"],
+                recipient_type=recipient_type,
+                title="New Work Order Assigned",
+                message=f"Work Order {workorder['workorder']} has been assigned to you.",
+                notification_type="workorder_assigned",
+                reference_type="workorder",
+                reference_id=workorder["id"],
+                action_url=action_url
+            )
+
+            logging.info(f"✅ Notification inserted for {provider['email_id']}")
+
+            # =====================================================
+            # PUSH NOTIFICATION
+            # =====================================================
+
+            try:
+                from app.utils.notification_service import send_notification_to_tokens
+                from app.models.provider_model import ProviderModel
+
+                tokens, error = ProviderModel.get_active_token_user_id(
+                    provider["user_uid"]
+                )
+
+                if tokens:
+                    send_notification_to_tokens(
+                        tokens,
+                        "New Work Order Assigned",
+                        f"You have been assigned Work Order {workorder['workorder']}."
+                    )
+
+                    logging.info(
+                        f"✅ Push notification sent to {provider['email_id']}"
+                    )
+                else:
+                    logging.warning(
+                        f"No active device tokens found for {provider['email_id']}"
+                    )
+
+            except Exception as e:
+                logging.exception(
+                    f"Push notification failed: {e}"
+                )
+
         except Exception as e:
             db.session.rollback()
             logging.error("EMAIL ERROR / ASSIGNMENT INSERT ERROR: %s", e, exc_info=True)
             
+            
+                        
             
     @classmethod
     def get_active_percentage(cls):
@@ -1903,7 +1986,8 @@ class WorkOrder(db.Model):
                 JOIN description_master_t g ON b.description = g.description_id
                 JOIN state_master_t h ON b.state = h.state_id
                 JOIN city_master_t i ON b.city = i.city_id
-                WHERE a.provider_id = :provider_id AND b.status = 'COMPLETED';
+                WHERE a.provider_id = :provider_id AND b.status = 'COMPLETED'
+                AND a.assignment_status='COMPLETED';;
             """) 
             result = db.session.execute(
                 sql, {"provider_id": provider_id}
