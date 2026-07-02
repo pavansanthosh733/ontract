@@ -648,12 +648,16 @@ paginatedProviders.map((p) => (
 
               {selectedCertificate ? (
                 selectedCertificate.endsWith(".pdf") ? (
-                  <iframe
-                    src={`${BASE_URL}${selectedCertificate}`}
-                    width="100%"
-                    height="600px"
-                    title="certificate"
-                  />
+<div className="text-center mt-5">
+      <a
+        href={`${BASE_URL}${selectedCertificate}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="btn btn-primary"
+      >
+        Open PDF Document
+      </a>
+    </div>
                 ) : (
                   <img
                     src={`${BASE_URL}${selectedCertificate}`}

@@ -209,21 +209,26 @@ const EditZone = () => {
   // =========================
   // REMOVE CITY (uses zoneCode)
   // =========================
-  const removeCity = async (cityId) => {
-    if (!zoneCode) {
-      showToast("Zone not loaded properly", "error");
-      return;
-    }
+const removeCity = async (cityId) => {
+  if (!zoneCode) {
+    showToast("Zone not loaded properly", "error");
+    return;
+  }
 
-    const ok = window.confirm("Remove this city from zone?");
-    if (!ok) return;
+  // VALIDATION
+ if (existingCities.length <= 1) {
+  alert("At least one city is required in a zone");
+  return;
+}
 
-    const backup = [...existingCities];
+  const ok = window.confirm("Remove this city from zone?");
+  if (!ok) return;
 
-    // Optimistic
-    setExistingCities((prev) =>
-      prev.filter((c) => c.city_id !== cityId)
-    );
+  const backup = [...existingCities];
+
+  setExistingCities((prev) =>
+    prev.filter((c) => c.city_id !== cityId)
+  );
 
     try {
       const res = await apiDelete(
