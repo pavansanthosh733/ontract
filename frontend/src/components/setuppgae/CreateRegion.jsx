@@ -31,9 +31,11 @@ const [filters, setFilters] = useState({
     fetchRegions();
   }, []);
 
+  const cleanInput = (value) => value.replace(/[^A-Za-z0-9.,\-&() ]/g, "");
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const cleaned = name === "REGION_NAME" ? cleanInput(value) : value;
+    setFormData((prev) => ({...prev,[name]: cleaned,}));
   };
 
   const handleEditChange = (e) => {
