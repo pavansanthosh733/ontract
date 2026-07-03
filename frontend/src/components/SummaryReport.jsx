@@ -178,7 +178,7 @@ const SummaryReport = () => {
     setMonthQuery(m.label);
     setShowMonthDropdown(false);
   };
-
+  const cleanInput = (value) => {return value.replace(/[^A-Za-z0-9-.& ]/g, "");};
   return (
     <div className="summary-report-container">
       <h2 className="title">Summary Report</h2>
@@ -201,7 +201,8 @@ const SummaryReport = () => {
                 value={categoryQuery}
                 onFocus={handleCategoryFocus}
                 onChange={(e) => {
-                  setCategoryQuery(e.target.value);
+                  const cleanedValue = cleanInput(e.target.value);
+                  setCategoryQuery(cleanedValue);
                   setCategoryId("");
                   setShowCategoryDropdown(true);
                 }}
@@ -248,7 +249,8 @@ const SummaryReport = () => {
                 value={yearQuery}
                 onFocus={handleYearFocus}
                 onChange={(e) => {
-                  setYearQuery(e.target.value);
+                  const cleanedValue = cleanInput(e.target.value);
+                  setYearQuery(cleanedValue);
                   setYear("");
                   setShowYearDropdown(true);
                 }}
@@ -294,7 +296,8 @@ const SummaryReport = () => {
                 value={monthQuery}
                 onFocus={handleMonthFocus}
                 onChange={(e) => {
-                  setMonthQuery(e.target.value);
+                  const cleanedValue = cleanInput(e.target.value);
+                  setMonthQuery(cleanedValue);
                   setMonth("");
                   setShowMonthDropdown(true);
                 }}
