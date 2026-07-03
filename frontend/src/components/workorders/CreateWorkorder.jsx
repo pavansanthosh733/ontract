@@ -317,9 +317,11 @@ const handleImageChange = (files) => {
       formDataToSend.append("ITEM_ID", selectedItemId);
       formDataToSend.append("TYPE_ID", selectedTypeId);
       formDataToSend.append("DESCRIPTION_ID", selectedDescriptionId);
+
       formDataToSend.append("REGION_ID", selectedRegionId);
       formDataToSend.append("STATE_ID", selectedStateId);
       formDataToSend.append("CITY_ID", selectedCityId);
+
       formDataToSend.append("CLIENT", selectedClient);
       formDataToSend.append( "STANDARD_RATE_ID", selectedRate?.standard_rate_id || "" );
       formDataToSend.append( "RATE_SNAPSHOT", selectedRate?.price_rm || "" );
@@ -327,12 +329,8 @@ const handleImageChange = (files) => {
       formDataToSend.append("REQUESTED_TIME_CLOSING",formData.REQUESTED_TIME_CLOSING);
       formDataToSend.append("REMARKS",cleanInput(formData.REMARKS).trim());
       formDataToSend.append("DETAILED_DESCRIPTION",cleanInput(detailedDescription).trim());
-      formDataToSend.append("STATUS", formData.STATUS);
-      
-      formDataToSend.append(
-        "ticket_assignment_type",
-        ticketAssignmentType
-      );
+      formDataToSend.append("STATUS", formData.STATUS);  
+      formDataToSend.append("ticket_assignment_type",ticketAssignmentType);
 
       if (ignoreDuplicate) {
         formDataToSend.append("ignore_duplicate", "true");
@@ -382,44 +380,53 @@ const handleImageChange = (files) => {
         }
         return;
       }
-      
+
+
       // ================================
-      // VALIDATION MESSAGE
-      // ================================
+// VALIDATION MESSAGE
+// ================================
 
-      if (data.success === false) {
-        await Swal.fire({
-          icon: "warning",
-          title: "Validation",
-          text: data.message,
-          confirmButtonText: "OK",
-        });
+if (data.success === false) {
+  await Swal.fire({
+    icon: "warning",
+    title: "Validation",
+    text: data.message,
+    confirmButtonText: "OK",
+  });
 
-        window.location.reload();
-        return;
-      }
+  window.location.reload();
+  return;
+}
 
-      if (!res.ok) {
-        throw new Error(data?.error || "Failed to create workorder");
-      }
+// ================================
+// ACTUAL ERROR
+// ================================
 
-          const workorderNumber = data?.workorder?.workorder;
+    if (!res.ok) {
+      throw new Error(data?.error || "Failed to create workorder");
+    }
 
-          await Swal.fire({s
-            title: "✅ Workorder Created",
-            html: `
-              <div style="font-size:14px;">
-                <b>Workorder Number:</b><br/>
-                <span style="color:green;font-size:18px;font-weight:bold;">
-                  ${workorderNumber}
-                </span>
-              </div>
-            `,
-            icon: "success",
-            confirmButtonText: "OK",
-          });
+    // ================================
+    // SUCCESS
+    // ================================
 
-      window.location.reload();
+    const workorderNumber = data?.workorder?.workorder;
+
+    await Swal.fire({
+      title: "✅ Workorder Created",
+      html: `
+        <div style="font-size:14px;">
+          <b>Workorder Number:</b><br/>
+          <span style="color:green;font-size:18px;font-weight:bold;">
+            ${workorderNumber}
+          </span>
+        </div>
+      `,
+      icon: "success",
+      confirmButtonText: "OK",
+    });
+
+    window.location.reload();
     } catch (err) {
       console.error(err);
       Swal.fire("❌ Error", err.message, "error");
