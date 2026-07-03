@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { Routes, Route, Link, useNavigate, useLocation } from "react-router-dom";
 import { apiPost } from "../../api";
 import "../css/WorkOrderPage.css";
 import { useContractor } from "../../context/ContractorContext";
@@ -10,42 +10,63 @@ import { BASE_URL } from "../../api";
 
 function CompanyWorkorders() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { contractor } = useContractor();
-
-
   const [data, setData] = useState([]);
   const [details, setDetails] = useState(null);
   const [contractorRemarks, setContractorRemarks] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-
   const [selectedWorkorder, setSelectedWorkorder] = useState(null);
   const [selectedExpiryTime, setSelectedExpiryTime] = useState(null);
-
   const [activeTab, setActiveTab] = useState("ASSIGNED");
   const [openRemarks, setOpenRemarks] = useState("");
   const [openImages, setOpenImages] = useState([]);
   const [openSubmitting, setOpenSubmitting] = useState(false);
   const [previewMedia, setPreviewMedia] = useState(null);
-  
+  const cleanRemarks = (value) => {return value.replace(/[^A-Za-z0-9.,&()\-/'\n ]/g, "");};
 
   /* =========================
      FETCH WORKORDERS
      ========================= */
-useEffect(() => {
-  if (!contractor) {
-    console.log("🚫 Contractor not authenticated, redirecting...");
-    navigate("/contractor/login");
-  }
-}, [contractor, navigate]);
-
+  useEffect(() => {
+    if (!contractor) {
+      console.log("🚫 Contractor not authenticated, redirecting...");
+      navigate("/contractor/login");
+    }
+  }, [contractor, navigate]);
 
 
   useEffect(() => {
     if (!contractor?.user_uid) return;
     fetchWorkorders(activeTab);
   }, [contractor, activeTab]);
+  
+  useEffect(() => {
+    if (
+      location.state?.openDetails &&
+      location.state?.workorderId &&
+      data.length > 0
+    ) {
+      const row = data.find(
+        (item) =>
+          item.WORKORDER_ID === location.state.workorderId ||
+          item.workorder_id === location.state.workorderId ||
+          item.workorder === location.state.workorderId
+      );
+
+      if (row) {
+        handleWorkorderClick(row);
+
+        // Clear navigation state so it doesn't reopen on refresh/back
+        navigate(location.pathname, {
+          replace: true,
+          state: {},
+        });
+      }
+    }
+  }, [data, location.state]);
 
   const fetchWorkorders = async (tab) => {
     try {
@@ -527,7 +548,7 @@ Purchase Order sent to contractor email`
                         rows="3"
                         value={contractorRemarks}
                         onChange={(e) =>
-                          setContractorRemarks(e.target.value)
+                          setContractorRemarks(cleanRemarks(e.target.value))
                         }
                       />
                     </div>
@@ -604,7 +625,7 @@ Purchase Order sent to contractor email`
                       <textarea
                         rows="3"
                         value={openRemarks}
-                        onChange={(e) => setOpenRemarks(e.target.value)}
+                        onChange={(e) => setOpenRemarks(cleanRemarks(e.target.value))}
                       />
                     </div>
 
