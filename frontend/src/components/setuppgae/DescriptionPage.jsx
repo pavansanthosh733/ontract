@@ -18,6 +18,7 @@ const DescriptionPage = () => {
   const [items, setItems] = useState([]);
   const [types, setTypes] = useState([]);
   const [usageMap, setUsageMap] = useState({});
+  const cleanInput = (value) => value.replace(/[^A-Za-z0-9.,\-&() ]/g, "");
 
   const [editingId, setEditingId] = useState(null);
   // ✅ Filters for Existing Descriptions Table
@@ -95,9 +96,10 @@ const [filters, setFilters] = useState({
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    const cleaned = name === "DESCRIPTION" ? cleanInput(value) : value;
 
     setFormData((prev) => {
-      let updated = { ...prev, [name]: value };
+      let updated = { ...prev, [name]: cleaned };
       if (name === "CATEGORY_ID") updated.ITEM_ID = updated.TYPE_ID = "";
       if (name === "ITEM_ID") updated.TYPE_ID = "";
       return updated;
