@@ -56,12 +56,14 @@ const [filters, setFilters] = useState({
     fetchStates();
   }, []);
 
+  const cleanInput = (value) => value.replace(/[^A-Za-z0-9.,\-&() ]/g, "");
   /* ==========================
      Add Form Change
   =========================== */
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const cleaned = name === "STATE_NAME" ? cleanInput(value) : value;
+    setFormData((prev) => ({...prev,[name]: cleaned,}));
   };
 
   /* ==========================
