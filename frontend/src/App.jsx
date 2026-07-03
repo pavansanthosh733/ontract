@@ -112,9 +112,9 @@ const isApk = params.get("source") === "apk";
             element={<ForgotPassword setUser={setUser} />}
           />
           <Route
-  path="/provider_home/profile"
-  element={<ProviderProfile user={user} />}
-/>
+            path="/provider_home/profile"
+            element={<ProviderProfile user={user} />}
+          />
 
           {/* Provider nested */}
           <Route path="/provider_home" element={<ProviderHome user={user} />}>
@@ -123,10 +123,7 @@ const isApk = params.get("source") === "apk";
               path="services"
               element={<ProviderServices user={user} />}
             />
-            <Route
-              path="notifications"
-              element={<Notifications user={user} />}
-            />
+            <Route path="notifications" element={<Notifications />} />
             <Route path="providerrating" element={<ProviderRating />} />
             <Route path="workorders" element={<ProviderWorkOrders />} />
             <Route path="invoice" element={<ProviderInvoice />} />
