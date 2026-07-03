@@ -50,6 +50,7 @@ const CreateWorkOrder = () => {
   // ===============================
   // Initial load
   // ===============================
+  const cleanInput = (value) => value.replace(/[^A-Za-z0-9.,\-&() ]/g, "");
   useEffect(() => {
     const loadInitial = async () => {
       try {
@@ -231,7 +232,9 @@ const CreateWorkOrder = () => {
   // Helpers
   // ===============================
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    const cleaned = name === "REMARKS" ? cleanInput(value) : value;
+    setFormData((prev) => ({...prev,[name]: cleaned,}));
   };
 
   const handleReset = () => window.location.reload();
@@ -314,21 +317,16 @@ const handleImageChange = (files) => {
       formDataToSend.append("ITEM_ID", selectedItemId);
       formDataToSend.append("TYPE_ID", selectedTypeId);
       formDataToSend.append("DESCRIPTION_ID", selectedDescriptionId);
-
       formDataToSend.append("REGION_ID", selectedRegionId);
       formDataToSend.append("STATE_ID", selectedStateId);
       formDataToSend.append("CITY_ID", selectedCityId);
-
       formDataToSend.append("CLIENT", selectedClient);
       formDataToSend.append( "STANDARD_RATE_ID", selectedRate?.standard_rate_id || "" );
       formDataToSend.append( "RATE_SNAPSHOT", selectedRate?.price_rm || "" );
-      formDataToSend.append("ADDRESS", address);
-      formDataToSend.append(
-        "REQUESTED_TIME_CLOSING",
-        formData.REQUESTED_TIME_CLOSING
-      );
-      formDataToSend.append("REMARKS", formData.REMARKS);
-      formDataToSend.append("DETAILED_DESCRIPTION",detailedDescription || "");
+      formDataToSend.append("ADDRESS",cleanInput(address).trim());
+      formDataToSend.append("REQUESTED_TIME_CLOSING",formData.REQUESTED_TIME_CLOSING);
+      formDataToSend.append("REMARKS",cleanInput(formData.REMARKS).trim());
+      formDataToSend.append("DETAILED_DESCRIPTION",cleanInput(detailedDescription).trim());
       formDataToSend.append("STATUS", formData.STATUS);
       
       formDataToSend.append(
@@ -384,7 +382,22 @@ const handleImageChange = (files) => {
         }
         return;
       }
+      
+      // ================================
+      // VALIDATION MESSAGE
+      // ================================
 
+      if (data.success === false) {
+        await Swal.fire({
+          icon: "warning",
+          title: "Validation",
+          text: data.message,
+          confirmButtonText: "OK",
+        });
+
+        window.location.reload();
+        return;
+      }
 
       if (!res.ok) {
         throw new Error(data?.error || "Failed to create workorder");
@@ -392,7 +405,7 @@ const handleImageChange = (files) => {
 
           const workorderNumber = data?.workorder?.workorder;
 
-          await Swal.fire({
+          await Swal.fire({s
             title: "✅ Workorder Created",
             html: `
               <div style="font-size:14px;">
@@ -599,7 +612,7 @@ const handleImageChange = (files) => {
                 placeholder="Enter Address"
                 required
                 value={address}
-                onChange={(e) => setAddress(e.target.value)}
+                onChange={(e) => setAddress(cleanInput(e.target.value))}
               />
               <span className="required-star">★</span>
             </div>
@@ -653,7 +666,7 @@ const handleImageChange = (files) => {
                 placeholder="Detailed Description"
                 value={detailedDescription}
                 onChange={(e) =>
-                  setDetailedDescription(e.target.value)
+                  setDetailedDescription(cleanInput(e.target.value))
                 }
                 rows={3}
               />
