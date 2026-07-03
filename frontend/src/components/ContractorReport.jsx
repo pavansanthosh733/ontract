@@ -50,8 +50,9 @@ const ContractorReport = () => {
     setShowDropdown(true);
   };
 
+  const cleanInput = (value) => value.replace(/[^A-Za-z0-9@._\-&() ]/g, "");
   const handleContractorChange = (e) => {
-    const value = e.target.value;
+    const value = cleanInput(e.target.value);
     setContractorQuery(value);
     setContractorId("");
     setShowDropdown(true);
