@@ -1,25 +1,26 @@
-// components/Notifications.jsx
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiGet, apiPost } from "../api";
+import { useUser } from "../context/UserContext";
 
-function Notifications({ user }) {
+function Notifications() {
+  const { user, loading: userLoading } = useUser();
   const navigate = useNavigate();
-
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("unread");
 
   useEffect(() => {
-    if (!user) return;
+    if (userLoading || !user?.email_id) return;
+
     fetchNotifications();
-  }, [user]);
+  }, [userLoading, user]);
 
   // --------------------------
   // FETCH NOTIFICATIONS
   // --------------------------
+  console.log("Notifications user:", user);
   const fetchNotifications = async () => {
     try {
       setLoading(true);
