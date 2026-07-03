@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from apscheduler.schedulers.background import BackgroundScheduler
 from sqlalchemy import text
 from app.models.database import db
+from app.models.admin_model import AdminModel
 from app.controllers.workorder_mail_controller import (
     handle_send_acceptance_mail_auto,
     handle_send_admin_no_acceptance_mail
@@ -35,8 +36,11 @@ def reassign_expired_workorders(app):
             # (1) MARK EXPIRED ASSIGNMENTS
             # ---------------------------------------------------
             mark_sql = text("""
-                UPDATE workorder_assignment_t SET assignment_status = 'EXPIRED'
-                WHERE assignment_status = 'PENDING' AND expiry_time < CURRENT_TIMESTAMP;
+                UPDATE workorder_assignment_t wa SET assignment_status = 'EXPIRED'
+                from workorder_t wt  WHERE wa."WORKORDER_ID" = wt.workorder 
+                AND wa.assignment_status = 'PENDING' 
+                AND wt.ticket_assignment_type = 'auto'
+                AND expiry_time < CURRENT_TIMESTAMP;
             """)
 
             res = db.session.execute(mark_sql)
@@ -94,9 +98,9 @@ def reassign_expired_workorders(app):
                 # (5) FETCH CONTRACTORS FOR REGION + CATEGORY
                 # ---------------------------------------------------
                 provider_sql = text("""
-                    SELECT a.user_uid AS provider_id,a.name AS full_name,a.email_id,b.service_rate,
-                    c.region_name,d.category_name,e.item_name,f.type_name,g.description_name,
-                    h.state_name,i.city_name FROM users_t a
+                    SELECT a.user_uid AS provider_id,a.name AS full_name,a.email_id,a.service_type,
+                    b.service_rate,c.region_name,d.category_name,e.item_name,f.type_name,
+                    g.description_name,h.state_name,i.city_name FROM users_t a
                     JOIN services_t b ON a.user_uid = b.user_uid
                     JOIN region_master_t c ON b.region = c.region_name
                     JOIN category_master_t d ON b.category_name = d.category_name
@@ -191,15 +195,49 @@ def reassign_expired_workorders(app):
                     # ✅ SEND EMAIL AFTER ASSIGNMENT
                     try:
                         base_url = os.getenv("PUBLIC_BASE_URL", "http://localhost:5000")
-
                         handle_send_acceptance_mail_auto(wr,p,expiry_minutes,base_url)
                         logging.info(f"[AUTO] Email sent to {p.email_id}")
 
                     except Exception as e:
                         logging.exception(f"[AUTO] Email failed: {e}")
 
+
+                    # =====================================================
+                    # SAVE DATABASE NOTIFICATION
+                    # =====================================================
+
+                    try:
+
+                        if str(p.service_type) == "0":
+                            recipient_type = "provider"
+                            action_url = "/provider_home/workorders"
+                        else:
+                            recipient_type = "contractor"
+                            action_url = "/contractor/dashboard/companyworkorders"
+
+                        AdminModel.insert_admin_message(
+                            email=p.email_id,
+                            recipient_type=recipient_type,
+                            title="New Work Order Assigned",
+                            message=f"Work Order {workorder_code} has been assigned to you.",
+                            notification_type="workorder_assigned",
+                            reference_type="workorder",
+                            reference_id=provider_id,
+                            action_url=action_url
+                        )
+
+                        logging.info(
+                            f"[AUTO] Notification inserted for {p.email_id}"
+                        )
+
+                    except Exception as e:
+                        logging.exception(
+                            f"[AUTO] Failed to insert notification: {e}"
+                        )
+
                     break
 
+                    
                 # ---------------------------------------------------
                 # (8) ESCALATION LOGIC → WHEN NO PROVIDERS ACCEPT
                 # ---------------------------------------------------
@@ -259,9 +297,7 @@ def reassign_expired_workorders(app):
 
                             # Fetch admin email
                             admin_sql = text("""
-                                SELECT email
-                                FROM admins_t
-                                WHERE admin_id = :aid
+                                SELECT email FROM admins_t WHERE admin_id = :aid
                             """)
 
                             admin_row = db.session.execute(
