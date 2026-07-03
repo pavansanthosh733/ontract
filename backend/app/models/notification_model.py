@@ -2,7 +2,7 @@ from sqlalchemy.sql import text
 from app.models.database import db
 
 class NotificationModel:
-    #added
+    
     @staticmethod
     def get_all(email):
         sql = text("""
@@ -12,7 +12,7 @@ class NotificationModel:
         """)
 
         rows = db.session.execute(sql, {"email": email}).fetchall()
-        return [dict(r._mapping) for r in rows]D
+        return [dict(r._mapping) for r in rows]
 
     @staticmethod
     def unread_count(email):
