@@ -36,6 +36,8 @@ export default function AdminStandardRates() {
   // validations
   const [errors, setErrors] = useState({});
   const fileInputRef = useRef(null);
+  const cleanInput = (value = "") => value.replace(/[^A-Za-z0-9.,\-&() ]/g, "");
+  const cleanNumber = (value = "") => value.replace(/[^0-9.]/g, "");
 
   const fetchCategories = async () => {
     try {
@@ -259,6 +261,10 @@ export default function AdminStandardRates() {
 
       const payload = {
         ...form,
+        client: cleanInput(form.client),
+        brand: cleanInput(form.brand),
+        sub_type: cleanInput(form.sub_type),
+        unit: cleanInput(form.unit),
 
         category:
           categories.find(
@@ -410,7 +416,7 @@ export default function AdminStandardRates() {
                       className="form-control form-control-sm"
                       value={tradeFilter}
                       onChange={(e) => {
-                        setTradeFilter(e.target.value);
+                        setTradeFilter(cleanInput(e.target.value));
                         setPage(1);
                       }}
                     />
@@ -422,7 +428,7 @@ export default function AdminStandardRates() {
                       className="form-control form-control-sm"
                       value={catFilter}
                       onChange={(e) => {
-                        setCatFilter(e.target.value);
+                        setCatFilter(cleanInput(e.target.value));
                         setPage(1);
                       }}
                     />
@@ -434,7 +440,7 @@ export default function AdminStandardRates() {
                       className="form-control form-control-sm"
                       value={typeFilter}
                       onChange={(e) => {
-                        setTypeFilter(e.target.value);
+                        setTypeFilter(cleanInput(e.target.value));
                         setPage(1);
                       }}
                     />
@@ -446,7 +452,7 @@ export default function AdminStandardRates() {
                       className="form-control form-control-sm"
                       value={subTypeFilter}
                       onChange={(e) => {
-                        setSubTypeFilter(e.target.value);
+                        setSubTypeFilter(cleanInput(e.target.value));
                         setPage(1);
                       }}
                     />
@@ -458,7 +464,7 @@ export default function AdminStandardRates() {
                       className="form-control form-control-sm"
                       value={brandFilter}
                       onChange={(e) => {
-                        setBrandFilter(e.target.value);
+                        setBrandFilter(cleanInput(e.target.value));
                         setPage(1);
                       }}
                     />
@@ -470,7 +476,7 @@ export default function AdminStandardRates() {
                       className="form-control form-control-sm"
                       value={search}
                       onChange={(e) => {
-                        setSearch(e.target.value);
+                        setSearch(cleanInput(e.target.value));
                         setPage(1);
                       }}
                     />
@@ -491,7 +497,7 @@ export default function AdminStandardRates() {
                       className="form-control form-control-sm"
                       value={clientFilter}
                       onChange={(e) => {
-                        setClientFilter(e.target.value);
+                        setClientFilter(cleanInput(e.target.value));
                         setPage(1);
                       }}
                     />
@@ -862,9 +868,27 @@ export default function AdminStandardRates() {
                         <input
                           className={`form-control ${errors[key] ? "is-invalid" : ""}`}
                           value={form[key] || ""}
-                          onChange={(e) =>
-                            setForm({ ...form, [key]: e.target.value })
-                          }
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            let cleaned = value;
+
+                              if (
+                                  ["client", "brand", "sub_type"].includes(key)
+                              ) {
+                                  cleaned = cleanInput(value);
+                              }
+
+                              if (
+                                  ["price_rm", "copper_pipe_price","unit"].includes(key)
+                              ) {
+                                  cleaned = cleanNumber(value);
+                              }
+
+                            setForm({
+                              ...form,
+                              [key]: cleaned,
+                            });
+                          }}
                         />
 
                       )}
