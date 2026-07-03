@@ -2,7 +2,7 @@ from sqlalchemy.sql import text
 from app.models.database import db
 
 class NotificationModel:
-
+    #added
     @staticmethod
     def get_all(email):
         sql = text("""
