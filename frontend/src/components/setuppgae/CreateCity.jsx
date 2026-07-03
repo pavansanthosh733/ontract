@@ -57,8 +57,10 @@ const [filters, setFilters] = useState({
     fetchCities();
   }, []);
 
+  const cleanInput = (value) => value.replace(/[^A-Za-z0-9.,\-&() ]/g, "");
   const handleChange = (e) => {
     const { name, value } = e.target;
+     const cleaned = name === "CITY_NAME" ? cleanInput(value) : value;
 
     if (name === "REGION_ID") {
       setFormData({
@@ -68,7 +70,10 @@ const [filters, setFilters] = useState({
       });
       fetchStatesByRegion(value);
     } else {
-      setFormData({ ...formData, [name]: value });
+      setFormData((prev) => ({
+        ...prev,
+        [name]: cleaned,
+      }));
     }
   };
 
