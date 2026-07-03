@@ -84,7 +84,7 @@ const AIReport = () => {
   const [report, setReport] = useState(null);
   const [error, setError] = useState("");
   const [lastRunAt, setLastRunAt] = useState("");
-
+  const cleanPromptInput = (value) => {return value.replace(/[<>'"`;\\]/g, "");};
   const rows = useMemo(() => {
     if (!report) return [];
     if (Array.isArray(report.data)) return report.data;
@@ -196,7 +196,7 @@ const AIReport = () => {
                 className="ai-input ai-textarea"
                 rows="6"
                 value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
+                onChange={(e) => setPrompt(cleanPromptInput(e.target.value))}
                 onKeyDown={handlePromptKeyDown}
                 placeholder="Example: show top 4 contractors with only contractor name and open workorders"
               />
