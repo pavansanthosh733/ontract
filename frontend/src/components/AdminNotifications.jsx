@@ -20,8 +20,8 @@ function AdminNotifications() {
   const [adminRemarks, setAdminRemarks] = useState("");
   const [adminSubmitting, setAdminSubmitting] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
-const [ratingWorkorderData, setRatingWorkorderData] = useState(null);
-
+  const [ratingWorkorderData, setRatingWorkorderData] = useState(null);
+  const cleanInput = (value) => {return value.replace(/[^A-Za-z0-9-.& ]/g, "");};
   /* =========================================================
      TOGGLE CONTRACTOR
   ========================================================= */
@@ -544,7 +544,7 @@ setRatingWorkorderData(ratingData);
                       placeholder="Enter admin remarks..."
                       value={adminRemarks}
                       onChange={(e) =>
-                        setAdminRemarks(e.target.value)
+                        setAdminRemarks(cleanInput(e.target.value))
                       }
                     />
 
