@@ -5,13 +5,14 @@ import Notifications from "../Notifications";
 
 function CompanyNotifications() {
   const { email, contractor } = useOutletContext();
-  const userEmail = contractor?.email_id || email; // safe fallback
+  const userEmail = contractor?.email_id || email;
+  console.log("check this page is working or not",userEmail)
 
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <Notifications
-        user={{ email: userEmail }} 
+        user={{ email_id: userEmail }}
         apiPrefix="/api/contractor" 
         endpoints={{
           list: "contractor_notifications",
