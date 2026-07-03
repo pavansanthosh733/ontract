@@ -60,13 +60,12 @@ const CreateZone = () => {
   /* ==========================================
      HANDLE INPUT CHANGE
   ========================================== */
+  const cleanInput = (value) => value.replace(/[^A-Za-z0-9.,\-&() ]/g, "");
   const handleChange = async (e) => {
     const { name, value } = e.target;
+    const cleaned = name === "zone_name" ? cleanInput(value) : value;
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({...prev,[name]: cleaned,}));
 
     // ✅ FIX: DO NOT RESET selectedCities
     if (name === "state_id") {
