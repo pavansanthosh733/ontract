@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { apiGet, apiPost } from "../api";
 import { useUser } from "../context/UserContext";
 
-function Notifications() {
-  const { user, loading: userLoading } = useUser();
+function Notifications({ user: passedUser }) {
+  const { user: contextUser, loading: userLoading } = useUser();
+  const user = passedUser || contextUser;
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
