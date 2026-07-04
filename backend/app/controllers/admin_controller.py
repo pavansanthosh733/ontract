@@ -4,6 +4,7 @@ import tempfile
 import logging
 import magic
 import jwt
+import traceback
 import uuid 
 from datetime import datetime, timedelta, timezone
 from app.utils.current_admin import set_admin
@@ -15,6 +16,8 @@ from app.models.admin_model import AdminModel
 from app.utils.email_utils import send_email, send_admin_otp_email
 from app.utils.pdf_utils import generate_certificate_pdf
 from app.utils.auth import revoke_token
+from app.utils.jwt_utils import (create_access_token, create_refresh_token)
+from app.models.refresh_token_model import RefreshTokenModel
 
 
 class AdminController:
@@ -72,21 +75,31 @@ class AdminController:
 
         AdminModel.delete_otp(email)
 
-        access_token = jwt.encode(
-            {
-                "jti": str(uuid.uuid4()),
-                "user_id": admin["admin_id"],
-                "email": admin["email"],
-                "role": "admin",
-                "exp": datetime.utcnow() + timedelta(hours=8)
-            },
-            current_app.config["SECRET_KEY"],
-            algorithm="HS256"
+        # -----------------------------------
+        # Generate Access Token
+        # -----------------------------------
+        access_token = create_access_token(
+            user_id=admin["admin_id"],
+            role="admin",
+            email=admin["email"]
         )
 
-        AdminModel.update_access_token(
-            admin["admin_id"],
-            access_token
+        # -----------------------------------
+        # Generate Refresh Token
+        # -----------------------------------
+        refresh_token, refresh_expiry = create_refresh_token(
+            user_id=admin["admin_id"],
+            role="admin"
+        )
+
+        # -----------------------------------
+        # Save Refresh Token
+        # -----------------------------------
+        RefreshTokenModel.save_refresh_token(
+            user_id=admin["admin_id"],
+            role="admin",
+            refresh_token=refresh_token,
+            expires_at=refresh_expiry
         )
 
         admin_data = {
@@ -95,27 +108,34 @@ class AdminController:
             if k not in ("password_hash", "access_token")
         }
 
-        # -----------------------------
-        # CREATE RESPONSE
-        # -----------------------------
         response = make_response(jsonify({
             "success": True,
             "message": "OTP verified successfully",
-            "admin": admin_data,
-            "access_token": access_token 
+            "admin": admin_data
         }))
 
-        # -----------------------------
-        # SET COOKIE
-        # -----------------------------
+        # -----------------------------------
+        # Access Token Cookie
+        # -----------------------------------
         response.set_cookie(
-                "admin_access_token",
-                value=access_token,
-                httponly=True,
-                secure=True,
-                samesite="None",
-                path="/",
-                max_age=8 * 60 * 60
+            "admin_access_token",
+            value=access_token,
+            httponly=True,
+            secure=True,
+            samesite="None",
+            path="/"
+        )
+
+        # -----------------------------------
+        # Refresh Token Cookie
+        # -----------------------------------
+        response.set_cookie(
+            "admin_refresh_token",
+            value=refresh_token,
+            httponly=True,
+            secure=True,
+            samesite="None",
+            path="/"
         )
 
         return response
@@ -127,57 +147,203 @@ class AdminController:
     
     @staticmethod
     def logout():
+
         from flask import request, current_app, make_response, jsonify
         import jwt
         from datetime import datetime, timezone
+        from app.models.refresh_token_model import RefreshTokenModel
 
-        token = request.cookies.get("admin_access_token")
+        access_token = request.cookies.get("admin_access_token")
+        refresh_token = request.cookies.get("admin_refresh_token")
 
-        if not token:
-            return {
-                "success": True,
-                "message": "Already logged out"
-            }, 200
-
-        try:
-            payload = jwt.decode(
-                token,
-                current_app.config["SECRET_KEY"],
-                algorithms=["HS256"]
-            )
-
-            revoke_token(
-                jti=payload["jti"],
-                user_id=payload["user_id"],
-                role=payload["role"],
-                expires_at=datetime.fromtimestamp(
-                    payload["exp"],
-                    timezone.utc
+        # -----------------------------------
+        # Revoke Access Token
+        # -----------------------------------
+        if access_token:
+            try:
+                payload = jwt.decode(
+                    access_token,
+                    current_app.config["SECRET_KEY"],
+                    algorithms=["HS256"]
                 )
-            )
 
-            # DO NOT clear access_token from admins_t
+                revoke_token(
+                    jti=payload["jti"],
+                    user_id=payload["user_id"],
+                    role=payload["role"],
+                    expires_at=datetime.fromtimestamp(
+                        payload["exp"],
+                        timezone.utc
+                    )
+                )
 
-        except jwt.ExpiredSignatureError:
-            pass
+            except jwt.ExpiredSignatureError:
+                pass
 
-        except jwt.InvalidTokenError:
-            pass
+            except jwt.InvalidTokenError:
+                pass
 
+        # -----------------------------------
+        # Revoke Refresh Token
+        # -----------------------------------
+        if refresh_token:
+            try:
+                RefreshTokenModel.revoke_refresh_token(
+                    refresh_token
+                )
+            except Exception as e:
+                print("Refresh revoke error:", e)
+
+        # -----------------------------------
+        # Response
+        # -----------------------------------
         response = make_response(jsonify({
             "success": True,
             "message": "Logged out successfully"
         }))
 
+        # -----------------------------------
+        # Delete Access Cookie
+        # -----------------------------------
         response.delete_cookie(
             "admin_access_token",
             path="/",
-            httponly=True,
             secure=True,
+            httponly=True,
+            samesite="None"
+        )
+
+        # -----------------------------------
+        # Delete Refresh Cookie
+        # -----------------------------------
+        response.delete_cookie(
+            "admin_refresh_token",
+            path="/",
+            secure=True,
+            httponly=True,
             samesite="None"
         )
 
         return response, 200
+    
+    @staticmethod
+    def refresh():
+        
+        from flask import request, make_response, jsonify
+        print("========== REFRESH ==========")
+        print("request.cookies =", request.cookies)
+        print("Cookie header =", request.headers.get("Cookie"))
+        print("=============================")
+        from app.utils.jwt_utils import (
+            verify_token,
+            create_access_token,
+            create_refresh_token
+        )
+        from app.models.refresh_token_model import RefreshTokenModel
+
+        refresh_token = request.cookies.get("admin_refresh_token")
+        if not refresh_token:
+            return {
+                "success": False,
+                "message": "Refresh token missing"
+            }, 401
+
+        try:
+
+            # -----------------------------------
+            # Verify Refresh JWT
+            # -----------------------------------
+            payload = verify_token(refresh_token)
+
+            if payload.get("type") != "refresh":
+                return {
+                    "success": False,
+                    "message": "Invalid refresh token"
+                }, 401
+
+            # -----------------------------------
+            # Verify token exists in DB
+            # -----------------------------------
+            token = RefreshTokenModel.get_refresh_token(refresh_token)
+
+            if not token:
+                return {
+                    "success": False,
+                    "message": "Refresh token revoked"
+                }, 401
+
+            # -----------------------------------
+            # De - active old token
+            # -----------------------------------
+            RefreshTokenModel.revoke_refresh_token(refresh_token)
+
+            # -----------------------------------
+            # Generate NEW Access Token
+            # -----------------------------------
+            access_token = create_access_token(
+                user_id=payload["user_id"],
+                role=payload["role"]
+            )
+
+            # -----------------------------------
+            # Generate NEW Refresh Token
+            # -----------------------------------
+            refresh_token_new, refresh_expiry = create_refresh_token(
+                user_id=payload["user_id"],
+                role=payload["role"]
+            )
+
+            # -----------------------------------
+            # Save NEW Refresh Token
+            # -----------------------------------
+            RefreshTokenModel.save_refresh_token(
+                user_id=payload["user_id"],
+                role=payload["role"],
+                refresh_token=refresh_token_new,
+                expires_at=refresh_expiry
+            )
+
+            # -----------------------------------
+            # Response
+            # -----------------------------------
+            response = make_response(jsonify({
+                "success": True,
+                "message": "Access token refreshed"
+            }))
+
+            # -----------------------------------
+            # New Access Token Cookie
+            # -----------------------------------
+            response.set_cookie(
+                "admin_access_token",
+                value=access_token,
+                httponly=True,
+                secure=True,
+                samesite="None",
+                path="/"
+            )
+
+            # -----------------------------------
+            # New Refresh Token Cookie
+            # -----------------------------------
+            response.set_cookie(
+                "admin_refresh_token",
+                value=refresh_token_new,
+                httponly=True,
+                secure=True,
+                samesite="None",
+                path="/"
+            )
+
+            return response
+
+        except Exception as e:
+            traceback.print_exc()
+
+            return {
+                "success": False,
+                "message": str(e)
+            }, 401
             
         
         

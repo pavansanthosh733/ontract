@@ -24,10 +24,8 @@ PUBLIC_ROUTES = [
 
     # ✅ Health check
     "/api/health",
-
     # ✅ File uploads
     "/uploads/",
-
     # ✅ Testdb
     "/api/testdb",
 
@@ -35,11 +33,11 @@ PUBLIC_ROUTES = [
     # ✅ Admin auth routes
     "/api/admin/login",
     "/api/admin/verify_otp",
-    "/api/admin/dev-login",
     "/api/admin/resend_otp",
-    "/api/admin/send-otp",
+    "/api/admin/send_otp",
     "/api/workorders/admin/",
     "/api/admin/logout",
+    "/api/admin/refresh",
       
 
     # ✅ Provider auth routes
@@ -51,8 +49,8 @@ PUBLIC_ROUTES = [
     "/api/forgot",
     "/api/reset-password",
     "/api/verify-reset-otp",
-     "/api/profile",
-    
+    "/api/refresh",
+    "/api/logout",
 
     # ✅ Contractor auth routes
     "/api/contractor/verify_otp",
@@ -61,11 +59,9 @@ PUBLIC_ROUTES = [
     "/api/contractor/activate",
     "/api/contractor/resend_otp",
     "/api/contractor/logout",
-    "/api/contractor/",
+    "/api/contractor/refresh",
+    
 
-
-    # ✅ Provider logout
-    "/api/logout",
 
     # ✅ Add these missing routes causing 401
     "/api/dashboard/completed-orders",        # ✅
@@ -117,20 +113,26 @@ PUBLIC_ROUTES = [
 # 🔑 HELPER — extract token from cookie OR header
 # ==============================================
 def _extract_token():
-    """
-    1st: httpOnly cookie (secure)
-    2nd: Authorization header (fallback during transition)
-    """
-    # Primary: httpOnly cookie
-    token = (
-        request.cookies.get("access_token") or
-        request.cookies.get("contractor_access_token") or
-        request.cookies.get("admin_access_token")
-      )
+
+    # ------------------------------------------
+    # Choose cookie based on request path
+    # ------------------------------------------
+    if request.path.startswith("/api/admin"):
+        token = request.cookies.get("admin_access_token")
+
+    elif request.path.startswith("/api/contractor"):
+        token = request.cookies.get("contractor_access_token")
+
+    else:
+        # Provider/User APIs
+        token = request.cookies.get("user_access_token")
+
     if token:
         return token
 
-    # Fallback: Authorization header
+    # ------------------------------------------
+    # Fallback to Authorization header
+    # ------------------------------------------
     auth_header = request.headers.get("Authorization")
     if auth_header and auth_header.startswith("Bearer "):
         return auth_header.split(" ")[1]
@@ -175,10 +177,8 @@ def revoke_token(jti: str, user_id: str, role: str, expires_at: datetime):
             from sqlalchemy import text
             conn.execute(
                 text("""
-                    INSERT INTO revoked_tokens_t 
-                        (jti, user_id, role, revoked_at, expires_at)
-                    VALUES 
-                        (:jti, :user_id, :role, NOW(), :expires_at)
+                    INSERT INTO revoked_tokens_t (jti, user_id, role, revoked_at, expires_at)
+                    VALUES (:jti, :user_id, :role, NOW(), :expires_at)
                     ON CONFLICT (jti) DO NOTHING
                 """),
                 {

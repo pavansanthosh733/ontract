@@ -18,6 +18,8 @@ from app.utils.file_utils import save_uploaded_file
 from app.models.contractor_model import ContractorModel
 from app.models.provider_model import ProviderModel 
 from flask import current_app, make_response, jsonify, request
+from app.models.refresh_token_model import RefreshTokenModel
+from app.utils.jwt_utils import (create_access_token,create_refresh_token,verify_token)
 from app.utils.auth import revoke_token
 from app.utils.encrypt_utils import cipher
 from sqlalchemy.exc import IntegrityError
@@ -173,53 +175,53 @@ class ContractorController:
 
     @staticmethod
     def verify_otp(data):
+        from app.utils.jwt_utils import (
+            create_access_token,
+            create_refresh_token
+        )
+        from app.models.refresh_token_model import RefreshTokenModel
+
         email = data.get("email")
         otp = data.get("otp")
 
         if not email or not otp:
             return {"error": "Email and OTP required"}, 400
 
-        # ✅ Validate OTP from database
+        # Validate OTP
         record = ContractorModel.validate_otp(email)
 
         if not record or record["otp_code"] != otp:
             return {"error": "Invalid or expired OTP"}, 400
 
-        # Delete OTP after successful verification
+        # Delete OTP
         ContractorModel.delete_otp(email)
 
-        # Get contractor details
+        # Contractor details
         contractor = ContractorModel.get_basic_info(email)
 
         if not contractor:
             return {"error": "Contractor not found"}, 404
 
-        # Generate JWT
-        token = jwt.encode(
-            {
-                "user_id": contractor["user_uid"],
-                "role": "contractor",
-                "exp": datetime.utcnow() + timedelta(hours=24)
-            },
-            current_app.config["SECRET_KEY"],
-            algorithm="HS256"
+        # Create Access Token
+        access_token = create_access_token(
+            user_id=contractor["user_uid"],
+            role="contractor"
         )
 
-        # Save JWT in users_t
-        db.session.execute(
-            text("""
-                UPDATE users_t
-                SET token = :token
-                WHERE user_uid = :user_uid
-            """),
-            {
-                "token": token,
-                "user_uid": contractor["user_uid"]
-            }
+        # Create Refresh Token
+        refresh_token, refresh_expiry = create_refresh_token(
+            user_id=contractor["user_uid"],
+            role="contractor"
         )
-        db.session.commit()
 
-        # Create response for code 200
+        # Save Refresh Token
+        RefreshTokenModel.save_refresh_token(
+            user_id=contractor["user_uid"],
+            role="contractor",
+            refresh_token=refresh_token,
+            expires_at=refresh_expiry
+        )
+
         response = make_response(jsonify({
             "success": True,
             "message": "OTP verified successfully",
@@ -227,59 +229,170 @@ class ContractorController:
             "contractor": contractor
         }))
 
-        # Store JWT in HttpOnly cookie
         response.set_cookie(
             "contractor_access_token",
-            value=token,
+            value=access_token,
             httponly=True,
             secure=True,
             samesite="None",
-            path="/",
-            max_age=24 * 60 * 60
+            path="/"
+        )
+
+        response.set_cookie(
+            "contractor_refresh_token",
+            value=refresh_token,
+            httponly=True,
+            secure=True,
+            samesite="None",
+            path="/"
         )
 
         return response, 200
+    
+    @staticmethod
+    def refresh():
+
+        from flask import request, make_response, jsonify
+        from app.utils.jwt_utils import (
+            verify_token,
+            create_access_token,
+            create_refresh_token
+        )
+        from app.models.refresh_token_model import RefreshTokenModel
+
+        refresh_token = request.cookies.get("contractor_refresh_token")
+
+        if not refresh_token:
+            return {
+                "success": False,
+                "message": "Refresh token missing"
+            }, 401
+
+        try:
+
+            # Verify Refresh JWT
+            payload = verify_token(refresh_token)
+
+            if payload.get("type") != "refresh":
+                return {
+                    "success": False,
+                    "message": "Invalid refresh token"
+                }, 401
+
+            # Verify token exists in DB
+            token = RefreshTokenModel.get_refresh_token(refresh_token)
+
+            if not token:
+                return {
+                    "success": False,
+                    "message": "Refresh token revoked"
+                }, 401
+
+            # Revoke OLD refresh token
+            RefreshTokenModel.revoke_refresh_token(refresh_token)
+
+            # Create NEW access token
+            access_token = create_access_token(
+                user_id=payload["user_id"],
+                role=payload["role"]
+            )
+
+            # Create NEW refresh token
+            refresh_token_new, refresh_expiry = create_refresh_token(
+                user_id=payload["user_id"],
+                role=payload["role"]
+            )
+
+            # Save NEW refresh token
+            RefreshTokenModel.save_refresh_token(
+                user_id=payload["user_id"],
+                role=payload["role"],
+                refresh_token=refresh_token_new,
+                expires_at=refresh_expiry
+            )
+
+            response = make_response(jsonify({
+                "success": True,
+                "message": "Access token refreshed"
+            }))
+
+            response.set_cookie(
+                "contractor_access_token",
+                value=access_token,
+                httponly=True,
+                secure=True,
+                samesite="None",
+                path="/"
+            )
+
+            response.set_cookie(
+                "contractor_refresh_token",
+                value=refresh_token_new,
+                httponly=True,
+                secure=True,
+                samesite="None",
+                path="/"
+            )
+
+            return response
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+
+            return {
+                "success": False,
+                "message": str(e)
+            }, 401
 
     @staticmethod
     def logout():
-        token = request.cookies.get("access_token")
 
-        if not token:
-            response = make_response(jsonify({
-                "success": True,
-                "message": "Already logged out"
-            }))
-            return response
+        from flask import request, current_app, make_response, jsonify
+        import jwt
+        from datetime import datetime, timezone
 
-        try:
-            payload = jwt.decode(
-                token,
-                current_app.config["SECRET_KEY"],
-                algorithms=["HS256"]
-            )
+        from app.utils.auth import revoke_token
+        from app.models.refresh_token_model import RefreshTokenModel
 
-            revoke_token(
-                jti=payload["jti"],
-                user_id=payload["user_id"],
-                role=payload["role"],
-                expires_at=datetime.fromtimestamp(
-                    payload["exp"],
-                    timezone.utc
+        access_token = request.cookies.get("contractor_access_token")
+        refresh_token = request.cookies.get("contractor_refresh_token")
+
+        # -----------------------------------
+        # Revoke Access Token
+        # -----------------------------------
+        if access_token:
+            try:
+                payload = jwt.decode(
+                    access_token,
+                    current_app.config["SECRET_KEY"],
+                    algorithms=["HS256"]
                 )
-            )
 
-            db.session.execute(
-                text("""
-                    UPDATE users_t
-                    SET token = NULL
-                    WHERE user_uid = :uid
-                """),
-                {"uid": payload["user_id"]}
-            )
-            db.session.commit()
+                revoke_token(
+                    jti=payload["jti"],
+                    user_id=payload["user_id"],
+                    role=payload["role"],
+                    expires_at=datetime.fromtimestamp(
+                        payload["exp"],
+                        timezone.utc
+                    )
+                )
 
-        except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
-            pass
+            except jwt.ExpiredSignatureError:
+                pass
+
+            except jwt.InvalidTokenError:
+                pass
+
+        # -----------------------------------
+        # Revoke Refresh Token
+        # -----------------------------------
+        if refresh_token:
+            try:
+                RefreshTokenModel.revoke_refresh_token(refresh_token)
+            except Exception as e:
+                print("Contractor Refresh Revoke Error:", e)
 
         response = make_response(jsonify({
             "success": True,
@@ -287,10 +400,19 @@ class ContractorController:
         }))
 
         response.delete_cookie(
-            "access_token",
+            "contractor_access_token",
             path="/",
-            samesite=current_app.config["SESSION_COOKIE_SAMESITE"],
-            secure=current_app.config["SESSION_COOKIE_SECURE"],
+            secure=True,
+            httponly=True,
+            samesite="None"
+        )
+
+        response.delete_cookie(
+            "contractor_refresh_token",
+            path="/",
+            secure=True,
+            httponly=True,
+            samesite="None"
         )
 
         return response

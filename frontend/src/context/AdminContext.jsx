@@ -45,10 +45,18 @@ export const AdminProvider = ({ children }) => {
   /* -------------------------------------------
      LOGIN ADMIN
   -------------------------------------------- */
-  const loginAdmin = (adminData) => {
+ const loginAdmin = (adminData) => {
     console.group("🔐 Admin Login");
 
     console.log("Admin data received:", adminData);
+
+    // Save the token separately for Authorization header use
+    if (adminData.access_token) {
+      localStorage.setItem("admin_token", adminData.access_token);
+      console.log("✅ admin_token saved to localStorage");
+    } else {
+      console.warn("⚠️ No access_token received from backend");
+    }
 
     // Keep ALL admin fields
     const safeData = {
@@ -67,9 +75,6 @@ export const AdminProvider = ({ children }) => {
       "admin",
       JSON.stringify(safeData)
     );
-
-    // Admin now uses HttpOnly cookie
-    localStorage.removeItem("admin_token");
 
     console.groupEnd();
   };

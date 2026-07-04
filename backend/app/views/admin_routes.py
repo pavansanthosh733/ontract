@@ -43,6 +43,10 @@ def reject_provider():
 def admin_logout():
     return AdminController.logout()
 
+@admin_bp.route("/refresh", methods=["POST"])
+def refresh():
+    return AdminController.refresh()
+
 @admin_bp.route('/send_message', methods=['POST'])
 def send_message_provider():
     data = request.get_json(force=True)

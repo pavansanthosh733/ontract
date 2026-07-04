@@ -46,6 +46,13 @@ def verify_otp():
         data["email"],
         data["otp"]
     )
+@provider_bp.route("/refresh", methods=["POST"])
+def refresh():
+    return ProviderController.refresh()
+
+@provider_bp.route("/logout", methods=["POST"])
+def logout():
+    return ProviderController.logout()
 
 @provider_bp.route("/save_token", methods=["POST"])
 def save_token():

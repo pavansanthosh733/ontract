@@ -10,27 +10,28 @@ import { apiPost } from "../api";
 /* =====================================================
    CONTRACTOR CONTEXT
 ===================================================== */
+
 const ContractorContext = createContext(null);
 
 /* =====================================================
    PROVIDER
 ===================================================== */
+
 export const ContractorProvider = ({ children }) => {
   const [contractor, setContractor] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const didRestore = useRef(false);
 
-  /* -------------------------------------------
-     REUSABLE REFRESH SESSION
-  -------------------------------------------- */
+  /* =====================================================
+     REFRESH CONTRACTOR SESSION
+  ===================================================== */
+
   const refreshContractorSession = async () => {
     console.group("🔄 Manual Contractor Session Refresh");
 
     try {
-      const data = await apiPost("/api/contractor/refresh_token", {});
-
-    
+      const data = await apiPost("/api/contractor/refresh", {});
 
       if (data?.contractor) {
         console.log("✅ Contractor restored from backend");
@@ -52,9 +53,10 @@ export const ContractorProvider = ({ children }) => {
     }
   };
 
-  /* -------------------------------------------
-     RESTORE CONTRACTOR SESSION ON APP START
-  -------------------------------------------- */
+  /* =====================================================
+     RESTORE SESSION ON APP START
+  ===================================================== */
+
   useEffect(() => {
     if (didRestore.current) {
       console.log("⏭️ Skipping duplicate restoreSession call");
@@ -62,23 +64,25 @@ export const ContractorProvider = ({ children }) => {
     }
 
     didRestore.current = true;
+
     console.group("🧠 ContractorContext Init");
 
     const restoreSession = async () => {
       try {
-        // ✅ Fast UI restore
+        // Fast UI restore
         const stored = localStorage.getItem("contractor");
 
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          console.log("⚡ Fast restore from localStorage", parsed);
-          setContractor(parsed);
+        // No contractor stored → don't call refresh
+        if (!stored) {
+            setLoading(false);
+            return;
         }
 
-        // ✅ Backend validation
-        const data = await apiPost("/api/contractor/refresh_token", {});
+        const parsed = JSON.parse(stored);
+        setContractor(parsed);
 
-      
+        // Only now validate session
+        const data = await apiPost("/api/contractor/refresh", {});
 
         if (data?.contractor) {
           console.log("🔐 Contractor restored from backend");
@@ -103,8 +107,11 @@ export const ContractorProvider = ({ children }) => {
           console.log("ℹ️ No active contractor session");
 
           setContractor(null);
+
+          
+
           localStorage.removeItem("contractor");
-         
+          localStorage.removeItem("role");
         } else {
           console.error(
             "⚠️ Temporary backend issue, keeping cached contractor",
@@ -120,34 +127,41 @@ export const ContractorProvider = ({ children }) => {
     restoreSession();
   }, []);
 
-  /* -------------------------------------------
+  /* =====================================================
      LOGIN CONTRACTOR
-  -------------------------------------------- */
-  const loginContractor = (contractorData) => {
-    console.group("🔐 Contractor Login");
+  ===================================================== */
 
+ const loginContractor = (contractorData) => {
     setContractor(contractorData);
 
     localStorage.setItem(
-      "contractor",
-      JSON.stringify(contractorData)
+        "contractor",
+        JSON.stringify(contractorData)
     );
-  };
 
-  /* -------------------------------------------
+    localStorage.setItem("role", "contractor");
+};
+
+  /* =====================================================
      LOGOUT CONTRACTOR
-  -------------------------------------------- */
-  const logoutContractor = async () => {
+  ===================================================== */
+
+ const logoutContractor = async () => {
   try {
     await apiPost("/api/contractor/logout", {});
   } catch (err) {
-    console.error(err);
+    console.error("Contractor logout failed:", err);
   } finally {
     setContractor(null);
+
     localStorage.removeItem("contractor");
-    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("role");
   }
 };
+
+  /* =====================================================
+     CONTEXT PROVIDER
+  ===================================================== */
 
   return (
     <ContractorContext.Provider
@@ -166,8 +180,9 @@ export const ContractorProvider = ({ children }) => {
 };
 
 /* =====================================================
-   HOOK
+   CUSTOM HOOK
 ===================================================== */
+
 export const useContractor = () => {
   const ctx = useContext(ContractorContext);
 
