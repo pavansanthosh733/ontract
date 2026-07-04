@@ -3,7 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { apiPost } from "../api";
 
 /* =====================================================
-   ADMIN CONTEXT
+   ADMIN CONTEXTS
 ===================================================== */
 const AdminContext = createContext(null);
 

@@ -8,7 +8,7 @@ import React, {
 import { apiPost } from "../api";
 
 /* =====================================================
-   CONTRACTOR CONTEXT
+   CONTRACTOR CONTEXTS
 ===================================================== */
 
 const ContractorContext = createContext(null);

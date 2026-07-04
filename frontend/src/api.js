@@ -10,7 +10,7 @@ function getAuthToken() {
   return null;
 }
 
-// ==============================================
+// ===============================================
 function getRefreshUrl(path) {
   if (path.startsWith("/api/admin")) {
     return `${BASE_URLS.admin}/api/admin/refresh`;
