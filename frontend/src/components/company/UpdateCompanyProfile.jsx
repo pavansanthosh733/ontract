@@ -49,6 +49,26 @@ const [sameAsMailing, setSameAsMailing] = useState(false);
 const [regions, setRegions] = useState({});
 const [states, setStates] = useState([]);
 const navigate = useNavigate();
+const cleanInput = (value) => {
+  return value.replace(/[^A-Za-z0-9-.& ]/g, "");
+};
+
+const cleanName = (value) => {
+  return value.replace(/[^A-Za-z ]/g, "");
+};
+
+const cleanAddress = (value) => {
+  return value.replace(/[^A-Za-z0-9\s,./#&()-]/g, "");
+};
+
+const cleanNumber = (value) => {
+  return value.replace(/\D/g, "");
+};
+
+const cleanAlphaNumeric = (value) => {
+  return value.replace(/[^A-Za-z0-9]/g, "");
+};
+
 
 
   
@@ -60,6 +80,10 @@ const navigate = useNavigate();
 
  
    const [servicesList, setServicesList] = useState([]);
+   const [categories, setCategories] = useState([]);
+const [items, setItems] = useState([]);
+const [types, setTypes] = useState([]);
+const [descriptions, setDescriptions] = useState([]);
      // example usage
   useEffect(() => {
     if (!contractor) {
@@ -81,13 +105,16 @@ const navigate = useNavigate();
     }
   }, [sameAsMailing, mailingPostalCode, formData.mailing_address]);
   useEffect(() => {
-    apiGet("/api/category")
-      .then(data => {
-        if (Array.isArray(data)) setServicesList(data);
-        else setServicesList([]);
-      })
-      .catch(() => setServicesList([]));
-  }, []);
+  apiGet("/api/category")
+    .then(data => {
+      setCategories(data || []);
+      setServicesList(data || []);
+    })
+    .catch(() => {
+      setCategories([]);
+      setServicesList([]);
+    });
+}, []);
 
   useEffect(() => {
     if (contractor) fetchProfile();
@@ -161,6 +188,21 @@ useEffect(() => {
 
 
 const fetchStates = (regionName, index, regionIdOverride = null) => {
+  const fetchItemsByCategory = async (categoryId) => {
+  return await apiGet(`/api/items/${categoryId}`);
+};
+
+const fetchTypesByCategoryItem = async (categoryId, itemId) => {
+  return await apiGet(
+    `/api/types/filter?category_id=${categoryId}&item_id=${itemId}`
+  );
+};
+
+const fetchDescriptions = async (categoryId, itemId, typeId) => {
+  return await apiGet(
+    `/api/description/filter?category_id=${categoryId}&item_id=${itemId}&type_id=${typeId}`
+  );
+};
   if (!regionName) {
     setLocationServiceList(prev => {
       const updated = [...prev];
@@ -194,57 +236,207 @@ const fetchStates = (regionName, index, regionIdOverride = null) => {
 
   const enterEditMode = () => setEditMode(true);
 
-  // FORM change handlers
-  const handleFormChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
 
-const handleServiceChange = (index, field, value) => {
-  const list = [...locationServiceList];
-  const updated = { ...list[index], [field]: value };
 
-  // If the user changes region, clear states and re-fetch them
-  if (field === "region") {
-    updated.region = value;
-    const regObj = regions.find(r => r.region_name === value);
-    updated.region_id = regObj?.region_id || null;
-    updated.state = "";
-    updated.state_id = null;
-    fetchStates(value, index);
+const handleFormChange = (e) => {
+  const { name, value } = e.target;
+
+  let cleanedValue = value;
+
+  switch (name) {
+    case "company_name":
+      cleanedValue = cleanInput(value);
+      break;
+
+    case "brn_number":
+      cleanedValue = cleanAlphaNumeric(value).toUpperCase();
+      break;
+
+    case "tin_number":
+      cleanedValue = cleanAlphaNumeric(value).toUpperCase();
+      break;
+
+    case "contact_person":
+      cleanedValue = cleanName(value);
+      break;
+
+    case "contact_number":
+    case "alternate_contact":
+      cleanedValue = cleanNumber(value);
+      break;
+
+    case "mailing_address":
+    case "billing_address":
+      cleanedValue = cleanAddress(value);
+      break;
+
+    default:
+      cleanedValue = value;
   }
 
-
-  // --- 🧩 Prevent duplicates (Region + State + Service combination) ---
-  const isDuplicate = list.some((item, i) =>
-    i !== index &&
-    item.region === updated.region &&
-    item.state === updated.state &&
-    item.service === updated.service
-  );
-
-  if (isDuplicate) {
-    alert('This Region + State + Service combination already exists.');
-    return;
-  }
-
-  // --- ✅ Update the row ---
-  list[index] = updated;
-  setLocationServiceList(list);
-
-  console.log("Updated services list:", list);
+  setFormData((prev) => ({
+    ...prev,
+    [name]: cleanedValue,
+  }));
 };
 
+  const handleChange = async (index, field, value) => {
+    setLocationServiceList(prev => {
+      const list = [...prev];
+      const row = { ...list[index] };
+
+      switch (field) {
+
+        case "region":
+          row.region_id = value.id;
+          row.region_name = value.name;
+
+          row.state_id = row.city_id = "";
+          row.category_id = row.item_id = row.type_id = row.description_id = "";
+
+          row.states = [];
+          row.cities = [];
+          row.items = [];
+          row.types = [];
+          row.descriptions = [];
+
+          apiGet(`/api/state/by-region/${value.id}`).then(data => {
+            setLocationServiceList(p => {
+              const copy = [...p];
+              copy[index].states = data || [];
+              return copy;
+            });
+          });
+          break;
+
+        case "state":
+          row.state_id = value.id;
+          row.state_name = value.name;
+
+          row.city_id = "";
+          row.cities = [];
+
+          apiGet(`/api/city/by-region-state?region_id=${row.region_id}&state_id=${value.id}`)
+            .then(data => {
+              setLocationServiceList(p => {
+                const copy = [...p];
+                copy[index].cities = data || [];
+                return copy;
+              });
+            });
+          break;
+
+        case "city":
+          row.city_id = value.id;
+          row.city_name = value.name;
+          break;
+
+        case "category":
+          row.category_id = value.id;
+          row.category_name = value.name;
+
+          row.item_id = row.type_id = row.description_id = "";
+          row.items = [];
+          row.types = [];
+          row.descriptions = [];
+
+          apiGet(`/api/items/${value.id}`).then(data => {
+            setLocationServiceList(p => {
+              const copy = [...p];
+              copy[index].items = data || [];
+              return copy;
+            });
+          });
+          break;
+
+        case "item":
+          row.item_id = value.id;
+          row.item_name = value.name;
+
+          row.type_id = row.description_id = "";
+          row.types = [];
+          row.descriptions = [];
+
+          apiGet(`/api/types/filter?category_id=${row.category_id}&item_id=${value.id}`)
+            .then(data => {
+              setLocationServiceList(p => {
+                const copy = [...p];
+                copy[index].types = data || [];
+                return copy;
+              });
+            });
+          break;
+
+        case "type":
+          row.type_id = value.id;
+          row.type_name = value.name;
+
+          row.description_id = "";
+          row.descriptions = [];
+
+          apiGet(`/api/description/filter?category_id=${row.category_id}&item_id=${row.item_id}&type_id=${value.id}`)
+            .then(data => {
+              setLocationServiceList(p => {
+                const copy = [...p];
+                copy[index].descriptions = data || [];
+                return copy;
+              });
+            });
+          break;
+
+        case "description":
+          row.description_id = value.id;
+          row.description_name = value.name;
+          break;
+
+        case "price":
+          row.price = value;
+          break;
+      }
+
+      list[index] = row;
+      return list;
+    });
+  };
 
   const addServiceRow = () => {
-    if (locationServiceList.some(r => !r.region || !r.state || !r.service || !r.price)) {
+    if (locationServiceList.some(r => !r.region_id || !r.state_id || !r.city_id || !r.category_id || !r.item_id || !r.type_id || !r.description_id || !r.price)) {
       alert('Please fill existing rows before adding a new one.');
       return;
     }
 
     setLocationServiceList(prev => [
       ...prev,
-      {region: "",region_id: null,state: "",state_id: null,service: "",price: "",states: [] }
+     {
+  region: "",
+  region_id: null,
+
+  state: "",
+  state_id: null,
+
+  city: "",
+  city_id: null,
+
+  category_id: "",
+  category_name: "",
+
+  item_id: "",
+  item_name: "",
+
+  type_id: "",
+  type_name: "",
+
+  description_id: "",
+  description_name: "",
+
+  price: "",
+
+  states: [],
+  cities: [],
+  items: [],
+  types: [],
+  descriptions: []
+}
     ]);
   };
 
@@ -581,13 +773,30 @@ if (!finalBilling.endsWith(billingPostalCode)) {
 }
 
     // services -> array of objects expected by backend
-    const servicesArray = locationServiceList.map(item => ({
-      service_name: item.service,
-      service_region: item.region,
-      service_location: item.state,
-      service_rate: Number(item.price)
-    }));
+const servicesArray = locationServiceList.map(item => ({
+  region_id: item.region_id,
+  region_name: item.region,
 
+  state_id: item.state_id,
+  state_name: item.state,
+
+  city_id: item.city_id,
+  city_name: item.city,
+
+  category_id: item.category_id,
+  category_name: item.category_name,
+
+  item_id: item.item_id,
+  item_name: item.item_name,
+
+  type_id: item.type_id,
+  type_name: item.type_name,
+
+  description_id: item.description_id,
+  description_name: item.description_name,
+
+  service_rate: item.price
+}));
     const fd = new FormData();
     fd.append('email', contractor.email_id);
     fd.append('company_name', formData.company_name);
@@ -936,73 +1145,204 @@ if (!finalBilling.endsWith(billingPostalCode)) {
           <div className="col-12">
             <h5>Locations & Services<span className="required-asterisk">*</span></h5>
             {locationServiceList.map((it, idx) => (
-              <div key={idx} className="row mb-2 align-items-end">
-     
-                <div className="col-md-3">
-                  <select
-                    className={`form-select ${errors[`region-${idx}`] ? 'is-invalid' : ''}`}
-                    value={it.region || ''}
-                    onChange={(e) => {
-                      handleServiceChange(idx, "region", e.target.value); // store region_name
-                      fetchStates(e.target.value, idx);
-                    }}
-                  >
-                    <option value="">Select Region</option>
-                    {regions.map((r) => (
-                      <option key={r.region_id} value={r.region_name}>
-                        {r.region_name}
-                      </option>
-                    ))}
-                  </select>
+              <div key={idx} className="border rounded p-3 mb-3">
 
-                  {errors[`region-${idx}`] && (
-                    <div className="invalid-feedback d-block">
-                      {errors[`region-${idx}`]}
-                    </div>
-                  )}
+                {/* ===== ROW 1 : REGION / STATE / CITY / PRICE ===== */}
+                <div className="row mb-2">
+
+                  {/* REGION */}
+                  <div className="col-md-3">
+                    <label className="form-label small">Region</label>
+                    <select
+                      className={`form-select ${errors[`region-${idx}`] ? 'is-invalid' : ''}`}
+                      value={it.region_id || ''}
+                      onChange={(e) => {
+                        const region = regions.find(r => r.region_id == e.target.value);
+                        handleChange(idx, "region", {
+                          id: region.region_id,
+                          name: region.region_name
+                        });
+                      }}
+                    >
+                      <option value="">Select Region</option>
+                      {regions.map((r) => (
+                        <option key={r.region_id} value={r.region_id}>
+                          {r.region_name}
+                        </option>
+                      ))}
+                    </select>
+                    {errors[`region-${idx}`] && (
+                      <div className="invalid-feedback d-block">{errors[`region-${idx}`]}</div>
+                    )}
+                  </div>
+
+                  {/* STATE */}
+                  <div className="col-md-3">
+                    <label className="form-label small">State</label>
+                    <select
+                      className={`form-select ${errors[`state-${idx}`] ? "is-invalid" : ""}`}
+                      value={it.state_id || ""}
+                      onChange={(e) => {
+                        const state = it.states.find(s => s.state_id == e.target.value);
+                        handleChange(idx, "state", {
+                          id: state.state_id,
+                          name: state.state_name
+                        });
+                      }}
+                      disabled={!it.region_id}
+                    >
+                      <option value="">Select State</option>
+                      {it.states?.map((s) => (
+                        <option key={s.state_id} value={s.state_id}>
+                          {s.state_name}
+                        </option>
+                      ))}
+                    </select>
+                    {errors[`state-${idx}`] && (
+                      <div className="invalid-feedback d-block">{errors[`state-${idx}`]}</div>
+                    )}
+                  </div>
+
+                  {/* CITY */}
+                  <div className="col-md-3">
+                    <label className="form-label small">City</label>
+                    <select
+                      className={`form-select ${errors[`city-${idx}`] ? "is-invalid" : ""}`}
+                      value={it.city_id || ""}
+                      onChange={(e) => {
+                        const city = it.cities.find(c => c.city_id == e.target.value);
+                        handleChange(idx, "city", {
+                          id: city.city_id,
+                          name: city.city_name
+                        });
+                      }}
+                      disabled={!it.state_id}
+                    >
+                      <option value="">Select City</option>
+                      {it.cities?.map((c) => (
+                        <option key={c.city_id} value={c.city_id}>
+                          {c.city_name}
+                        </option>
+                      ))}
+                    </select>
+                    {errors[`city-${idx}`] && (
+                      <div className="invalid-feedback d-block">{errors[`city-${idx}`]}</div>
+                    )}
+                  </div>
+
+                  {/* PRICE */}
+                  <div className="col-md-3">
+                    <label className="form-label small">Price</label>
+                    <input
+                      type="number"
+                      min="0"
+                      className={`form-control ${errors[`price-${idx}`] ? 'is-invalid' : ''}`}
+                      value={it.price || ''}
+                      onChange={(e) => handleChange(idx, 'price', e.target.value)}
+                    />
+                    {errors[`price-${idx}`] && (
+                      <div className="invalid-feedback d-block">{errors[`price-${idx}`]}</div>
+                    )}
+                  </div>
                 </div>
 
-                <div className="col-md-3">
-                  <label className="form-label small">State</label>
-                  <select
-                    className={`form-select ${errors[`state-${idx}`] ? "is-invalid" : ""}`}
-                    value={it.state || ""}
-                    onChange={(e) => handleServiceChange(idx, "state", e.target.value)}
-                    disabled={!it.region}
-                  >
-                    <option value="">Select State</option>
+                {/* ===== ROW 2 : CATEGORY / ITEM / TYPE / DESCRIPTION ===== */}
+                <div className="row">
 
-                    {it.states?.map((state, i) => (
-                      <option key={i} value={state}>
-                        {state}
-                      </option>
-                    ))}
-                  </select>
+                  {/* CATEGORY */}
+                  <div className="col-md-3">
+                    <label className="form-label small">Category</label>
+                    <select
+                      className="form-select"
+                      value={it.category_id || ""}
+                      onChange={e =>
+                        handleChange(idx, "category", {
+                          id: e.target.value,
+                          name: servicesList.find(c => c.category_id == e.target.value)?.category_name
+                        })
+                      }
+                    >
+                      <option value="">Category</option>
+                      {servicesList.map(c => (
+                        <option key={c.category_id} value={c.category_id}>
+                          {c.category_name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
+                  {/* ITEM */}
+                  <div className="col-md-3">
+                    <label className="form-label small">Item</label>
+                    <select
+                      className="form-select"
+                      value={it.item_id || ""}
+                      onChange={e =>
+                        handleChange(idx, "item", {
+                          id: e.target.value,
+                          name: it.items.find(i => i.item_id == e.target.value)?.item_name
+                        })
+                      }
+                      disabled={!it.items?.length}
+                    >
+                      <option value="">Item</option>
+                      {it.items?.map(i => (
+                        <option key={i.item_id} value={i.item_id}>
+                          {i.item_name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                  {errors[`state-${idx}`] && (
-                    <div className="invalid-feedback d-block">{errors[`state-${idx}`]}</div>
-                  )}
+                  {/* TYPE */}
+                  <div className="col-md-3">
+                    <label className="form-label small">Type</label>
+                    <select
+                      className="form-select"
+                      value={it.type_id || ""}
+                      onChange={e =>
+                        handleChange(idx, "type", {
+                          id: e.target.value,
+                          name: it.types.find(t => t.type_id == e.target.value)?.type_name
+                        })
+                      }
+                      disabled={!it.types?.length}
+                    >
+                      <option value="">Type</option>
+                      {it.types?.map(t => (
+                        <option key={t.type_id} value={t.type_id}>
+                          {t.type_name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* DESCRIPTION */}
+                  <div className="col-md-3">
+                    <label className="form-label small">Description</label>
+                    <select
+                      className="form-select"
+                      value={it.description_id || ""}
+                      onChange={e =>
+                        handleChange(idx, "description", {
+                          id: e.target.value,
+                          name: it.descriptions.find(d => d.id == e.target.value)?.description_name
+                        })
+                      }
+                      disabled={!it.descriptions?.length}
+                    >
+                      <option value="">Description</option>
+                      {it.descriptions?.map(d => (
+                        <option key={d.id} value={d.id}>
+                          {d.description_name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
-                <div className="col-md-3">
-                  <label className="form-label small">Service</label>
-                  <select className={`form-select ${errors[`service-${idx}`] ? 'is-invalid' : ''}`} value={it.service} onChange={e => handleServiceChange(idx, 'service', e.target.value)}>
-                    <option value="">Service</option>
-                    {servicesList.map(s => (
-                      <option key={s.category_id} value={s.category_name}>
-                        {s.category_name}
-                      </option>
-                    ))}
-
-                  </select>
-                </div>
-                <div className="col-md-2">
-                  <label className="form-label small">Price</label>
-                  <input type="number" min="0" className={`form-control ${errors[`price-${idx}`] ? 'is-invalid' : ''}`} value={it.price || ''} onChange={(e) => handleServiceChange(idx, 'price', e.target.value)} />
-                </div>
-                <div className="col-md-1">
-                  <button type="button" className="btn btn-danger" onClick={() => removeServiceRow(idx)}>×</button>
+                <div className="text-end mt-2">
+                  <button type="button" className="btn btn-danger btn-sm" onClick={() => removeServiceRow(idx)}>Remove</button>
                 </div>
               </div>
             ))}
