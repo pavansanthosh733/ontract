@@ -32,6 +32,7 @@ from app.controllers.purchase_order_controller import (
 )
 
 workorder_bp = Blueprint("workorder", __name__)
+admin_workorder_bp = Blueprint("admin_workorder", __name__)
 view = WorkOrderView()
 
 
@@ -64,7 +65,7 @@ def get_file_category(filename):
         return "video"
 
     return None
-@workorder_bp.route("/", methods=["POST"])
+@admin_workorder_bp.route("/", methods=["POST"])
 def create_workorder():
     try:
         if not request.content_type.startswith("multipart/form-data"):
@@ -179,7 +180,7 @@ def create_workorder():
     
         
 
-@workorder_bp.route("/", methods=["GET"])
+@admin_workorder_bp.route("/", methods=["GET"])
 def get_all():
     workorders, error = WorkOrder.get_all()
     if error:
@@ -197,7 +198,7 @@ def get_all():
 
 
 
-@workorder_bp.route("/search", methods=["GET"])
+@admin_workorder_bp.route("/search", methods=["GET"])
 def search_workorders():
     query = request.args.get("query", "").strip()
     if not query:
@@ -349,7 +350,7 @@ def get_all_contractors():
 
 
 
-@workorder_bp.route("/filter", methods=["GET"])
+@admin_workorder_bp.route("/filter", methods=["GET"])
 def filter_workorders():
     logging.info("Checking dashboard filter...")
 
@@ -396,7 +397,7 @@ def get_standard_rates():
         return jsonify({"error": str(e)}), 500
 
 
-@workorder_bp.route("/code/<string:workorder>", methods=["GET"])
+@admin_workorder_bp.route("/code/<string:workorder>", methods=["GET"])
 def get_workorder_by_code(workorder):
     record, error = WorkOrder.get_by_workorder_code(workorder)
 
@@ -414,7 +415,7 @@ def get_contractors_by_region_category_name(region_name, category_name):
 
     return jsonify(contractors), 200
 
-@workorder_bp.route("/contractors/search", methods=["POST"])
+@admin_workorder_bp.route("/contractors/search", methods=["POST"])
 def get_contractors():
     data = request.get_json()
 
@@ -427,7 +428,7 @@ def get_contractors():
 
 
 
-@workorder_bp.route("/assignment-audit", methods=["POST"])
+@admin_workorder_bp.route("/assignment-audit", methods=["POST"])
 def save_assignment_audit():
     try:
         data = request.get_json()
@@ -464,7 +465,7 @@ def save_assignment_audit():
 
 
 
-@workorder_bp.route("/send-acceptance-mail/<string:workorder>", methods=["POST"])
+@admin_workorder_bp.route("/send-acceptance-mail/<string:workorder>", methods=["POST"])
 def send_acceptance_mail_manual(workorder):
     from app.controllers.workorder_mail_controller import handle_send_acceptance_mail
 
@@ -478,7 +479,7 @@ def send_acceptance_mail_manual(workorder):
 
     return jsonify(res), status
 
-@workorder_bp.route("/count/closed", methods=["GET"])
+@admin_workorder_bp.route("/admin/count/closed", methods=["GET"])
 def count_closed_workorders():
     count, error = WorkOrder.count_closed()
 
@@ -487,7 +488,7 @@ def count_closed_workorders():
 
     return jsonify({"closed_count": count}), 200
 
-@workorder_bp.route("/count/all", methods=["GET"])
+@admin_workorder_bp.route("/admin/count/all", methods=["GET"])
 def count_all_workorders():
     count, error = WorkOrder.count_total()
 
@@ -496,7 +497,7 @@ def count_all_workorders():
 
     return jsonify({"total_count": count}), 200
 
-@workorder_bp.route("/count/open", methods=["GET"])
+@admin_workorder_bp.route("/admin/count/open", methods=["GET"])
 def count_open_workorders():
     count, error = WorkOrder.count_open()
 
@@ -505,7 +506,7 @@ def count_open_workorders():
 
     return jsonify({"open_count": count}), 200
 
-@workorder_bp.route("/count/today", methods=["GET"])
+@admin_workorder_bp.route("/admin/count/today", methods=["GET"])
 def count_today_workorders():
     count, error = WorkOrder.count_today()
 
@@ -570,7 +571,7 @@ def get_pending_workorders():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@workorder_bp.route("/provider/workorders/assigned", methods=["POST"])
+@admin_workorder_bp.route("/provider/workorders/assigned", methods=["POST"])
 def get_assigned_workorder_details():
     logging.info(f"checkthe input: ")
     try:
@@ -618,7 +619,7 @@ def get_closed_workorders():
         return jsonify({"error": str(e)}), 500
     
     
-@workorder_bp.route("/workorder-lifecycle", methods=["GET"])
+@admin_workorder_bp.route("/workorder-lifecycle", methods=["GET"])
 def get_workorder_lifecycle():
     from_date = request.args.get("from")
     to_date = request.args.get("to")
@@ -636,7 +637,7 @@ def get_workorder_lifecycle():
     return jsonify(data), 200
 
 
-@workorder_bp.route("/admin/notifications/close", methods=["GET"])
+@admin_workorder_bp.route("/admin/notifications/close", methods=["GET"])
 def get_closed_admin_notifications():
     try:
         data = WorkOrder.get_closed_notifications()
@@ -644,7 +645,7 @@ def get_closed_admin_notifications():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@workorder_bp.route("/admin/notifications/assigned", methods=["GET"])
+@admin_workorder_bp.route("/admin/notifications/assigned", methods=["GET"])
 def get_assigned_admin_notifications():
     try:
         data = WorkOrder.get_assigned_notifications()
@@ -653,7 +654,7 @@ def get_assigned_admin_notifications():
         return jsonify({"error": str(e)}), 500
 
 
-@workorder_bp.route("/admin/notifications/invoice", methods=["GET"])
+@admin_workorder_bp.route("/admin/notifications/invoice", methods=["GET"])
 def get_invoice_admin_notifications():
     try:
         data = WorkOrder.get_invoice_notifications()
@@ -662,7 +663,7 @@ def get_invoice_admin_notifications():
         return jsonify({"error": str(e)}), 500
     
     
-@workorder_bp.route("/admin/notifications/contractorlist", methods=["GET"])
+@admin_workorder_bp.route("/admin/notifications/contractorlist", methods=["GET"])
 def fetch_contractors_for_workorder():
     try:
         workorder_id = request.args.get("workorder_id")
@@ -889,7 +890,7 @@ def workorder_insert_admin_notification_close():
         
         
         
-@workorder_bp.route("/admin/notifications/completed_workorder", methods=["GET"])
+@admin_workorder_bp.route("/admin/notifications/completed_workorder", methods=["GET"])
 def get_completed_workorder_details_admin():
     try:
         workorder = request.args.get("workorder_id")
@@ -904,7 +905,7 @@ def get_completed_workorder_details_admin():
         return jsonify({"error": str(e)}), 500
 
 
-@workorder_bp.route("/admin/reopen", methods=["POST"])
+@admin_workorder_bp.route("/admin/reopen", methods=["POST"])
 def admin_reopen_workorder():
     try:
         data = request.get_json()
@@ -995,7 +996,7 @@ def admin_reopen_workorder():
     
     
     
-@workorder_bp.route("/admin/close", methods=["POST"])
+@admin_workorder_bp.route("/admin/close", methods=["POST"])
 def admin_close_workorder():
     try:
         logging.info("Admin close workorder API called for rating")
@@ -1103,7 +1104,7 @@ def get_overrated_admin_notifications():
     
     
     
-@workorder_bp.route("/admin/notifications/overrated/details", methods=["GET"])
+@admin_workorder_bp.route("/admin/notifications/overrated/details", methods=["GET"])
 def get_admin_overrated_workorder_details():
     try:
         workorder_id = request.args.get("workorder_id")
@@ -1321,7 +1322,7 @@ def update_admin():
             "success": False,
             "message": str(e)
         }), 500
-@workorder_bp.route("/withdraw/<string:workorder>", methods=["POST"])
+@admin_workorder_bp.route("/withdraw/<string:workorder>", methods=["POST"])
 def withdraw_workorder(workorder):
     try:
         data = request.get_json() or {}
@@ -1706,7 +1707,7 @@ def contractor_ratings_dashboard():
         }), 500
         
         
-@workorder_bp.route(
+@admin_workorder_bp.route(
     "/assignment-audit",
     methods=["GET"]
 )
@@ -1736,3 +1737,26 @@ def get_assignment_audit():
         }), 500
         
         #workorder_bp.route("/admin/notifications/overrated", methods=["GET"])   donee
+        
+        
+@workorder_bp.route("/<workorder>/full-history", methods=["GET"])
+def get_workorder_full_history(workorder):
+    try:
+        history, error = WorkOrder.get_full_history(workorder)
+
+        if error:
+            return jsonify({
+                "status": "error",
+                "message": error
+            }), 400
+
+        return jsonify({
+            "status": "success",
+            "data": history
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500

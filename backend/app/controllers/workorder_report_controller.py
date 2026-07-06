@@ -97,7 +97,7 @@ def get_summary_report():
     
     
 # ✅ GET CATEGORIES (DEPARTMENTS)
-@workorder_report_bp.route("/categories", methods=["GET"])
+@workorder_report_bp.route("/admin/categories", methods=["GET"])
 def get_categories():
     try:
         data = WorkorderReportModel.get_categories()

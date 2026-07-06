@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./css/createworkorder.css";
 import Swal from "sweetalert2";
-import { apiGet, BASE_URL } from "../../api";
+import { apiGet, apiPost } from "../../api";
 import { useAdmin } from "../../context/AdminContext";
 
 const CreateWorkOrder = () => {
@@ -50,7 +50,6 @@ const CreateWorkOrder = () => {
   // ===============================
   // Initial load
   // ===============================
-  const cleanInput = (value) => value.replace(/[^A-Za-z0-9.,\-&() ]/g, "");
   useEffect(() => {
     const loadInitial = async () => {
       try {
@@ -232,9 +231,7 @@ const CreateWorkOrder = () => {
   // Helpers
   // ===============================
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    const cleaned = name === "REMARKS" ? cleanInput(value) : value;
-    setFormData((prev) => ({...prev,[name]: cleaned,}));
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleReset = () => window.location.reload();
@@ -325,12 +322,19 @@ const handleImageChange = (files) => {
       formDataToSend.append("CLIENT", selectedClient);
       formDataToSend.append( "STANDARD_RATE_ID", selectedRate?.standard_rate_id || "" );
       formDataToSend.append( "RATE_SNAPSHOT", selectedRate?.price_rm || "" );
-      formDataToSend.append("ADDRESS",cleanInput(address).trim());
-      formDataToSend.append("REQUESTED_TIME_CLOSING",formData.REQUESTED_TIME_CLOSING);
-      formDataToSend.append("REMARKS",cleanInput(formData.REMARKS).trim());
-      formDataToSend.append("DETAILED_DESCRIPTION",cleanInput(detailedDescription).trim());
-      formDataToSend.append("STATUS", formData.STATUS);  
-      formDataToSend.append("ticket_assignment_type",ticketAssignmentType);
+      formDataToSend.append("ADDRESS", address);
+      formDataToSend.append(
+        "REQUESTED_TIME_CLOSING",
+        formData.REQUESTED_TIME_CLOSING
+      );
+      formDataToSend.append("REMARKS", formData.REMARKS);
+      formDataToSend.append("DETAILED_DESCRIPTION",detailedDescription || "");
+      formDataToSend.append("STATUS", formData.STATUS);
+      
+      formDataToSend.append(
+        "ticket_assignment_type",
+        ticketAssignmentType
+      );
 
       if (ignoreDuplicate) {
         formDataToSend.append("ignore_duplicate", "true");
@@ -340,13 +344,15 @@ const handleImageChange = (files) => {
         formDataToSend.append("images[]", file);
       });
 
-      const res = await fetch(`${BASE_URL}/api/workorders/`, {
-        method: "POST",
-        body: formDataToSend,
-        headers: { "ngrok-skip-browser-warning": "true" },
-      });
-
-      const data = await res.json();
+      const data = await apiPost(
+        "/api/admin/workorders/",
+        formDataToSend,
+        {
+          headers: {
+            "ngrok-skip-browser-warning": "true",
+          },
+        }
+      );
 
       // 🔥 DUPLICATE POPUP
       if (data?.error_type === "DUPLICATE_WORKORDER") {
@@ -382,54 +388,31 @@ const handleImageChange = (files) => {
       }
 
 
-      // ================================
-// VALIDATION MESSAGE
-// ================================
 
-if (data.success === false) {
-  await Swal.fire({
-    icon: "warning",
-    title: "Validation",
-    text: data.message,
-    confirmButtonText: "OK",
-  });
+          const workorderNumber = data?.workorder?.workorder;
 
-  window.location.reload();
-  return;
-}
+          await Swal.fire({
+            title: "✅ Workorder Created",
+            html: `
+              <div style="font-size:14px;">
+                <b>Workorder Number:</b><br/>
+                <span style="color:green;font-size:18px;font-weight:bold;">
+                  ${workorderNumber}
+                </span>
+              </div>
+            `,
+            icon: "success",
+            confirmButtonText: "OK",
+          });
 
-// ================================
-// ACTUAL ERROR
-// ================================
-
-    if (!res.ok) {
-      throw new Error(data?.error || "Failed to create workorder");
-    }
-
-    // ================================
-    // SUCCESS
-    // ================================
-
-    const workorderNumber = data?.workorder?.workorder;
-
-    await Swal.fire({
-      title: "✅ Workorder Created",
-      html: `
-        <div style="font-size:14px;">
-          <b>Workorder Number:</b><br/>
-          <span style="color:green;font-size:18px;font-weight:bold;">
-            ${workorderNumber}
-          </span>
-        </div>
-      `,
-      icon: "success",
-      confirmButtonText: "OK",
-    });
-
-    window.location.reload();
+      window.location.reload();
     } catch (err) {
       console.error(err);
-      Swal.fire("❌ Error", err.message, "error");
+      Swal.fire(
+        "❌ Error",
+        err.response?.data?.message || err.message,
+        "error"
+      );
     }
   };
 
@@ -619,7 +602,7 @@ if (data.success === false) {
                 placeholder="Enter Address"
                 required
                 value={address}
-                onChange={(e) => setAddress(cleanInput(e.target.value))}
+                onChange={(e) => setAddress(e.target.value)}
               />
               <span className="required-star">★</span>
             </div>
@@ -673,7 +656,7 @@ if (data.success === false) {
                 placeholder="Detailed Description"
                 value={detailedDescription}
                 onChange={(e) =>
-                  setDetailedDescription(cleanInput(e.target.value))
+                  setDetailedDescription(e.target.value)
                 }
                 rows={3}
               />

@@ -46,6 +46,7 @@ import RateComparisonReport from "./components/RateComparisonReport";
 import ProviderDashboardHome from "./components/ProviderDashboardHome";
 import CompanyRating from "./components/company/CompanyRating";
 import ProviderRating from "./components/ProviderRating";
+import WorkorderHistoryPage from "./components/WorkorderHistoryPage"; 
 
 function PublicCompanyProfileRoute() {
   const location = useLocation();
@@ -115,9 +116,11 @@ const isApk = params.get("source") === "apk";
             path="/provider_home/profile"
             element={<ProviderProfile user={user} />}
           />
+           <Route path="/workorders/:workorder/history" element={<WorkorderHistoryPage />} />
 
           {/* Provider nested */}
           <Route path="/provider_home" element={<ProviderHome user={user} />}>
+         
 
             <Route
               path="services"

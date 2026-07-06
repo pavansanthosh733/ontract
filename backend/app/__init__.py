@@ -6,7 +6,7 @@ import os
 import logging
 from logging.handlers import RotatingFileHandler
 from app.utils.auth import register_auth_middleware
-from app.middleware.security_headers import register_security_headers
+
 
 
 # ---------------------------------------------------------
@@ -95,7 +95,7 @@ def create_app(include_admin=True):
     from app.views.location_routes import location_bp
     from app.views.contractor_routes import contractor_bp
 
-    from app.controllers.workorder_controller import workorder_bp
+    from app.controllers.workorder_controller import (workorder_bp,admin_workorder_bp)
     from app.controllers.testdb_controller import testdb_bp
     from app.views.workorder_area_view import workorder_area_view
     from app.views.workorder_type_view import workorder_type_view
@@ -115,6 +115,7 @@ def create_app(include_admin=True):
     from app.controllers.workorder_report_controller import workorder_report_bp
     from app.controllers.ai_report_controller import ai_report_bp
     from app.controllers.zone_controller import zone_bp
+    app.register_blueprint(admin_workorder_bp,url_prefix="/api/admin/workorders")
 
     # ---------------------------------------------------------
     # REGISTER ROUTES
@@ -175,7 +176,7 @@ def create_app(include_admin=True):
         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     )
     register_auth_middleware(app)
-    register_security_headers(app)
+    
 
 
     # ---------------------------------------------------------

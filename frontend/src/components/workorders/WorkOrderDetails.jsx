@@ -28,7 +28,7 @@ const WorkOrderDetails = () => {
   useEffect(() => {
     const fetchDetails = async () => {
       try {
-        const data = await apiGet(`/api/workorders/code/${workorder}`);
+        const data = await apiGet(`/api/admin/workorders/code/${workorder}`);
         data.RATE = data.RATE || { total_rate: 0, type_rates: {} };
         setDetails(data);
 
@@ -43,7 +43,7 @@ const WorkOrderDetails = () => {
         };
 
         const cdata = await apiPost(
-          "/api/workorders/contractors/search",
+          "/api/admin/workorders/contractors/search",
           payload
         );
 
@@ -122,7 +122,7 @@ const WorkOrderDetails = () => {
   };
 
   await apiPost(
-    "/api/workorders/assignment-audit",
+    "/api/admin/workorders/assignment-audit",
     payload
   );
 };
@@ -169,7 +169,7 @@ const WorkOrderDetails = () => {
     };
 
     try {
-      await apiPost(`/api/workorders/send-acceptance-mail/${workorder}`, payload);
+      await apiPost(`/api/admin/workorders/send-acceptance-mail/${workorder}`, payload);
       setDetails(payload);
       window.alert(`✅ Contractor assigned and email sent to ${contractor.full_name}!`);
     } catch (err) {

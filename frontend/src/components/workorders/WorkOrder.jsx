@@ -136,7 +136,7 @@ const WorkOrders = () => {
         params.append("status", status);
       }
 
-      const data = await apiGet(`/api/workorders/filter?${params.toString()}`);
+      const data = await apiGet(`/api/admin/workorders/filter?${params.toString()}`);
 
       if (!Array.isArray(data) || data.length === 0) {
         setWorkorders([]);
@@ -312,7 +312,7 @@ const WorkOrders = () => {
       setCustomReason("");
 
       const res = await apiPost(
-        "/api/workorders/provider/workorders/assigned",
+        "/api/admin/workorders/provider/workorders/assigned",
         { workorder_id: wo.workorder }
       );
 
@@ -351,7 +351,7 @@ const WorkOrders = () => {
 
     try {
       await apiPost(
-        `/api/workorders/withdraw/${details.workorder}`,
+        `/api/admin/workorders/withdraw/${details.workorder}`,
         { reason: finalReason }
       );
 

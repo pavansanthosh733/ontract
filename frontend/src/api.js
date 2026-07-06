@@ -6,6 +6,8 @@ const BACKEND_URL =
 export const BASE_URLS = { user: BACKEND_URL, admin: BACKEND_URL };
 export const BASE_URL = BASE_URLS.user;
 
+let refreshPromise = null;
+
 function getAuthToken() {
   return null;
 }
@@ -22,6 +24,23 @@ function getRefreshUrl(path) {
   
   return `${BASE_URLS.user}/api/refresh`;
 } null;
+
+async function refreshToken(refreshUrl) {
+  if (!refreshPromise) {
+    console.log("Starting refresh request...");
+
+    refreshPromise = fetch(refreshUrl, {
+      method: "POST",
+      credentials: "include",
+    }).finally(() => {
+      refreshPromise = null;
+    });
+  } else {
+    console.log("Waiting for existing refresh request...");
+  }
+
+  return refreshPromise;
+}
 
 
 /* ==========================================
@@ -63,10 +82,7 @@ export async function apiFetch(path, options = {}) {
       console.warn("401 received");
       console.log("Refreshing via:", refreshUrl);
 
-      const refreshResponse = await fetch(refreshUrl, {
-        method: "POST",
-        credentials: "include",
-      });
+const refreshResponse = await refreshToken(refreshUrl);
 
       if (refreshResponse.ok) {
         console.log("Refresh successful. Retrying request...");
@@ -128,22 +144,33 @@ function _handleUnauthorized() {
   console.warn("Unauthorized request.");
 }
 
-export const apiGet = (path, extra = {}) =>
-  apiFetch(path, { method: "GET", ...extra });
+export const apiGet = (path, extraOptions = {}) =>
+  apiFetch(path, {
+    method: "GET",
+    ...extraOptions,
+  });
 
-export const apiPost = (path, body, extra = {}) =>
+
+export const apiPost = (path, body, extraOptions = {}) =>
   apiFetch(path, {
     method: "POST",
     body: body instanceof FormData ? body : JSON.stringify(body),
-    ...extra,
+    ...extraOptions,
   });
 
-export const apiPut = (path, body, extra = {}) =>
+export const apiPut = (path, body, extraOptions = {}) =>
   apiFetch(path, {
     method: "PUT",
     body: body instanceof FormData ? body : JSON.stringify(body),
-    ...extra,
+    ...extraOptions,
   });
 
-export const apiDelete = (path, extra = {}) =>
-  apiFetch(path, { method: "DELETE", ...extra });
+/* ==============================================
+   DELETE
+============================================== */
+
+export const apiDelete = (path, extraOptions = {}) =>
+  apiFetch(path, {
+    method: "DELETE",
+    ...extraOptions,
+  }); 

@@ -41,13 +41,13 @@ function AdminNotifications() {
       let res = [];
 
       if (tab === "ASSIGNED") {
-        res = await apiGet("/api/workorders/admin/notifications/assigned");
+        res = await apiGet("/api/admin/workorders/admin/notifications/assigned");
       } else if (tab === "OPEN") {
-        res = await apiGet("/api/workorders/admin/notifications/close");
+        res = await apiGet("/api/admin/workorders/admin/notifications/close");
       } else if (tab === "COMPLETED") {
-        res = await apiGet("/api/workorders/admin/notifications/invoice");
+        res = await apiGet("/api/admin/workorders/admin/notifications/invoice");
       } else if (tab === "OVERRATED") {
-        res = await apiGet("/api/workorders/admin/notifications/overrated");
+        res = await apiGet("/api/admin//workorders/admin/notifications/overrated");
       }
 
       setData(Array.isArray(res) ? res : []);
@@ -80,21 +80,21 @@ function AdminNotifications() {
 
       if (activeTab === "ASSIGNED") {
         const res = await apiGet(
-          `/api/workorders/admin/notifications/contractorlist?workorder_id=${workorderId}`
+          `/api/admin/workorders/admin/notifications/contractorlist?workorder_id=${workorderId}`
         );
         setDetails(res?.data || []);
       }
 
       else if (activeTab === "OPEN") {
         const res = await apiGet(
-          `/api/workorders/admin/notifications/completed_workorder?workorder_id=${workorderId}`
+          `/api/admin/workorders/admin/notifications/completed_workorder?workorder_id=${workorderId}`
         );
         setDetails(res || []);
       }
 
       else if (activeTab === "OVERRATED") {
         const res = await apiGet(
-          `/api/workorders/admin/notifications/overrated/details?workorder_id=${workorderId}`
+          `/api/admin/workorders/admin/notifications/overrated/details?workorder_id=${workorderId}`
         );
 
         if (res?.data) {
@@ -156,7 +156,7 @@ function AdminNotifications() {
     setAdminSubmitting(true);
 
     const response = await apiPost(
-      "/api/workorders/admin/close",
+      "/api/admin/workorders/admin/close",
       {
         workorder: selectedWorkorder,
         remarks: adminRemarks,
@@ -213,7 +213,7 @@ setRatingWorkorderData(ratingData);
     try {
       setAdminSubmitting(true);
 
-      await apiPost("/api/workorders/admin/reopen", {
+      await apiPost("/api/admin/workorders/admin/reopen", {
         workorder: selectedWorkorder,
         remarks: adminRemarks,
       });
@@ -246,7 +246,7 @@ setRatingWorkorderData(ratingData);
         selectedContractors.includes(c.user_uid)
       );
 
-      await apiPost("/api/workorders/send-email-acceptence", {
+      await apiPost("/api/admin/workorders/send-email-acceptence", {
         workorder: selectedWorkorder,
         contractors: selectedData,
       });

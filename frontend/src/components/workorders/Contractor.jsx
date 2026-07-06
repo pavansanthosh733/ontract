@@ -68,7 +68,7 @@ const WorkOrders = () => {
   /* ================= FETCH ALL (kept, unused by default now but harmless to keep) ================= */
   const fetchWorkOrders = async () => {
     try {
-      const data = await apiGet("/api/workorders/");
+      const data = await apiGet("/api/admin/workorders/");
 
       setWorkorders(data || []);
       setFilteredOrders(data || []);
@@ -97,7 +97,7 @@ const WorkOrders = () => {
       params.append("to", to);
       params.append("status", statusVal || "All");
 
-      const data = await apiGet(`/api/workorders/filter?${params.toString()}`);
+      const data = await apiGet(`/api/admin/workorders/filter?${params.toString()}`);
 
       setWorkorders(data || []);
       setFilteredOrders(data || []);

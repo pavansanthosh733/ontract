@@ -30,7 +30,7 @@ const SummaryReport = () => {
 
   const fetchCategories = async () => {
     try {
-      const res = await apiGet("/api/categories");
+      const res = await apiGet("/api/admin/categories");
       const list = Array.isArray(res.data) ? res.data : [];
       setCategories(list);
       console.log("✅ Categories loaded:", list.length);

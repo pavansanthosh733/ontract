@@ -72,10 +72,10 @@ console.log("logina admin detils",permissionLevel)
         activeRes,
         todayRes2
       ] = await Promise.all([
-        apiGet("/api/workorders/count/all"),
-        apiGet("/api/workorders/count/open"),
-        apiGet("/api/workorders/count/closed"),
-        apiGet("/api/workorders/count/today"),
+        apiGet("/api/admin/workorders/count/all"),
+        apiGet("/api/admin/workorders/count/open"),
+        apiGet("/api/admin/workorders/count/closed"),
+        apiGet("/api/admin/workorders/count/today"),
 
         apiGet("/api/admin/users/count/company"),
         apiGet("/api/admin/users/count/individual"),

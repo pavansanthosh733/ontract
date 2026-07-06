@@ -22,7 +22,7 @@ const ContractorReport = () => {
 
   const fetchContractors = async () => {
     try {
-      const res = await apiGet("/api/contractors");
+      const res = await apiGet("/api/admin/contractors");
       const list = Array.isArray(res.data) ? res.data : [];
       setContractors(list);
       console.log("✅ Contractors loaded:", list.length);

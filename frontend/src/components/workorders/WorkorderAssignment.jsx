@@ -76,7 +76,7 @@ const WorkorderAssignment = () => {
       if (statusVal && statusVal !== "All") params.append("status", statusVal);
 
       const res = await apiGet(
-        `/api/workorders/workorder-lifecycle?${params.toString()}`
+        `/api/admin/workorders/workorder-lifecycle?${params.toString()}`
       );
 
       setRows(Array.isArray(res) ? res : []);

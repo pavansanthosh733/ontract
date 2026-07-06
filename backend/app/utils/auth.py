@@ -35,7 +35,6 @@ PUBLIC_ROUTES = [
     "/api/admin/verify_otp",
     "/api/admin/resend_otp",
     "/api/admin/send_otp",
-    "/api/workorders/admin/",
     "/api/admin/logout",
     "/api/admin/refresh",
       
@@ -51,17 +50,11 @@ PUBLIC_ROUTES = [
     "/api/verify-reset-otp",
     "/api/refresh",
     "/api/logout",
-    "/api/profile",
-    "/api/update_profile",
 
     # ✅ Contractor auth routes
     "/api/contractor/verify_otp",
     "/api/contractor/login",
     "/api/contractor/signup",
-    "/api/contractor/contractor_signup",
-    "/api/contractor/contractor_activate",
-    "/api/contractor/company_profile",
-    "/api/contractor/update_company_profile",
     "/api/contractor/activate",
     "/api/contractor/resend_otp",
     "/api/contractor/logout",
@@ -78,19 +71,8 @@ PUBLIC_ROUTES = [
     "/api/save_token",                         # ✅
 
     # ✅ Workorder public routes
-    "/api/workorders/search",
-    "/api/workorders/workorder-types",
-    "/api/workorders/generate",
-    "/api/workorders/generates",
-    "/api/workorders/contractors",
-    "/api/workorders/standard-rates",
-    "/api/workorders/code/",
-    "/api/workorders/send-acceptance-mail",
-    "/api/workorders/contractors/by-area-type",
-    "/api/workorders/contractors/by-region-category",
-    "/api/workorders/provider/",
-    "/api/workorders/admin-notification-close",
-    "/api/workorders/",
+    
+    
     "/api/get_image/",
 
     # ✅ Provider routes
@@ -120,26 +102,29 @@ PUBLIC_ROUTES = [
 # ==============================================
 def _extract_token():
 
-    # ------------------------------------------
-    # Choose cookie based on request path
-    # ------------------------------------------
+    print("=" * 80)
+    print("PATH:", request.path)
+    print("COOKIE HEADER:", request.headers.get("Cookie"))
+    print("REQUEST COOKIES:", request.cookies)
+
     if request.path.startswith("/api/admin"):
         token = request.cookies.get("admin_access_token")
+        print("ADMIN TOKEN:", token)
 
     elif request.path.startswith("/api/contractor"):
         token = request.cookies.get("contractor_access_token")
+        print("CONTRACTOR TOKEN:", token)
 
     else:
-        # Provider/User APIs
         token = request.cookies.get("user_access_token")
+        print("USER TOKEN:", token)
 
     if token:
         return token
 
-    # ------------------------------------------
-    # Fallback to Authorization header
-    # ------------------------------------------
     auth_header = request.headers.get("Authorization")
+    print("AUTH HEADER:", auth_header)
+
     if auth_header and auth_header.startswith("Bearer "):
         return auth_header.split(" ")[1]
 

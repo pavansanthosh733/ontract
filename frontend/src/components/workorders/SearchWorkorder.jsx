@@ -21,7 +21,7 @@ const SearchWorkOrder = () => {
     }
 
     try {
-      const data = await apiGet(`/api/workorders/search?query=${searchTerm}`);
+      const data = await apiGet(`/api/admin/workorders/search?query=${searchTerm}`);
 
       if (!Array.isArray(data) || data.length === 0)
         throw new Error("Workorder not found");
