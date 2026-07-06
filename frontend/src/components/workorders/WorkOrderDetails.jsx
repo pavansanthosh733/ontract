@@ -67,7 +67,7 @@ const WorkOrderDetails = () => {
     return [...contractors]
       .filter((c) => {
        const searchableName = `${c.company_name || ""} ${c.full_name || ""}`.toLowerCase();
-        // const serviceLocations = (c.service_locations || "").toLowerCase();
+        // const serviceLocations = (c.service_locations || "").toLowerCase(); jusr for adding tinto git
         const rateValue = parseFloat(c.rate ?? 0);
 
         const nameOk =

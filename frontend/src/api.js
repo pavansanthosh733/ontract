@@ -166,7 +166,7 @@ export const apiPut = (path, body, extraOptions = {}) =>
   });
 
 /* ==============================================
-   DELETE
+   DELETE code for delpuenet
 ============================================== */
 
 export const apiDelete = (path, extraOptions = {}) =>
