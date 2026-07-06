@@ -169,7 +169,7 @@ console.groupEnd()
 
     alert("✅ Workorder closed successfully");
 
-    // Open rating popup immediately small chane fdor addig in to git
+    // Open rating popup immediately small chane fdor addig in to git code
     // setRatingWorkorderData({
     //   workorder:
     //     response?.data?.workorder ||

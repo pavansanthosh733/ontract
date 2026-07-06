@@ -99,7 +99,7 @@ console.log("logina admin detils",permissionLevel)
           companyUsers: companyRes.company_count,
           individualUsers: individualRes.individual_count,
 
-          activeToday: activeRes.active_count,      // ⭐ NEW file changig
+          activeToday: activeRes.active_count,      // ⭐ NEW file changig stayr
           newThisMonth: todayRes2.today_count      // ⭐ NEW
         }
       }));
