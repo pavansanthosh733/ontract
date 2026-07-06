@@ -62,22 +62,25 @@ function ProviderBankDetails() {
         if (data.bank_details.bank_statement) {
           setExistingStatement(true);
 
-          const base64 = data.bank_details.bank_statement;
+const filePath = data.bank_details.bank_statement;
 
-          // 🔍 Detect file type from base64 header
-          if (base64.startsWith("/9j")) {
-            // JPEG
-            setStatementType("image");
-            setStatementPreview(`data:image/jpeg;base64,${base64}`);
-          } else if (base64.startsWith("iVBOR")) {
-            // PNG
-            setStatementType("image");
-            setStatementPreview(`data:image/png;base64,${base64}`);
-          } else if (base64.startsWith("JVBER")) {
-            // PDF
-            setStatementType("pdf");
-            setStatementPreview(`data:application/pdf;base64,${base64}`);
-          } else {
+if (filePath) {
+  setExistingStatement(true);
+
+  const fileUrl = `${BASE_URLS.user}/${filePath.replace(/\\/g, "/")}`;
+
+  if (
+    filePath.toLowerCase().endsWith(".jpg") ||
+    filePath.toLowerCase().endsWith(".jpeg") ||
+    filePath.toLowerCase().endsWith(".png")
+  ) {
+    setStatementType("image");
+    setStatementPreview(fileUrl);
+  } else if (filePath.toLowerCase().endsWith(".pdf")) {
+    setStatementType("pdf");
+    setStatementPreview(fileUrl);
+  }
+} else {
             console.warn("Unknown bank statement format");
           }
         }

@@ -523,7 +523,7 @@ paginatedProviders.map((p) => (
 
 
 
-      {/* Shared Message Modal */}
+      {/* Shared Message Modal for deployment */}
       {selectedUser && (
         <div className="modal fade show d-block" style={{ background: "rgba(0,0,0,0.5)" }}>
           <div className="modal-dialog">

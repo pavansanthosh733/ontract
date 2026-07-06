@@ -207,7 +207,7 @@ const EditZone = () => {
   };
 
   // =========================
-  // REMOVE CITY (uses zoneCode)
+  // REMOVE CITY (uses zoneCode) fir deployed zone, not numeric id
   // =========================
 const removeCity = async (cityId) => {
   if (!zoneCode) {

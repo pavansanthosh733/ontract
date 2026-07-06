@@ -495,14 +495,22 @@ function ProviderUpdateProfile() {
           <div className="mt-4">
             <strong>Certificate: </strong>
 
-            {profile.authorized_certificate ? (
-              <a
-                href={`${BASE_URLS.user}/api/get_image/${user.email_id}/certificate`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                View Document
-              </a>
+  {profile.authorized_certificate &&
+   Array.isArray(profile.authorized_certificate) &&
+   profile.authorized_certificate.length > 0 ? (
+
+    profile.authorized_certificate.map((cert, index) => (
+      <div key={index}>
+        <a
+          href={`${BASE_URLS.user}${cert}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          View Certificate {index + 1}
+        </a>
+      </div>
+    ))
+
             ) : (
               <span className="text-muted">Not Uploaded</span>
             )}
