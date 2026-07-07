@@ -479,7 +479,7 @@ def send_acceptance_mail_manual(workorder):
 
     return jsonify(res), status
 
-@admin_workorder_bp.route("/admin/count/closed", methods=["GET"])
+@admin_workorder_bp.route("/count/closed", methods=["GET"])
 def count_closed_workorders():
     count, error = WorkOrder.count_closed()
 
@@ -488,7 +488,7 @@ def count_closed_workorders():
 
     return jsonify({"closed_count": count}), 200
 
-@admin_workorder_bp.route("/admin/count/all", methods=["GET"])
+@admin_workorder_bp.route("/count/all", methods=["GET"])
 def count_all_workorders():
     count, error = WorkOrder.count_total()
 
@@ -497,7 +497,7 @@ def count_all_workorders():
 
     return jsonify({"total_count": count}), 200
 
-@admin_workorder_bp.route("/admin/count/open", methods=["GET"])
+@admin_workorder_bp.route("/count/open", methods=["GET"])
 def count_open_workorders():
     count, error = WorkOrder.count_open()
 
@@ -506,7 +506,7 @@ def count_open_workorders():
 
     return jsonify({"open_count": count}), 200
 
-@admin_workorder_bp.route("/admin/count/today", methods=["GET"])
+@admin_workorder_bp.route("/count/today", methods=["GET"])
 def count_today_workorders():
     count, error = WorkOrder.count_today()
 
