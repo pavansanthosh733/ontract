@@ -3150,3 +3150,225 @@ class WorkOrder(db.Model):
         except Exception as e:
             return None, str(e)
         #workorder_bp.route("/admin/notifications/overrated"
+        
+        
+        
+    @classmethod
+    def get_full_history(cls, workorder):
+        try:
+            events = []
+    
+            # -----------------------------------------
+            # 1. Base workorder info
+            # -----------------------------------------
+            wo_sql = text("""
+                SELECT
+                    id,
+                    workorder,
+                    status,
+                    created_t,
+                    created_by,
+                    withdrawn_at,
+                    withdrawn_by,
+                    withdraw_reason,
+                    closed_by
+                FROM workorder_t
+                WHERE workorder = :workorder
+            """)
+    
+            wo_row = db.session.execute(
+                wo_sql, {"workorder": workorder}
+            ).mappings().first()
+    
+            if not wo_row:
+                return None, "Workorder not found"
+    
+            events.append({
+                "type": "created",
+                "timestamp": wo_row["created_t"],
+                "title": "Workorder Created",
+                "details": {
+                    "created_by": wo_row["created_by"],
+                    "status_at_creation": wo_row["status"]
+                }
+            })
+    
+            if wo_row["withdrawn_at"]:
+                events.append({
+                    "type": "withdrawn",
+                    "timestamp": wo_row["withdrawn_at"],
+                    "title": "Workorder Withdrawn",
+                    "details": {
+                        "withdrawn_by": wo_row["withdrawn_by"],
+                        "reason": wo_row["withdraw_reason"]
+                    }
+                })
+    
+            # -----------------------------------------
+            # 2. Assignment audit rounds
+            # -----------------------------------------
+            audit_sql = text("""
+                SELECT
+                    audit_id,
+                    assignment_reason,
+                    suggested_contractors,
+                    selected_contractor,
+                    created_at
+                FROM contractor_assignment_audit_t
+                WHERE workorder = :workorder
+                ORDER BY created_at ASC
+            """)
+    
+            audit_rows = db.session.execute(
+                audit_sql, {"workorder": workorder}
+            ).mappings().all()
+    
+            for i, row in enumerate(audit_rows, start=1):
+                suggested = row["suggested_contractors"] or []
+                selected = row["selected_contractor"] or {}
+    
+                events.append({
+                    "type": "assignment_round",
+                    "round": i,
+                    "timestamp": row["created_at"],
+                    "title": f"Round {i}: {len(suggested)} Contractors Suggested",
+                    "details": {
+                        "suggested_count": len(suggested),
+                        "suggested_contractors": suggested,
+                        "selected_contractor": selected,
+                        "assignment_reason": row["assignment_reason"]
+                    }
+                })
+    
+            # -----------------------------------------
+            # 3. Actual assignment entries
+            # NOTE: verify exact column names/casing with
+            # \d workorder_assignment_t before running
+            # -----------------------------------------
+            assign_sql = text("""
+                SELECT
+                    "ID",
+                    provider_id,
+                    assigned_at,
+                    expiry_time,
+                    assignment_status
+                FROM workorder_assignment_t
+                WHERE "WORKORDER_ID" = :workorder
+                ORDER BY assigned_at ASC
+            """)
+    
+            assign_rows = db.session.execute(
+                assign_sql, {"workorder": workorder}
+            ).mappings().all()
+    
+            for row in assign_rows:
+                events.append({
+                    "type": "assignment_entry",
+                    "timestamp": row["assigned_at"],
+                    "title": f"Assigned to Provider #{row['provider_id']}",
+                    "details": {
+                        "provider_id": row["provider_id"],
+                        "assignment_status": row["assignment_status"],
+                        "expiry_time": row["expiry_time"]
+                    }
+                })
+    
+            # -----------------------------------------
+            # 4. Life cycle events
+            # -----------------------------------------
+            lc_sql = text("""
+                SELECT
+                    id,
+                    contractor_id,
+                    contractor_name,
+                    status,
+                    contractor_remarks,
+                    admin_remarks,
+                    remarks,
+                    created_t,
+                    workorder_completed_time,
+                    workorder_close_time,
+                    workorder_reopen_time,
+                    requested_time_close
+                FROM workorder_life_cycle_t
+                WHERE workorder = :workorder
+                ORDER BY created_t ASC
+            """)
+    
+            lc_rows = db.session.execute(
+                lc_sql, {"workorder": workorder}
+            ).mappings().all()
+    
+            for row in lc_rows:
+                normalized_status = (row["status"] or "").strip().upper()
+    
+                events.append({
+                    "type": "contractor_action",
+                    "timestamp": row["created_t"],
+                    "title": f"Status: {normalized_status}",
+                    "details": {
+                        "contractor_id": row["contractor_id"],
+                        "contractor_name": row["contractor_name"],
+                        "status": normalized_status,
+                        "contractor_remarks": row["contractor_remarks"],
+                        "admin_remarks": row["admin_remarks"],
+                        "remarks": row["remarks"]
+                    }
+                })
+    
+                if row["workorder_completed_time"]:
+                    events.append({
+                        "type": "completed",
+                        "timestamp": row["workorder_completed_time"],
+                        "title": "Workorder Completed",
+                        "details": {
+                            "contractor_name": row["contractor_name"],
+                            "contractor_remarks": row["contractor_remarks"]
+                        }
+                    })
+    
+                if row["workorder_close_time"]:
+                    events.append({
+                        "type": "closed",
+                        "timestamp": row["workorder_close_time"],
+                        "title": "Workorder Closed by Admin",
+                        "details": {
+                            "admin_remarks": row["admin_remarks"]
+                        }
+                    })
+    
+                if row["workorder_reopen_time"]:
+                    events.append({
+                        "type": "reopened",
+                        "timestamp": row["workorder_reopen_time"],
+                        "title": "Workorder Reopened by Admin",
+                        "details": {
+                            "admin_remarks": row["admin_remarks"]
+                        }
+                    })
+    
+            # -----------------------------------------
+            # 5. Sort everything chronologically
+            # -----------------------------------------
+            def normalize_ts(ts):
+                if ts is None:
+                    return None
+                if ts.tzinfo is not None:
+                    return ts.replace(tzinfo=None)
+                return ts
+
+            for e in events:
+                e["timestamp"] = normalize_ts(e["timestamp"])
+
+            events = [e for e in events if e["timestamp"] is not None]
+                
+            events.sort(key=lambda e: e["timestamp"])
+    
+            return {
+                "workorder": wo_row["workorder"],
+                "current_status": wo_row["status"],
+                "timeline": events
+            }, None
+    
+        except Exception as e:
+            return None, str(e)
