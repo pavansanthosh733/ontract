@@ -72,7 +72,7 @@ const WorkOrderDetails = () => {
 
         const nameOk =
   !nameFilter || searchableName.includes(nameFilter);
-        // const locationOk =
+        // const locationOk =commetnt
         //   !locationFilter || serviceLocations.includes(locationFilter) coomented out location filter as it was not working well and we have city filter in place in UI;
         const priceOk =
           !maxPrice || (!Number.isNaN(rateValue) && rateValue <= Number(maxPrice));
