@@ -31,7 +31,7 @@ const [filters, setFilters] = useState({
 
   // Fetch Regions
   const fetchRegions = async () => {
-    const data = await apiGet("/api/region/");
+    const data = await apiGet("/api/admin/region/");
     setRegionsList(Array.isArray(data) ? data : []);
   };
 
@@ -42,13 +42,13 @@ const [filters, setFilters] = useState({
       return;
     }
 
-    const data = await apiGet(`/api/state/by-region/${regionId}`);
+    const data = await apiGet(`/api/admin/state/by-region/${regionId}`);
     setStatesList(Array.isArray(data) ? data : []);
   };
 
   // Fetch Cities
   const fetchCities = async () => {
-    const data = await apiGet("/api/city/");
+    const data = await apiGet("/api/admin/city/");
     setCities(Array.isArray(data) ? data : []);
   };
 
@@ -57,10 +57,8 @@ const [filters, setFilters] = useState({
     fetchCities();
   }, []);
 
-  const cleanInput = (value) => value.replace(/[^A-Za-z0-9.,\-&() ]/g, "");
   const handleChange = (e) => {
     const { name, value } = e.target;
-     const cleaned = name === "CITY_NAME" ? cleanInput(value) : value;
 
     if (name === "REGION_ID") {
       setFormData({
@@ -70,10 +68,7 @@ const [filters, setFilters] = useState({
       });
       fetchStatesByRegion(value);
     } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: cleaned,
-      }));
+      setFormData({ ...formData, [name]: value });
     }
   };
 
@@ -92,7 +87,7 @@ const [filters, setFilters] = useState({
       status: formData.STATUS,
     };
 
-    await apiPost("/api/city/", payload);
+    await apiPost("/api/admin/city/", payload);
 
     await Swal.fire({
       icon: "success",
@@ -144,7 +139,7 @@ const [filters, setFilters] = useState({
       status: editingData.STATUS,
     };
 
-    const res = await apiPut(`/api/city/${id}`, payload);
+    const res = await apiPut(`/api/admin/city/${id}`, payload);
 
     if (res?.error) return alert("❌ " + res.error);
 
@@ -156,7 +151,7 @@ const [filters, setFilters] = useState({
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this city?")) return;
 
-    await apiDelete(`/api/city/${id}`);
+    await apiDelete(`/api/admin/city/${id}`);
     alert("🗑️ City deleted!");
     fetchCities();
   };

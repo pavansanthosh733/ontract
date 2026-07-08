@@ -32,7 +32,7 @@ const [filters, setFilters] = useState({
   =========================== */
   const fetchRegionsList = async () => {
     try {
-      const data = await apiGet("/api/region/");
+      const data = await apiGet("/api/admin/region/");
       setRegionsList(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error("Error fetching regions:", e);
@@ -44,7 +44,7 @@ const [filters, setFilters] = useState({
   =========================== */
   const fetchStates = async () => {
     try {
-      const data = await apiGet("/api/state/");
+      const data = await apiGet("/api/admin/state/");
       setStates(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error("Error fetching states:", e);
@@ -56,14 +56,12 @@ const [filters, setFilters] = useState({
     fetchStates();
   }, []);
 
-  const cleanInput = (value) => value.replace(/[^A-Za-z0-9.,\-&() ]/g, "");
   /* ==========================
      Add Form Change
   =========================== */
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const cleaned = name === "STATE_NAME" ? cleanInput(value) : value;
-    setFormData((prev) => ({...prev,[name]: cleaned,}));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   /* ==========================
@@ -87,7 +85,7 @@ const handleSubmit = async (e) => {
       status: formData.STATUS,
     };
 
-    await apiPost("/api/state/", payload);
+    await apiPost("/api/admin/state/", payload);
 
     await Swal.fire({
       icon: "success",
@@ -139,7 +137,7 @@ const handleSubmit = async (e) => {
     };
 
     try {
-      const res = await apiPut(`/api/state/${id}`, payload);
+      const res = await apiPut(`/api/admin/state/${id}`, payload);
       if (res?.error) return alert("❌ " + res.error);
 
       alert("✅ State updated!");
@@ -158,7 +156,7 @@ const handleSubmit = async (e) => {
     if (!window.confirm("Are you sure you want to delete this state?")) return;
 
     try {
-      await apiDelete(`/api/state/${id}`);
+      await apiDelete(`/api/admin/state/${id}`);
       alert("✅ State deleted!");
       fetchStates();
     } catch (e) {

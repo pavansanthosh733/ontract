@@ -34,7 +34,7 @@ const CategoryPage = () => {
 
       for (let cat of categoriesData) {
         const res = await apiPost(
-          "/api/workorders/admin/category/usage-check",
+          "/api/admin/workorders/admin/category/usage-check",
           {
             category_id: cat.category_id,
           }
@@ -51,7 +51,7 @@ const CategoryPage = () => {
 
   const fetchCategories = async () => {
     try {
-      const data = await apiGet("/api/category");
+      const data = await apiGet("/api/admin/category");
       const categoryList = Array.isArray(data) ? data : [];
       setCategories(categoryList);
 
@@ -83,7 +83,7 @@ const handleSubmit = async (e) => {
   e.preventDefault();
 
   try {
-    await apiPost("/api/category", {
+    await apiPost("/api/admin/category", {
       category_name: formData.CATEGORY_NAME,
       status: formData.STATUS,
     });
@@ -109,7 +109,7 @@ const handleSubmit = async (e) => {
 };
 
   const handleUpdate = async (id) => {
-    await apiPut(`/api/category/${id}`, {
+    await apiPut(`/api/admin/category/${id}`, {
       category_name: editingData.CATEGORY_NAME,
       status: editingData.STATUS,
     });
@@ -124,7 +124,7 @@ const handleSubmit = async (e) => {
     try {
       if (!window.confirm("Delete this category?")) return;
 
-      await apiDelete(`/api/category/${cat.id}`);
+      await apiDelete(`/api/admin/category/${cat.id}`);
       fetchCategories();
 
     } catch (error) {

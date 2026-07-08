@@ -33,7 +33,7 @@ const ItemPage = () => {
   const cleanInput = (value) => value.replace(/[^A-Za-z0-9- ]/g, "");
 
   const fetchCategories = async () => {
-    const data = await apiGet("/api/category/active");
+    const data = await apiGet("/api/admin/category/active");
     setCategories(Array.isArray(data) ? data : []);
   };
 
@@ -44,7 +44,7 @@ const ItemPage = () => {
 
       for (let item of itemsData) {
         const res = await apiPost(
-          "/api/workorders/admin/item/usage-check",
+          "/api/admin/workorders/admin/item/usage-check",
           {
             category_id: item.category_id,
             item_id: item.item_id,
@@ -61,7 +61,7 @@ const ItemPage = () => {
   };
 
   const fetchItems = async () => {
-    const data = await apiGet("/api/items");
+    const data = await apiGet("/api/admin/items");
     const itemList = Array.isArray(data) ? data : [];
 
     setItems(itemList);
@@ -91,7 +91,7 @@ const handleSubmit = async (e) => {
   e.preventDefault();
 
   try {
-    await apiPost("/api/items", {
+    await apiPost("/api/admin/items", {
       item_name: formData.ITEM_NAME,
       category_id: formData.CATEGORY_ID,
       status: formData.STATUS,
@@ -133,7 +133,7 @@ const handleSubmit = async (e) => {
   };
 
   const handleUpdate = async (id) => {
-    await apiPut(`/api/items/${id}`, {
+    await apiPut(`/api/admin/items/${id}`, {
       item_name: editingData.ITEM_NAME,
       category_id: editingData.CATEGORY_ID,
       status: editingData.STATUS,
@@ -148,7 +148,7 @@ const handleSubmit = async (e) => {
   const handleDelete = async (item) => {
     if (!window.confirm("Delete this item?")) return;
 
-    await apiDelete(`/api/items/${item.id}`);
+    await apiDelete(`/api/admin/items/${item.id}`);
     fetchItems();
   };
 

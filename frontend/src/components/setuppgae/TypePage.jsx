@@ -39,9 +39,9 @@ const [filters, setFilters] = useState({
   }, []);
 
   const loadData = async () => {
-    const categoryData = await apiGet("/api/category");
-    const typeData = await apiGet("/api/types");
-    const itemData = await apiGet("/api/items");
+    const categoryData = await apiGet("/api/admin/category");
+    const typeData = await apiGet("/api/admin/types");
+    const itemData = await apiGet("/api/admin/items");
 
     setCategories(categoryData);
     setTypes(typeData);
@@ -57,7 +57,7 @@ const [filters, setFilters] = useState({
   }, [formData.CATEGORY_ID]);
 
   const loadFiltered = async (categoryId) => {
-    setFilteredItems(await apiGet(`/api/items/${categoryId}`));
+    setFilteredItems(await apiGet(`/api/admin/items/${categoryId}`));
   };
 
   const handleChange = (e) => {
@@ -86,7 +86,7 @@ const [filters, setFilters] = useState({
 
     for (let row of typesData) {
       const res = await apiPost(
-        "/api/workorders/admin/type/usage-check",
+        "/api/admin/workorders/admin/type/usage-check",
         {
           category_id: row.category_id,
           item_id: row.item_id,
@@ -123,7 +123,7 @@ const handleSubmit = async (e) => {
   e.preventDefault();
 
   try {
-    await apiPost("/api/types", {
+    await apiPost("/api/admin/types", {
       type_name: formData.TYPE_NAME,
       category_id: formData.CATEGORY_ID,
       item_id: formData.ITEM_ID,
@@ -153,7 +153,7 @@ const handleSubmit = async (e) => {
 };
   const handleEdit = async (row) => {
     setEditingId(row.id);
-    setFilteredItems(await apiGet(`/api/items/${row.category_id}`));
+    setFilteredItems(await apiGet(`/api/admin/items/${row.category_id}`));
 
     setEditingData({
       TYPE_NAME: row.type_name,
@@ -175,7 +175,7 @@ const handleSubmit = async (e) => {
   };
 
   const handleUpdate = async (id) => {
-    await apiPut(`/api/types/${id}`, {
+    await apiPut(`/api/admin/types/${id}`, {
       type_name: editingData.TYPE_NAME,
       category_id: editingData.CATEGORY_ID,
       item_id: editingData.ITEM_ID,
@@ -189,7 +189,7 @@ const handleSubmit = async (e) => {
   const handleDelete = async (row) => {
     if (!window.confirm("Delete?")) return;
 
-    await apiDelete(`/api/types/${row.id}`);
+    await apiDelete(`/api/admin/types/${row.id}`);
     loadData();
   };
 

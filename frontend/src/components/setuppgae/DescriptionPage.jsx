@@ -18,7 +18,6 @@ const DescriptionPage = () => {
   const [items, setItems] = useState([]);
   const [types, setTypes] = useState([]);
   const [usageMap, setUsageMap] = useState({});
-  const cleanInput = (value) => value.replace(/[^A-Za-z0-9.,\-&() ]/g, "");
 
   const [editingId, setEditingId] = useState(null);
   // ✅ Filters for Existing Descriptions Table
@@ -43,10 +42,10 @@ const [filters, setFilters] = useState({
   }, []);
 
   const loadData = async () => {
-    const cat = await apiGet("/api/category");
-    const desc = await apiGet("/api/description");
-    const allItems = await apiGet("/api/items");
-    const allTypes = await apiGet("/api/types");
+    const cat = await apiGet("/api/admin/category");
+    const desc = await apiGet("/api/admin/description");
+    const allItems = await apiGet("/api/admin/items");
+    const allTypes = await apiGet("/api/admin/types");
 
     setCategories(cat || []);
     setDescriptions(desc || []);
@@ -57,14 +56,14 @@ const [filters, setFilters] = useState({
 
   const fetchItemsForCategory = async (categoryId) => {
     if (!categoryId) return setItems([]);
-    const data = await apiGet(`/api/items/${categoryId}`);
+    const data = await apiGet(`/api/admin/items/${categoryId}`);
     setItems(data || []);
   };
 
   const fetchTypesForCategoryItem = async (categoryId, itemId) => {
     if (!categoryId || !itemId) return setTypes([]);
     const data = await apiGet(
-      `/api/types/filter?category_id=${categoryId}&item_id=${itemId}`
+      `/api/admin/types/filter?category_id=${categoryId}&item_id=${itemId}`
     );
     setTypes(data || []);
   };
@@ -96,10 +95,9 @@ const [filters, setFilters] = useState({
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const cleaned = name === "DESCRIPTION" ? cleanInput(value) : value;
 
     setFormData((prev) => {
-      let updated = { ...prev, [name]: cleaned };
+      let updated = { ...prev, [name]: value };
       if (name === "CATEGORY_ID") updated.ITEM_ID = updated.TYPE_ID = "";
       if (name === "ITEM_ID") updated.TYPE_ID = "";
       return updated;
@@ -109,7 +107,7 @@ const [filters, setFilters] = useState({
   const checkDescriptionUsage = async (descData) => {
     try {
       const promises = descData.map((row) =>
-        apiPost("/api/workorders/admin/description/usage-check", {
+        apiPost("/api/admin/workorders/admin/description/usage-check", {
           category_id: row.category_id,
           item_id: row.item_id,
           type_id: row.type_id,
@@ -156,7 +154,7 @@ const handleSubmit = async (e) => {
       status: formData.STATUS,
     };
 
-    await apiPost("/api/description", payload);
+    await apiPost("/api/admin/description", payload);
 
     setFormData({
       DESCRIPTION: "",
@@ -207,7 +205,7 @@ const handleSubmit = async (e) => {
       status: editingData.STATUS,
     };
 
-    await apiPut(`/api/description/${id}`, payload);
+    await apiPut(`/api/admin/description/${id}`, payload);
     setEditingId(null);
     setItems([]);
     setTypes([]);
@@ -217,7 +215,7 @@ const handleSubmit = async (e) => {
 
   const handleDelete = async (row) => {
     if (!window.confirm("Delete this description?")) return;
-    await apiDelete(`/api/description/${row.id}`);
+    await apiDelete(`/api/admin/description/${row.id}`);
     await loadData();
   };
 

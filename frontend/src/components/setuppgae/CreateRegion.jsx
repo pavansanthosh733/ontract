@@ -23,7 +23,7 @@ const [filters, setFilters] = useState({
   });
 
   const fetchRegions = async () => {
-    const data = await apiGet("/api/region/");
+    const data = await apiGet("/api/admin/region/");
     setRegions(Array.isArray(data) ? data : []);
   };
 
@@ -31,11 +31,9 @@ const [filters, setFilters] = useState({
     fetchRegions();
   }, []);
 
-  const cleanInput = (value) => value.replace(/[^A-Za-z0-9.,\-&() ]/g, "");
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const cleaned = name === "REGION_NAME" ? cleanInput(value) : value;
-    setFormData((prev) => ({...prev,[name]: cleaned,}));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleEditChange = (e) => {
@@ -52,7 +50,7 @@ const handleSubmit = async (e) => {
       status: formData.STATUS,
     };
 
-    await apiPost("/api/region/", payload);
+    await apiPost("/api/admin/region/", payload);
 
     await Swal.fire({
       icon: "success",
@@ -96,7 +94,7 @@ const handleSubmit = async (e) => {
       status: editingData.STATUS,
     };
 
-    await apiPut(`/api/region/${id}`, payload);
+    await apiPut(`/api/admin/region/${id}`, payload);
     setEditingId(null);
     alert("region updated!");
     fetchRegions();
@@ -105,7 +103,7 @@ const handleSubmit = async (e) => {
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this region?")) return;
-    await apiDelete(`/api/region/${id}`);
+    await apiDelete(`/api/admin/region/${id}`);
     alert("region deleted!");
     fetchRegions();
   };
