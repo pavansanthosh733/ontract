@@ -155,7 +155,7 @@ def update_bank():
 
 
 # ==================================================================
-#                        PROFILE ROUTES
+#                        PROFILE ROUTES for pushing
 # ==================================================================
 
 @provider_bp.route("/profile", methods=["POST"])
