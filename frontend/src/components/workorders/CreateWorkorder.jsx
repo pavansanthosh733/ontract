@@ -53,10 +53,10 @@ const CreateWorkOrder = () => {
   useEffect(() => {
     const loadInitial = async () => {
       try {
-        const cat = await apiGet("/api/category/active");
+        const cat = await apiGet("/api/admin/category/active");
         setCategories(Array.isArray(cat) ? cat : []);
 
-        const regs = await apiGet("/api/region/");
+        const regs = await apiGet("/api/admin/region/");
         setRegions(Array.isArray(regs) ? regs : []);
 
         
@@ -129,14 +129,14 @@ const CreateWorkOrder = () => {
   // ===============================
   const fetchItemsForCategory = async (categoryId) => {
     if (!categoryId) return setItems([]);
-    const data = await apiGet(`/api/items/${categoryId}`);
+    const data = await apiGet(`/api/admin/items/${categoryId}`);
     setItems(Array.isArray(data) ? data : []);
   };
 
   const fetchTypesForCategoryItem = async (categoryId, itemId) => {
     if (!categoryId || !itemId) return setTypes([]);
     const data = await apiGet(
-      `/api/types/filter?category_id=${categoryId}&item_id=${itemId}`
+      `/api/admin/types/filter?category_id=${categoryId}&item_id=${itemId}`
     );
     setTypes(Array.isArray(data) ? data : []);
   };
@@ -149,7 +149,7 @@ const CreateWorkOrder = () => {
     if (!categoryId || !itemId || !typeId)
       return setDescriptionsDrop([]);
     const data = await apiGet(
-      `/api/description/filter?category_id=${categoryId}&item_id=${itemId}&type_id=${typeId}`
+      `/api/admin/description/filter?category_id=${categoryId}&item_id=${itemId}&type_id=${typeId}`
     );
     setDescriptionsDrop(Array.isArray(data) ? data : []);
   };
@@ -198,7 +198,7 @@ const CreateWorkOrder = () => {
   // ===============================
   const fetchStatesForRegion = async (regionId) => {
     if (!regionId) return setStates([]);
-    const data = await apiGet(`/api/state/by-region/${regionId}`);
+    const data = await apiGet(`/api/admin/state/by-region/${regionId}`);
     setStates(Array.isArray(data) ? data : []);
   };
 
@@ -214,7 +214,7 @@ const CreateWorkOrder = () => {
   const fetchCityForRegionState = async (regionId, stateId) => {
     if (!regionId || !stateId) return setCities([]);
     const data = await apiGet(
-      `/api/city/by-region-state?region_id=${regionId}&state_id=${stateId}`
+      `/api/admin/city/by-region-state?region_id=${regionId}&state_id=${stateId}`
     );
     setCities(Array.isArray(data) ? data : []);
   };
@@ -728,4 +728,4 @@ const handleImageChange = (files) => {
   );
 };
 
-export default CreateWorkOrder;//fun cdoessss
+export default CreateWorkOrder;
