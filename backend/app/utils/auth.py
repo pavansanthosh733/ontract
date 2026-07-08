@@ -37,6 +37,7 @@ PUBLIC_ROUTES = [
     "/api/admin/send_otp",
     "/api/admin/logout",
     "/api/admin/refresh",
+    "/api/workorders/assignment-audit",
       
 
     # ✅ Provider auth routes
@@ -50,11 +51,17 @@ PUBLIC_ROUTES = [
     "/api/verify-reset-otp",
     "/api/refresh",
     "/api/logout",
+        "/api/profile",
+    "/api/update_profile",
 
     # ✅ Contractor auth routes
     "/api/contractor/verify_otp",
     "/api/contractor/login",
     "/api/contractor/signup",
+    "/api/contractor/contractor_signup",
+    "/api/contractor/contractor_activate",
+    "/api/contractor/company_profile",
+    "/api/contractor/update_company_profile",
     "/api/contractor/activate",
     "/api/contractor/resend_otp",
     "/api/contractor/logout",

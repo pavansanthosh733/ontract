@@ -1739,24 +1739,36 @@ def get_assignment_audit():
         #workorder_bp.route("/admin/notifications/overrated", methods=["GET"])   donee
         
         
-@workorder_bp.route("/<workorder>/full-history", methods=["GET"])
+# @workorder_bp.route("/<workorder>/full-history", methods=["GET"])
+# def get_workorder_full_history(workorder):
+#     try:
+#         history, error = WorkOrder.get_full_history(workorder)
+
+#         if error:
+#             return jsonify({
+#                 "status": "error",
+#                 "message": error
+#             }), 400
+
+#         return jsonify({
+#             "status": "success",
+#             "data": history
+#         }), 200
+
+#     except Exception as e:
+#         return jsonify({
+#             "status": "error",
+#             "message": str(e)
+#         }), 500
+        
+        
+@admin_workorder_bp.route("/<workorder>/full-history", methods=["GET"])
 def get_workorder_full_history(workorder):
-    try:
-        history, error = WorkOrder.get_full_history(workorder)
+    data, error = WorkOrder.get_workorder_full_history(workorder)
+    print(f"Data testing for why error coming: {data}, Error: {error}")  # Debugging line
 
-        if error:
-            return jsonify({
-                "status": "error",
-                "message": error
-            }), 400
+    if error:
+        status_code = 404 if error == "Workorder not found" else 500
+        return jsonify({"error": error}), status_code
 
-        return jsonify({
-            "status": "success",
-            "data": history
-        }), 200
-
-    except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 500
+    return jsonify(data), 200

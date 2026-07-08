@@ -2,7 +2,7 @@
 from .database import db
 from flask_bcrypt import Bcrypt
 from sqlalchemy import text, func, LargeBinary
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta,timezone
 from decimal import Decimal
 from sqlalchemy.dialects.postgresql import JSON
 import json
@@ -3103,249 +3103,290 @@ class WorkOrder(db.Model):
             return None, str(e)
 
 
+    # @classmethod
+    # def get_assignment_audit(cls):
+    #     try:
+    #         sql = text("""
+    #             SELECT
+    #                 audit_id,
+    #                 workorder,
+    #                 selected_contractor_id,
+    #                 assignment_reason,
+    #                 suggested_contractors,
+    #                 selected_contractor,
+    #                 created_at
+    #             FROM contractor_assignment_audit_t
+    #             ORDER BY created_at DESC
+    #         """)
+
+    #         rows = db.session.execute(
+    #             sql
+    #         ).mappings().all()
+
+    #         result = []
+
+    #         for row in rows:
+    #             audit = dict(row)
+
+    #             # JSONB safety handling
+    #             if audit.get(
+    #                 "suggested_contractors"
+    #             ) is None:
+    #                 audit[
+    #                     "suggested_contractors"
+    #                 ] = []
+
+    #             if audit.get(
+    #                 "selected_contractor"
+    #             ) is None:
+    #                 audit[
+    #                     "selected_contractor"
+    #                 ] = {}
+
+    #             result.append(audit)
+
+    #         return result, None
+
+    #     except Exception as e:
+    #         return None, str(e)
+    #     #workorder_bp.route("/admin/notifications/overrated"
+    
+    
     @classmethod
     def get_assignment_audit(cls):
         try:
             sql = text("""
-                SELECT
-                    audit_id,
-                    workorder,
-                    selected_contractor_id,
-                    assignment_reason,
-                    suggested_contractors,
-                    selected_contractor,
-                    created_at
-                FROM contractor_assignment_audit_t
+                SELECT *
+                FROM (
+                    SELECT DISTINCT ON (workorder)
+                        audit_id,
+                        workorder,
+                        selected_contractor_id,
+                        assignment_reason,
+                        suggested_contractors,
+                        selected_contractor,
+                        created_at
+                    FROM contractor_assignment_audit_t
+                    ORDER BY workorder, created_at DESC
+                ) latest_per_workorder
                 ORDER BY created_at DESC
             """)
-
-            rows = db.session.execute(
-                sql
-            ).mappings().all()
-
+    
+            rows = db.session.execute(sql).mappings().all()
+    
             result = []
-
+    
             for row in rows:
                 audit = dict(row)
-
-                # JSONB safety handling
-                if audit.get(
-                    "suggested_contractors"
-                ) is None:
-                    audit[
-                        "suggested_contractors"
-                    ] = []
-
-                if audit.get(
-                    "selected_contractor"
-                ) is None:
-                    audit[
-                        "selected_contractor"
-                    ] = {}
-
+    
+                if audit.get("suggested_contractors") is None:
+                    audit["suggested_contractors"] = []
+    
+                if audit.get("selected_contractor") is None:
+                    audit["selected_contractor"] = {}
+    
                 result.append(audit)
-
+    
             return result, None
-
+    
         except Exception as e:
             return None, str(e)
-        #workorder_bp.route("/admin/notifications/overrated"
+            
         
         
-        
-    @classmethod
-    def get_full_history(cls, workorder):
-        try:
-            events = []
+    # @classmethod
+    # def get_full_history(cls, workorder):
+    #     try:
+    #         events = []
     
-            # -----------------------------------------
-            # 1. Base workorder info
-            # -----------------------------------------
-            wo_sql = text("""
-                SELECT
-                    id,
-                    workorder,
-                    status,
-                    created_t,
-                    created_by,
-                    withdrawn_at,
-                    withdrawn_by,
-                    withdraw_reason,
-                    closed_by
-                FROM workorder_t
-                WHERE workorder = :workorder
-            """)
+    #         # -----------------------------------------
+    #         # 1. Base workorder info
+    #         # -----------------------------------------
+    #         wo_sql = text("""
+    #             SELECT
+    #                 id,
+    #                 workorder,
+    #                 status,
+    #                 created_t,
+    #                 created_by,
+    #                 withdrawn_at,
+    #                 withdrawn_by,
+    #                 withdraw_reason,
+    #                 closed_by
+    #             FROM workorder_t
+    #             WHERE workorder = :workorder
+    #         """)
     
-            wo_row = db.session.execute(
-                wo_sql, {"workorder": workorder}
-            ).mappings().first()
+    #         wo_row = db.session.execute(
+    #             wo_sql, {"workorder": workorder}
+    #         ).mappings().first()
     
-            if not wo_row:
-                return None, "Workorder not found"
+    #         if not wo_row:
+    #             return None, "Workorder not found"
     
-            events.append({
-                "type": "created",
-                "timestamp": wo_row["created_t"],
-                "title": "Workorder Created",
-                "details": {
-                    "created_by": wo_row["created_by"],
-                    "status_at_creation": wo_row["status"]
-                }
-            })
+    #         events.append({
+    #             "type": "created",
+    #             "timestamp": wo_row["created_t"],
+    #             "title": "Workorder Created",
+    #             "details": {
+    #                 "created_by": wo_row["created_by"],
+    #                 "status_at_creation": wo_row["status"]
+    #             }
+    #         })
     
-            if wo_row["withdrawn_at"]:
-                events.append({
-                    "type": "withdrawn",
-                    "timestamp": wo_row["withdrawn_at"],
-                    "title": "Workorder Withdrawn",
-                    "details": {
-                        "withdrawn_by": wo_row["withdrawn_by"],
-                        "reason": wo_row["withdraw_reason"]
-                    }
-                })
+    #         if wo_row["withdrawn_at"]:
+    #             events.append({
+    #                 "type": "withdrawn",
+    #                 "timestamp": wo_row["withdrawn_at"],
+    #                 "title": "Workorder Withdrawn",
+    #                 "details": {
+    #                     "withdrawn_by": wo_row["withdrawn_by"],
+    #                     "reason": wo_row["withdraw_reason"]
+    #                 }
+    #             })
     
-            # -----------------------------------------
-            # 2. Assignment audit rounds
-            # -----------------------------------------
-            audit_sql = text("""
-                SELECT
-                    audit_id,
-                    assignment_reason,
-                    suggested_contractors,
-                    selected_contractor,
-                    created_at
-                FROM contractor_assignment_audit_t
-                WHERE workorder = :workorder
-                ORDER BY created_at ASC
-            """)
+    #         # -----------------------------------------
+    #         # 2. Assignment audit rounds
+    #         # -----------------------------------------
+    #         audit_sql = text("""
+    #             SELECT
+    #                 audit_id,
+    #                 assignment_reason,
+    #                 suggested_contractors,
+    #                 selected_contractor,
+    #                 created_at
+    #             FROM contractor_assignment_audit_t
+    #             WHERE workorder = :workorder
+    #             ORDER BY created_at ASC
+    #         """)
     
-            audit_rows = db.session.execute(
-                audit_sql, {"workorder": workorder}
-            ).mappings().all()
+    #         audit_rows = db.session.execute(
+    #             audit_sql, {"workorder": workorder}
+    #         ).mappings().all()
     
-            for i, row in enumerate(audit_rows, start=1):
-                suggested = row["suggested_contractors"] or []
-                selected = row["selected_contractor"] or {}
+    #         for i, row in enumerate(audit_rows, start=1):
+    #             suggested = row["suggested_contractors"] or []
+    #             selected = row["selected_contractor"] or {}
     
-                events.append({
-                    "type": "assignment_round",
-                    "round": i,
-                    "timestamp": row["created_at"],
-                    "title": f"Round {i}: {len(suggested)} Contractors Suggested",
-                    "details": {
-                        "suggested_count": len(suggested),
-                        "suggested_contractors": suggested,
-                        "selected_contractor": selected,
-                        "assignment_reason": row["assignment_reason"]
-                    }
-                })
+    #             events.append({
+    #                 "type": "assignment_round",
+    #                 "round": i,
+    #                 "timestamp": row["created_at"],
+    #                 "title": f"Round {i}: {len(suggested)} Contractors Suggested",
+    #                 "details": {
+    #                     "suggested_count": len(suggested),
+    #                     "suggested_contractors": suggested,
+    #                     "selected_contractor": selected,
+    #                     "assignment_reason": row["assignment_reason"]
+    #                 }
+    #             })
     
-            # -----------------------------------------
-            # 3. Actual assignment entries
-            # NOTE: verify exact column names/casing with
-            # \d workorder_assignment_t before running
-            # -----------------------------------------
-            assign_sql = text("""
-                SELECT
-                    "ID",
-                    provider_id,
-                    assigned_at,
-                    expiry_time,
-                    assignment_status
-                FROM workorder_assignment_t
-                WHERE "WORKORDER_ID" = :workorder
-                ORDER BY assigned_at ASC
-            """)
+    #         # -----------------------------------------
+    #         # 3. Actual assignment entries
+    #         # NOTE: verify exact column names/casing with
+    #         # \d workorder_assignment_t before running
+    #         # -----------------------------------------
+    #         assign_sql = text("""
+    #             SELECT
+    #                 "ID",
+    #                 provider_id,
+    #                 assigned_at,
+    #                 expiry_time,
+    #                 assignment_status
+    #             FROM workorder_assignment_t
+    #             WHERE "WORKORDER_ID" = :workorder
+    #             ORDER BY assigned_at ASC
+    #         """)
     
-            assign_rows = db.session.execute(
-                assign_sql, {"workorder": workorder}
-            ).mappings().all()
+    #         assign_rows = db.session.execute(
+    #             assign_sql, {"workorder": workorder}
+    #         ).mappings().all()
     
-            for row in assign_rows:
-                events.append({
-                    "type": "assignment_entry",
-                    "timestamp": row["assigned_at"],
-                    "title": f"Assigned to Provider #{row['provider_id']}",
-                    "details": {
-                        "provider_id": row["provider_id"],
-                        "assignment_status": row["assignment_status"],
-                        "expiry_time": row["expiry_time"]
-                    }
-                })
+    #         for row in assign_rows:
+    #             events.append({
+    #                 "type": "assignment_entry",
+    #                 "timestamp": row["assigned_at"],
+    #                 "title": f"Assigned to Provider #{row['provider_id']}",
+    #                 "details": {
+    #                     "provider_id": row["provider_id"],
+    #                     "assignment_status": row["assignment_status"],
+    #                     "expiry_time": row["expiry_time"]
+    #                 }
+    #             })
     
-            # -----------------------------------------
-            # 4. Life cycle events
-            # -----------------------------------------
-            lc_sql = text("""
-                SELECT
-                    id,
-                    contractor_id,
-                    contractor_name,
-                    status,
-                    contractor_remarks,
-                    admin_remarks,
-                    remarks,
-                    created_t,
-                    workorder_completed_time,
-                    workorder_close_time,
-                    workorder_reopen_time,
-                    requested_time_close
-                FROM workorder_life_cycle_t
-                WHERE workorder = :workorder
-                ORDER BY created_t ASC
-            """)
+    #         # -----------------------------------------
+    #         # 4. Life cycle events
+    #         # -----------------------------------------
+    #         lc_sql = text("""
+    #             SELECT
+    #                 id,
+    #                 contractor_id,
+    #                 contractor_name,
+    #                 status,
+    #                 contractor_remarks,
+    #                 admin_remarks,
+    #                 remarks,
+    #                 created_t,
+    #                 workorder_completed_time,
+    #                 workorder_close_time,
+    #                 workorder_reopen_time,
+    #                 requested_time_close
+    #             FROM workorder_life_cycle_t
+    #             WHERE workorder = :workorder
+    #             ORDER BY created_t ASC
+    #         """)
     
-            lc_rows = db.session.execute(
-                lc_sql, {"workorder": workorder}
-            ).mappings().all()
+    #         lc_rows = db.session.execute(
+    #             lc_sql, {"workorder": workorder}
+    #         ).mappings().all()
     
-            for row in lc_rows:
-                normalized_status = (row["status"] or "").strip().upper()
+    #         for row in lc_rows:
+    #             normalized_status = (row["status"] or "").strip().upper()
     
-                events.append({
-                    "type": "contractor_action",
-                    "timestamp": row["created_t"],
-                    "title": f"Status: {normalized_status}",
-                    "details": {
-                        "contractor_id": row["contractor_id"],
-                        "contractor_name": row["contractor_name"],
-                        "status": normalized_status,
-                        "contractor_remarks": row["contractor_remarks"],
-                        "admin_remarks": row["admin_remarks"],
-                        "remarks": row["remarks"]
-                    }
-                })
+    #             events.append({
+    #                 "type": "contractor_action",
+    #                 "timestamp": row["created_t"],
+    #                 "title": f"Status: {normalized_status}",
+    #                 "details": {
+    #                     "contractor_id": row["contractor_id"],
+    #                     "contractor_name": row["contractor_name"],
+    #                     "status": normalized_status,
+    #                     "contractor_remarks": row["contractor_remarks"],
+    #                     "admin_remarks": row["admin_remarks"],
+    #                     "remarks": row["remarks"]
+    #                 }
+    #             })
     
-                if row["workorder_completed_time"]:
-                    events.append({
-                        "type": "completed",
-                        "timestamp": row["workorder_completed_time"],
-                        "title": "Workorder Completed",
-                        "details": {
-                            "contractor_name": row["contractor_name"],
-                            "contractor_remarks": row["contractor_remarks"]
-                        }
-                    })
+    #             if row["workorder_completed_time"]:
+    #                 events.append({
+    #                     "type": "completed",
+    #                     "timestamp": row["workorder_completed_time"],
+    #                     "title": "Workorder Completed",
+    #                     "details": {
+    #                         "contractor_name": row["contractor_name"],
+    #                         "contractor_remarks": row["contractor_remarks"]
+    #                     }
+    #                 })
     
-                if row["workorder_close_time"]:
-                    events.append({
-                        "type": "closed",
-                        "timestamp": row["workorder_close_time"],
-                        "title": "Workorder Closed by Admin",
-                        "details": {
-                            "admin_remarks": row["admin_remarks"]
-                        }
-                    })
+    #             if row["workorder_close_time"]:
+    #                 events.append({
+    #                     "type": "closed",
+    #                     "timestamp": row["workorder_close_time"],
+    #                     "title": "Workorder Closed by Admin",
+    #                     "details": {
+    #                         "admin_remarks": row["admin_remarks"]
+    #                     }
+    #                 })
     
-                if row["workorder_reopen_time"]:
-                    events.append({
-                        "type": "reopened",
-                        "timestamp": row["workorder_reopen_time"],
-                        "title": "Workorder Reopened by Admin",
-                        "details": {
-                            "admin_remarks": row["admin_remarks"]
-                        }
-                    })
+    #             if row["workorder_reopen_time"]:
+    #                 events.append({
+    #                     "type": "reopened",
+    #                     "timestamp": row["workorder_reopen_time"],
+    #                     "title": "Workorder Reopened by Admin",
+    #                     "details": {
+    #                         "admin_remarks": row["admin_remarks"]
+    #                     }
+    #                 })
     
             # -----------------------------------------
             # 5. Sort everything chronologically
@@ -3371,4 +3412,239 @@ class WorkOrder(db.Model):
             }, None
     
         except Exception as e:
+            return None, str(e)
+        
+        
+        
+
+
+    @staticmethod
+    def _normalize_ts(ts):
+        """
+        Normalize any datetime to naive UTC so mixed tz-aware /
+        tz-naive columns from different tables can be sorted
+        against each other safely.
+        """
+        if ts is None:
+            return None
+        if isinstance(ts, datetime):
+            if ts.tzinfo is not None:
+                return ts.astimezone(timezone.utc).replace(tzinfo=None)
+            return ts
+        return None
+
+    @classmethod
+    def get_workorder_full_history(cls, workorder):
+        logging.info(f"Fetching full lifecycle history for workorder: '{workorder}'")
+
+        try:
+            workorder_sql = text("""
+                SELECT a.*, c.region_name, e.state_name, f.city_name, d.category_name,
+                       g.item_name, h.type_name, i.description_name
+                FROM workorder_t a
+                LEFT JOIN region_master_t c ON a.region = c.region_id
+                LEFT JOIN state_master_t e ON a.state = e.state_id
+                LEFT JOIN city_master_t f ON a.city = f.city_id
+                LEFT JOIN category_master_t d ON a.category = d.category_id
+                LEFT JOIN item_master_t g ON a.item = g.item_id
+                LEFT JOIN type_master_t h ON a.type = h.type_id
+                LEFT JOIN description_master_t i ON a.description = i.description_id
+                WHERE a.workorder = :query
+            """)
+
+            assignment_sql = text("""
+                SELECT wa.*, u.name AS contractor_name
+                FROM workorder_assignment_t wa
+                LEFT JOIN users_t u ON u.user_uid = wa.provider_id
+                WHERE wa."WORKORDER_ID" = :query
+                ORDER BY wa.assigned_at
+            """)
+
+            lifecycle_sql = text("""
+                SELECT lc.*, u.name AS contractor_name
+                FROM workorder_life_cycle_t lc
+                LEFT JOIN users_t u ON u.user_uid = lc.contractor_id
+                WHERE lc.workorder = :query
+                ORDER BY lc.created_t
+            """)
+
+            # One row per "suggestion round": who was suggested,
+            # who got picked, and the reason why
+            audit_sql = text("""
+                SELECT
+                    audit_id,
+                    workorder,
+                    selected_contractor_id,
+                    assignment_reason,
+                    suggested_contractors,
+                    selected_contractor,
+                    created_at
+                FROM contractor_assignment_audit_t
+                WHERE workorder = :query
+                ORDER BY created_at
+            """)
+
+            workorder_row = db.session.execute(
+                workorder_sql, {"query": workorder}
+            ).mappings().first()
+
+            if not workorder_row:
+                return None, "Workorder not found"
+
+            assignments = db.session.execute(
+                assignment_sql, {"query": workorder}
+            ).mappings().all()
+
+            lifecycles = db.session.execute(
+                lifecycle_sql, {"query": workorder}
+            ).mappings().all()
+
+            audit_rounds = db.session.execute(
+                audit_sql, {"query": workorder}
+            ).mappings().all()
+
+            response = dict(workorder_row)
+
+            for key, value in response.items():
+                if isinstance(value, datetime):
+                    response[key] = value.isoformat()
+
+            if (
+                "image" in response
+                and response["image"]
+                and isinstance(response["image"], (bytes, bytearray))
+            ):
+                response["image"] = base64.b64encode(response["image"]).decode("utf-8")
+
+            timeline = []
+
+            # ==================================================
+            # EVENT: WORKORDER CREATED
+            # ==================================================
+            created_raw = workorder_row.get("created_t")
+            timeline.append({
+                "event_type": "CREATED",
+                "title": "Workorder Created",
+                "sort_ts": cls._normalize_ts(created_raw),
+                "time": created_raw.isoformat() if created_raw else None,
+                "details": {
+                    "workorder": workorder_row.get("workorder"),
+                    "status": workorder_row.get("status"),
+                }
+            })
+
+            # ==================================================
+            # EVENT: EACH SUGGESTION / SELECTION ROUND
+            # ==================================================
+            for row in audit_rounds:
+                suggested = row.get("suggested_contractors") or []
+                selected = row.get("selected_contractor") or {}
+                created_at_raw = row.get("created_at")
+
+                timeline.append({
+                    "event_type": "CONTRACTOR_ROUND",
+                    "title": f"{len(suggested)} Contractor(s) Suggested",
+                    "sort_ts": cls._normalize_ts(created_at_raw),
+                    "time": created_at_raw.isoformat() if created_at_raw else None,
+                    "details": {
+                        "audit_id": row.get("audit_id"),
+                        "suggested_contractors": suggested,
+                        "selected_contractor": selected,
+                        "selected_contractor_id": row.get("selected_contractor_id"),
+                        "assignment_reason": row.get("assignment_reason"),
+                        "suggested_count": len(suggested),
+                    }
+                })
+
+            # ==================================================
+            # EVENT: REJECTED / EXPIRED ASSIGNMENTS
+            # ==================================================
+            for row in assignments:
+                status = row.get("assignment_status")
+
+                if status not in ["REJECTED", "EXPIRED"]:
+                    continue
+
+                remarks = None
+                matching_lifecycle = next(
+                    (
+                        lc for lc in lifecycles
+                        if lc.get("status") == status
+                        and str(lc.get("contractor_id")) == str(row.get("provider_id"))
+                    ),
+                    None
+                )
+                if matching_lifecycle:
+                    remarks = (
+                        matching_lifecycle.get("contractor_remarks")
+                        or matching_lifecycle.get("remarks")
+                    )
+
+                assigned_at_raw = row.get("assigned_at")
+
+                timeline.append({
+                    "event_type": status,
+                    "title": f"Contractor {status.title()}",
+                    "sort_ts": cls._normalize_ts(assigned_at_raw),
+                    "time": assigned_at_raw.isoformat() if assigned_at_raw else None,
+                    "details": {
+                        "contractor_id": row.get("provider_id"),
+                        "contractor_name": row.get("contractor_name"),
+                        "expiry_time": (
+                            row.get("expiry_time").isoformat()
+                            if row.get("expiry_time") else None
+                        ),
+                        "remarks": remarks,
+                    }
+                })
+
+            # ==================================================
+            # EVENT: LIFECYCLE EVENTS (assigned/completed/closed/reopened...)
+            # ==================================================
+            for row in lifecycles:
+                status = row.get("status")
+
+                if status in ["REJECTED", "EXPIRED"]:
+                    continue  # already represented above
+
+                event_time_raw = (
+                    row.get("workorder_close_time")
+                    or row.get("workorder_reopen_time")
+                    or row.get("workorder_completed_time")
+                    or row.get("created_t")
+                )
+
+                timeline.append({
+                    "event_type": status,
+                    "title": (status or "Status Update").replace("_", " ").title(),
+                    "sort_ts": cls._normalize_ts(event_time_raw),
+                    "time": event_time_raw.isoformat() if event_time_raw else None,
+                    "details": {
+                        "contractor_id": row.get("contractor_id"),
+                        "contractor_name": row.get("contractor_name"),
+                        "remarks": (
+                            row.get("admin_remarks")
+                            or row.get("contractor_remarks")
+                            or row.get("remarks")
+                        ),
+                    }
+                })
+
+            # ==================================================
+            # SORT MERGED TIMELINE CHRONOLOGICALLY
+            # ==================================================
+            timeline = sorted(
+                timeline,
+                key=lambda x: x["sort_ts"] or datetime.min
+            )
+
+            for event in timeline:
+                event.pop("sort_ts", None)  # only needed for ordering
+
+            response["timeline"] = timeline
+
+            return response, None
+
+        except Exception as e:
+            logging.exception("Error building full workorder history")
             return None, str(e)
