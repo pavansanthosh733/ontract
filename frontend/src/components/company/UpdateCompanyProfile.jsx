@@ -1533,7 +1533,7 @@ const servicesArray = locationServiceList.map(item => ({
         </div>
       )}
     </div>
-  );
+  );//deploy
 }
 
 export default UpdateCompanyProfile;

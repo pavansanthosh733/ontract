@@ -285,7 +285,7 @@ function CompanyProfile({ contractor }) {
       list[index] = row;
       return list;
     });
-  };
+  };//deply
 
   const handleAddLocationService = () => {
     setLocationServiceList(prev => [
