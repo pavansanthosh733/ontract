@@ -23,7 +23,7 @@ const WorkorderMaxAmountPage = () => {
   // ================= FETCH =================
   const fetchMaxAmount = async () => {
     try {
-      const res = await apiGet("/api/workorder-max-amount");
+      const res = await apiGet("/api/admin/workorder-max-amount");
       if (res?.success && res?.data) {
         setRecords(Array.isArray(res.data) ? res.data : [res.data]);
       } else {
@@ -81,7 +81,7 @@ const WorkorderMaxAmountPage = () => {
   // ================= UPDATE =================
   const handleUpdate = async (id) => {
     try {
-      await apiPut(`/api/workorder-max-amount/${id}`, {
+      await apiPut(`/api/admin/workorder-max-amount/${id}`, {
         ...editingData,
         updated_by: admin?.admin_id || "SYSTEM",
       });
@@ -97,7 +97,7 @@ const WorkorderMaxAmountPage = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this record?")) return;
     try {
-      await apiDelete(`/api/workorder-max-amount/${id}`);
+      await apiDelete(`/api/admin/workorder-max-amount/${id}`);
       alert("✅ Deleted");
       fetchMaxAmount();
     } catch {
