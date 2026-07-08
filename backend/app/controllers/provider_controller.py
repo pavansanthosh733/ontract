@@ -715,7 +715,7 @@ class ProviderController:
             # ✅ USING YOUR EXISTING METHOD
             ProviderModel.insert_services(user_uid, cleaned_services)
     
-        # ================= NOTIFICATIONS =================
+        # ================= NOTIFICATIONS ================= done for deployment
         send_email(
             ADMIN_EMAIL,
             "New Provider Ready for Review",
