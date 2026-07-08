@@ -65,7 +65,7 @@ const [formData, setFormData] = useState({
 
   /* ================= PREFILL FROM PROFILE API ================= */
 useEffect(() => {
-  apiGet("/api/category")
+  apiGet("/api/contractor/category")
     .then(data => {
       setCategories(data || []);
       setServicesList(data || []);
@@ -106,7 +106,7 @@ useEffect(() => {
       const reg = regions.find(r => r.region_name === item.region);
 
       if (reg) {
-        const states = await apiGet(`/api/state/by-region/${reg.region_id}`);
+        const states = await apiGet(`/api/contractor/state/by-region/${reg.region_id}`);
 
         setLocationServiceList(prev => {
           const copy = [...prev];
@@ -131,7 +131,7 @@ useEffect(() => {
 
       if (reg && st) {
         const cities = await apiGet(
-          `/api/city/by-region-state?region_id=${reg.region_id}&state_id=${st.state_id}`
+          `/api/contractor/city/by-region-state?region_id=${reg.region_id}&state_id=${st.state_id}`
         );
 
         setLocationServiceList(prev => {
@@ -155,7 +155,7 @@ useEffect(() => {
       );
 
       if (cat) {
-        const items = await apiGet(`/api/items/${cat.category_id}`);
+        const items = await apiGet(`/api/contractor/items/${cat.category_id}`);
 
         setLocationServiceList(prev => {
           const copy = [...prev];
@@ -184,7 +184,7 @@ useEffect(() => {
 
       if (cat && it) {
         const types = await apiGet(
-          `/api/types/filter?category_id=${cat.category_id}&item_id=${it.item_id}`
+          `/api/contractor/types/filter?category_id=${cat.category_id}&item_id=${it.item_id}`
         );
 
         setLocationServiceList(prev => {
@@ -219,7 +219,7 @@ useEffect(() => {
 
       if (cat && it && tp) {
         const descriptions = await apiGet(
-          `/api/description/filter?category_id=${cat.category_id}&item_id=${it.item_id}&type_id=${tp.type_id}`
+          `/api/contractor/description/filter?category_id=${cat.category_id}&item_id=${it.item_id}&type_id=${tp.type_id}`
         );
 
         setLocationServiceList(prev => {
@@ -237,9 +237,9 @@ useEffect(() => {
 
 
   useEffect(() => {
-    apiGet("/api/region/").then(setRegions).catch(() => setRegions([]));
+    apiGet("/api/contractor/region/").then(setRegions).catch(() => setRegions([]));
     
-    apiGet("/api/state/id-types").then(setIdTypes).catch(() => setIdTypes([]));
+    apiGet("/api/contractor/state/id-types").then(setIdTypes).catch(() => setIdTypes([]));
   }, []);
 
   /* ================= FILE HANDLERS ================= */
@@ -252,7 +252,7 @@ useEffect(() => {
 const fetchTypesByCategoryItem = async (categoryId, itemId) => {
   if (!categoryId || !itemId) return setTypes([]);
   const data = await apiGet(
-    `/api/types/filter?category_id=${categoryId}&item_id=${itemId}`
+    `/api/contractor/types/filter?category_id=${categoryId}&item_id=${itemId}`
   );
   setTypes(data || []);
 };
@@ -260,7 +260,7 @@ const fetchTypesByCategoryItem = async (categoryId, itemId) => {
 const fetchDescriptions = async (categoryId, itemId, typeId) => {
   if (!categoryId || !itemId || !typeId) return setDescriptions([]);
   const data = await apiGet(
-    `/api/description/filter?category_id=${categoryId}&item_id=${itemId}&type_id=${typeId}`
+    `/api/contractor/description/filter?category_id=${categoryId}&item_id=${itemId}&type_id=${typeId}`
   );
   setDescriptions(data || []);
 };
@@ -483,7 +483,7 @@ useEffect(() => {
   /* ================= HELPERS ================= */
   const fetchStates = async (regionId, index) => {
     try {
-      const data = await apiGet(`/api/state/by-region/${regionId}`);
+      const data = await apiGet(`/api/contractor/state/by-region/${regionId}`);
       setLocationServiceList(prev => {
         const updated = [...prev];
         updated[index].states = data || [];
@@ -511,7 +511,7 @@ if (field === "region") {
   updated.city_id = null;
 
   updated.states = found
-    ? await apiGet(`/api/state/by-region/${found.region_id}`)
+    ? await apiGet(`/api/contractor/state/by-region/${found.region_id}`)
     : [];
 
   updated.cities = [];
@@ -548,7 +548,7 @@ if (field === "city") {
   if (field === "category") {
     updated.category_id = value.id;
     updated.category_name = value.name;
-    updated.items = await apiGet(`/api/items/${value.id}`);
+    updated.items = await apiGet(`/api/contractor/items/${value.id}`);
     updated.types = [];
     updated.descriptions = [];
   }
@@ -556,13 +556,13 @@ if (field === "city") {
   if (field === "item") {
     updated.item_id = value.id;
     updated.item_name = value.name;
-    updated.types = await apiGet(`/api/types/filter?category_id=${updated.category_id}&item_id=${value.id}`);
+    updated.types = await apiGet(`/api/contractor/types/filter?category_id=${updated.category_id}&item_id=${value.id}`);
   }
 
   if (field === "type") {
     updated.type_id = value.id;
     updated.type_name = value.name;
-    updated.descriptions = await apiGet(`/api/description/filter?category_id=${updated.category_id}&item_id=${updated.item_id}&type_id=${value.id}`);
+    updated.descriptions = await apiGet(`/api/contractor/description/filter?category_id=${updated.category_id}&item_id=${updated.item_id}&type_id=${value.id}`);
   }
 
 if (field === "description") {
@@ -616,7 +616,7 @@ const handleAddLocationService = () => {
 const fetchCitiesByRegionState = async (regionId, stateId) => {
   if (!regionId || !stateId) return [];
   return await apiGet(
-    `/api/city/by-region-state?region_id=${regionId}&state_id=${stateId}`
+    `/api/contractor/city/by-region-state?region_id=${regionId}&state_id=${stateId}`
   );
 };
 const handleFormChange = (e) => {

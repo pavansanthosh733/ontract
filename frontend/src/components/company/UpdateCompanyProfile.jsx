@@ -105,7 +105,7 @@ const [descriptions, setDescriptions] = useState([]);
     }
   }, [sameAsMailing, mailingPostalCode, formData.mailing_address]);
   useEffect(() => {
-  apiGet("/api/category")
+  apiGet("/api/contractor/category")
     .then(data => {
       setCategories(data || []);
       setServicesList(data || []);
@@ -178,7 +178,7 @@ const [descriptions, setDescriptions] = useState([]);
  // Fetch Malaysia Regions
 // Fetch Regions → store full objects
 useEffect(() => {
-  apiGet("/api/region/")
+  apiGet("/api/contractor/region/")
     .then((data) => {
       console.log("Regions fetched:", data);
       setRegions(Array.isArray(data) ? data : []);
@@ -189,18 +189,18 @@ useEffect(() => {
 
 const fetchStates = (regionName, index, regionIdOverride = null) => {
   const fetchItemsByCategory = async (categoryId) => {
-  return await apiGet(`/api/items/${categoryId}`);
+  return await apiGet(`/api/contractor/items/${categoryId}`);
 };
 
 const fetchTypesByCategoryItem = async (categoryId, itemId) => {
   return await apiGet(
-    `/api/types/filter?category_id=${categoryId}&item_id=${itemId}`
+    `/api/contractor/types/filter?category_id=${categoryId}&item_id=${itemId}`
   );
 };
 
 const fetchDescriptions = async (categoryId, itemId, typeId) => {
   return await apiGet(
-    `/api/description/filter?category_id=${categoryId}&item_id=${itemId}&type_id=${typeId}`
+    `/api/contractor/description/filter?category_id=${categoryId}&item_id=${itemId}&type_id=${typeId}`
   );
 };
   if (!regionName) {
@@ -217,7 +217,7 @@ const fetchDescriptions = async (categoryId, itemId, typeId) => {
 
   if (!regionId) return;
 
-  apiGet(`/api/state/by-region/${regionId}`)
+  apiGet(`/api/contractor/state/by-region/${regionId}`)
     .then(data => {
       setLocationServiceList(prev => {
         const updated = [...prev];
@@ -300,7 +300,7 @@ const handleFormChange = (e) => {
           row.types = [];
           row.descriptions = [];
 
-          apiGet(`/api/state/by-region/${value.id}`).then(data => {
+          apiGet(`/api/contractor/state/by-region/${value.id}`).then(data => {
             setLocationServiceList(p => {
               const copy = [...p];
               copy[index].states = data || [];
@@ -316,7 +316,7 @@ const handleFormChange = (e) => {
           row.city_id = "";
           row.cities = [];
 
-          apiGet(`/api/city/by-region-state?region_id=${row.region_id}&state_id=${value.id}`)
+          apiGet(`/api/contractor/city/by-region-state?region_id=${row.region_id}&state_id=${value.id}`)
             .then(data => {
               setLocationServiceList(p => {
                 const copy = [...p];
@@ -340,7 +340,7 @@ const handleFormChange = (e) => {
           row.types = [];
           row.descriptions = [];
 
-          apiGet(`/api/items/${value.id}`).then(data => {
+          apiGet(`/api/contractor/items/${value.id}`).then(data => {
             setLocationServiceList(p => {
               const copy = [...p];
               copy[index].items = data || [];
@@ -357,7 +357,7 @@ const handleFormChange = (e) => {
           row.types = [];
           row.descriptions = [];
 
-          apiGet(`/api/types/filter?category_id=${row.category_id}&item_id=${value.id}`)
+          apiGet(`/api/contractor/types/filter?category_id=${row.category_id}&item_id=${value.id}`)
             .then(data => {
               setLocationServiceList(p => {
                 const copy = [...p];
@@ -374,7 +374,7 @@ const handleFormChange = (e) => {
           row.description_id = "";
           row.descriptions = [];
 
-          apiGet(`/api/description/filter?category_id=${row.category_id}&item_id=${row.item_id}&type_id=${value.id}`)
+          apiGet(`/api/contractor/description/filter?category_id=${row.category_id}&item_id=${row.item_id}&type_id=${value.id}`)
             .then(data => {
               setLocationServiceList(p => {
                 const copy = [...p];
@@ -450,7 +450,7 @@ const handleFormChange = (e) => {
   const fetchAndAppend = async (type, postalCode) => {
   if (postalCode.length !== 5) return;
   try {
-    const res = await fetch(`${BASE_URLS.user}/api/malaysia_postcode?postcode=${postalCode}`);
+    const res = await fetch(`${BASE_URLS.user}/api/contractor/malaysia_postcode?postcode=${postalCode}`);
     if (res.ok) {
       const data = await res.json();
       const city = data.city || '';
@@ -1453,7 +1453,7 @@ const servicesArray = locationServiceList.map(item => ({
             <div className="d-flex flex-column flex-md-row align-items-center justify-content-between">
               <div className="d-flex align-items-center mb-3 mb-md-0">
                 <img
-                  src={`${BASE_URLS.user}/api/get_image/${contractor.email_id}/contractor_logo`}
+                  src={`${BASE_URLS.user}/api/contractor/get_image/${contractor.email_id}/contractor_logo`}
                   alt="Company Logo"
                   className="rounded-circle shadow-sm me-3"
                   width="100"
@@ -1520,7 +1520,7 @@ const servicesArray = locationServiceList.map(item => ({
           <div className="certificate-section shadow-sm p-4 rounded bg-white">
             <h5 className="fw-semibold text-secondary mb-3">Documents</h5>
             <a
-              href={`${BASE_URLS.user}/api/get_image/${contractor.email_id}/contractor_certificate`}
+              href={`${BASE_URLS.user}/api/contractor/get_image/${contractor.email_id}/contractor_certificate`}
               target="_blank"
               rel="noreferrer"
               className="btn btn-outline-primary btn-sm"
