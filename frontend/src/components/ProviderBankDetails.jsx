@@ -61,7 +61,6 @@ function ProviderBankDetails() {
         // ✅ Handle existing statement
         if (data.bank_details.bank_statement) {
           setExistingStatement(true);
-
 const filePath = data.bank_details.bank_statement;
 
 if (filePath) {
@@ -92,7 +91,6 @@ if (filePath) {
 
   fetchProfile();
 }, [user]);
-
   // --------------------------------------
   // FILE CHANGE
   // --------------------------------------

@@ -133,18 +133,19 @@ def update_bank():
         if not all([email, bank_name, holder_name, account_number, swift, bank_statement]):
             return jsonify({"error": "All bank fields and statement required"}), 400
 
-        statement_path = save_uploaded_file(bank_statement, "provider_bank_statements")
-
-        # RESET POINTER before reading into DB
-        bank_statement.seek(0)
-
-        # ---------------------------------------------
-        # SAVE TO DB AS BYTES
-        # ---------------------------------------------
-        statement_bytes = bank_statement.read()
-
+        file_info = save_uploaded_file(
+            bank_statement,
+            "provider_bank_statements",
+            "/uploads/provider_bank_statements"
+        )
+        
         result, status = ProviderController.update_bank(
-            email, bank_name, holder_name, account_number, swift, statement_bytes
+            email,
+            bank_name,
+            holder_name,
+            account_number,
+            swift,
+            file_info["file_path"]
         )
 
         return jsonify(result), status

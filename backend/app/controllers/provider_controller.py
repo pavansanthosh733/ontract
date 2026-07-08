@@ -539,7 +539,7 @@ class ProviderController:
                 # ✅ holder was never encrypted
                 "holder_name": bank_row["account_holder_name"],
         
-                "bank_statement": base64.b64encode(bank_row["bank_statement"]).decode()
+                "bank_statement":bank_row["bank_statement"]
                 if bank_row.get("bank_statement") else None,
         
                 # ✅ optional
@@ -773,7 +773,7 @@ class ProviderController:
                 "swift": decrypt_value(bank_row["swift_code"]),
                 "bank_account_number": decrypt_value(bank_row["bank_account_number"]),
                 "holder_name": bank_row["account_holder_name"],
-                "bank_statement": base64.b64encode(bank_row["bank_statement"]).decode()
+                "bank_statement":bank_row["bank_statement"]
                 if bank_row.get("bank_statement") else None
             }
 
