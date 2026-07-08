@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { apiGet } from "../api";
 import "./css/ManualAssignedWorkorders.css";
 import AuditDetailsModal from "./modals/AuditDetailsModal";
+import { useNavigate } from "react-router-dom";
 
 function ManualAssignedWorkorders() {
   const [data, setData] = useState([]);
@@ -9,6 +10,7 @@ function ManualAssignedWorkorders() {
 
   const [showModal, setShowModal] = useState(false);
   const [selectedAudit, setSelectedAudit] = useState(null);
+  const navigate = useNavigate();
 
   // ✅ NEW: filter state — one key per column
   const [filters, setFilters] = useState({
@@ -27,7 +29,7 @@ function ManualAssignedWorkorders() {
       setLoading(true);
 
       const res = await apiGet(
-        "/api/workorders/assignment-audit"
+        "/api/admin/workorders/assignment-audit"
       );
 
       console.log(
@@ -105,12 +107,9 @@ function ManualAssignedWorkorders() {
   /* =====================================================
      HANDLE WORKORDER CLICK  - OPEN MODAL
   ===================================================== */
-  const handleWorkorderClick = (
-    audit
-  ) => {
-    setSelectedAudit(audit);
-    setShowModal(true);
-  };
+const handleWorkorderClick = (audit) => {
+  navigate(`/workorders/${encodeURIComponent(audit.workorder)}/history`);
+};
 
   /* =====================================================
      CLOSE MODAL
