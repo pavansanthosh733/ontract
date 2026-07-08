@@ -95,6 +95,7 @@ def create_app(include_admin=True):
     from app.views.location_routes import location_bp
     from app.views.contractor_routes import contractor_bp
 
+    
     from app.controllers.workorder_controller import (workorder_bp,admin_workorder_bp)
     from app.controllers.testdb_controller import testdb_bp
     from app.views.workorder_area_view import workorder_area_view
@@ -102,11 +103,11 @@ def create_app(include_admin=True):
     from app.controllers.workorder_mapping_controller import workorder_mapping_bp
     from app.routes.workorder_mail_bp import workorder_mail_bp
 
-    from app.controllers.region_controller import region_bp
-    from app.controllers.state_controller import state_bp
-    from app.controllers.city_controller import city_bp
+    from app.controllers.region_controller import (region_bp,admin_region_bp,contractor_region_bp)
+    from app.controllers.state_controller import (state_bp,admin_state_bp,contractor_state_bp)
+    from app.controllers.city_controller import (city_bp,admin_city_bp,contractor_city_bp)
 
-    from app.views.master_view import master_bp
+    from app.views.master_view import (master_bp,admin_master_bp,contractor_master_bp)
     from app.routes.admin_routes import admin_bp
 
     from app.controllers.user_dashboard_controller import user_dashboard_bp
@@ -114,8 +115,8 @@ def create_app(include_admin=True):
     from app.controllers.invoice_controller import invoice_bp
     from app.controllers.workorder_report_controller import workorder_report_bp
     from app.controllers.ai_report_controller import ai_report_bp
-    from app.controllers.zone_controller import zone_bp
-    app.register_blueprint(admin_workorder_bp,url_prefix="/api/admin/workorders")
+    from app.controllers.zone_controller import (zone_bp)
+
 
     # ---------------------------------------------------------
     # REGISTER ROUTES
@@ -127,6 +128,7 @@ def create_app(include_admin=True):
     app.register_blueprint(contractor_bp, url_prefix="/api/contractor")
 
     app.register_blueprint(workorder_bp, url_prefix="/api/workorders")
+    app.register_blueprint(admin_workorder_bp,url_prefix="/api/admin/workorders")
     app.register_blueprint(testdb_bp, url_prefix="/api/testdb")
     app.register_blueprint(workorder_area_view, url_prefix="/api")
     app.register_blueprint(workorder_type_view, url_prefix="/api/workorder-type")
@@ -134,13 +136,21 @@ def create_app(include_admin=True):
     app.register_blueprint(workorder_mail_bp, url_prefix="/api/workorders")
 
     app.register_blueprint(region_bp, url_prefix="/api/region")
+    app.register_blueprint(admin_region_bp, url_prefix="/api/admin/region")
+    app.register_blueprint(contractor_region_bp, url_prefix="/api/contractor/region")
     app.register_blueprint(state_bp, url_prefix="/api/state")
+    app.register_blueprint(admin_state_bp, url_prefix="/api/admin/state")
+    app.register_blueprint(contractor_state_bp, url_prefix="/api/contractor/state")
     app.register_blueprint(city_bp, url_prefix="/api/city")
+    app.register_blueprint(admin_city_bp, url_prefix="/api/admin/city")
+    app.register_blueprint(contractor_city_bp, url_prefix="/api/contractor/city")
     app.register_blueprint(master_bp, url_prefix="/api")
+    app.register_blueprint(admin_master_bp, url_prefix="/api/admin")
+    app.register_blueprint(contractor_master_bp, url_prefix="/api/contractor")
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
     app.register_blueprint(user_dashboard_bp, url_prefix="/api")
 
-    app.register_blueprint(workorder_max_amount_bp, url_prefix="/api")
+    app.register_blueprint(workorder_max_amount_bp, url_prefix="/api/admin")
     app.register_blueprint(invoice_bp)
     app.register_blueprint(workorder_report_bp, url_prefix="/api")
     app.register_blueprint(ai_report_bp, url_prefix="/api/ai-report")

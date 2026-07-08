@@ -37,7 +37,7 @@ PUBLIC_ROUTES = [
     "/api/admin/send_otp",
     "/api/admin/logout",
     "/api/admin/refresh",
-    "/api/workorders/assignment-audit",
+   
       
 
     # ✅ Provider auth routes
@@ -51,7 +51,7 @@ PUBLIC_ROUTES = [
     "/api/verify-reset-otp",
     "/api/refresh",
     "/api/logout",
-        "/api/profile",
+    "/api/profile",
     "/api/update_profile",
 
     # ✅ Contractor auth routes
@@ -89,18 +89,14 @@ PUBLIC_ROUTES = [
     "/api/file",
 
     # ✅ Master data routes
-    "/api/region",
-    "/api/state",
-    "/api/city",
-    "/api/zone",
-    "/api/category",
+   
+    
+    
     "/api/mapping",
     "/api/workorder-type",
     "/api/master",
     "/api/ai-report",
-    "/api/items",
-    "/api/types",
-    "/api/description",
+   
 ]
 
 

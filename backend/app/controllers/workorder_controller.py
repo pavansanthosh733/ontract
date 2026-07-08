@@ -1094,7 +1094,7 @@ def get_reopen_workorders_for_provider():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
-@workorder_bp.route("/admin/notifications/overrated", methods=["GET"])
+@admin_workorder_bp.route("/admin/notifications/overrated", methods=["GET"])
 def get_overrated_admin_notifications():
     try:
         data = WorkOrder.get_overrated_notifications()
@@ -1126,7 +1126,7 @@ def get_admin_overrated_workorder_details():
         )
         return jsonify({"error": str(e)}), 500
 
-@workorder_bp.route("/admin/category/usage-check", methods=["POST"])
+@admin_workorder_bp.route("/admin/category/usage-check", methods=["POST"])
 def check_category_usage():
     try:
         req_data = request.get_json()
@@ -1149,7 +1149,7 @@ def check_category_usage():
         logging.exception("check_category_usage controller error")
         return jsonify({"error": str(e)}), 500
 
-@workorder_bp.route("/admin/item/usage-check", methods=["POST"])
+@admin_workorder_bp.route("/admin/item/usage-check", methods=["POST"])
 def check_item_usage():
     try:
         req_data = request.get_json()
@@ -1178,7 +1178,7 @@ def check_item_usage():
         logging.exception("check_item_usage controller error")
         return jsonify({"error": str(e)}), 500
 
-@workorder_bp.route("/admin/type/usage-check", methods=["POST"])
+@admin_workorder_bp.route("/admin/type/usage-check", methods=["POST"])
 def check_type_usage():
     try:
         req_data = request.get_json()
@@ -1210,7 +1210,7 @@ def check_type_usage():
         return jsonify({"error": str(e)}), 500
     
 
-@workorder_bp.route("/admin/description/usage-check", methods=["POST"])
+@admin_workorder_bp.route("/admin/description/usage-check", methods=["POST"])
 def check_description_usage():
     try:
         req_data = request.get_json()
