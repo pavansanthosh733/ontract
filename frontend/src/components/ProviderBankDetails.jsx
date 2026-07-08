@@ -92,7 +92,7 @@ if (filePath) {
   fetchProfile();
 }, [user]);
   // --------------------------------------
-  // FILE CHANGE successsfully
+  // FILE CHANGE successsfully please 
   // --------------------------------------
   const handleBankStatementChange = (e) => {
     const file = e.target.files[0];
