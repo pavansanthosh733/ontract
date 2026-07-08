@@ -86,47 +86,76 @@ function AdminUpdate() {
   // SEARCH USER
   // =====================================================
   const handleSearch = async () => {
-    if (!searchEmail.trim()) {
-      setErrors({ searchEmail: "Please enter email to search" });
-      return;
-    }
+  if (!searchEmail.trim()) {
+    setErrors({ searchEmail: "Please enter email to search" });
+    return;
+  }
 
-    if (!searchEmail.includes("@") || !searchEmail.includes(".")) {
-      setErrors({ searchEmail: "Email must contain @ and ." });
-      return;
-    }
+  if (!searchEmail.includes("@") || !searchEmail.includes(".")) {
+    setErrors({ searchEmail: "Email must contain @ and ." });
+    return;
+  }
 
-    setLoading(true);
-    try {
-      const response = await fetch(
-        `${BASE_URL}/api/workorders/admin/get-user/${searchEmail}`
+  setLoading(true);
+
+  try {
+    let response = await fetch(
+      `${BASE_URL}/api/admin/workorders/admin/get-user/${searchEmail}`,
+      {
+        credentials: "include",
+      }
+    );
+
+    // Token expired -> Refresh
+    if (response.status === 401) {
+      const refreshResponse = await fetch(
+        `${BASE_URL}/api/admin/refresh`,
+        {
+          method: "POST",
+          credentials: "include",
+        }
       );
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        setFormData({
-          fullName: data.data.fullName || "",
-          email:    data.data.email    || "",
-          mobile:   data.data.mobile   || "",
-          password: "",
-          modules: Array.isArray(data.data.modules)
-            ? data.data.modules
-            : data.data.modules?.split(",").map((m) => m.trim()) || [],
-        });
-        setUserFound(true);
-        setErrors({});
+      if (refreshResponse.ok) {
+        response = await fetch(
+          `${BASE_URL}/api/admin/workorders/admin/get-user/${searchEmail}`,
+          {
+            credentials: "include",
+          }
+        );
       } else {
-        alert(`❌ ${data.message || "User not found"}`);
-        setUserFound(false);
+        alert("❌ Session expired. Please login again.");
+        window.location.href = "/admin/login";
+        return;
       }
-    } catch (error) {
-      console.error("Search Error:", error);
-      alert("❌ Server error");
-    } finally {
-      setLoading(false);
     }
-  };
+
+    const data = await response.json();
+
+    if (response.ok && data.success) {
+      setFormData({
+        fullName: data.data.fullName || "",
+        email: data.data.email || "",
+        mobile: data.data.mobile || "",
+        password: "",
+        modules: Array.isArray(data.data.modules)
+          ? data.data.modules
+          : data.data.modules?.split(",").map((m) => m.trim()) || [],
+      });
+
+      setUserFound(true);
+      setErrors({});
+    } else {
+      alert(`❌ ${data.message || "User not found"}`);
+      setUserFound(false);
+    }
+  } catch (error) {
+    console.error("Search Error:", error);
+    alert("❌ Server error");
+  } finally {
+    setLoading(false);
+  }
+};
 
   // =====================================================
   // RESET
@@ -186,54 +215,88 @@ function AdminUpdate() {
   // =====================================================
   // UPDATE USER
   // =====================================================
-  const handleUpdate = async () => {
-    if (!userFound) {
-      alert("❌ Please search and select a user first");
-      return;
-    }
+ const handleUpdate = async () => {
+  if (!userFound) {
+    alert("❌ Please search and select a user first");
+    return;
+  }
 
-    const validationErrors = validate();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
+  const validationErrors = validate();
 
-    setLoading(true);
-    try {
-      // ✅ Only send password if user filled it
-      const payload = {
-        fullName: formData.fullName,
-        email:    formData.email,
-        mobile:   formData.mobile,
-        modules:  formData.modules,
-        ...(formData.password ? { password: formData.password } : {}),
-      };
+  if (Object.keys(validationErrors).length > 0) {
+    setErrors(validationErrors);
+    return;
+  }
 
-      const response = await fetch(
-        `${BASE_URL}/api/workorders/admin/update-user`,
+  setLoading(true);
+
+  try {
+    const payload = {
+      fullName: formData.fullName,
+      email: formData.email,
+      mobile: formData.mobile,
+      modules: formData.modules,
+      ...(formData.password
+        ? { password: formData.password }
+        : {}),
+    };
+
+    let response = await fetch(
+      `${BASE_URL}/api/admin/workorders/admin/update-user`,
+      {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    // Token expired -> Refresh
+    if (response.status === 401) {
+      const refreshResponse = await fetch(
+        `${BASE_URL}/api/admin/refresh`,
         {
-          method:  "PUT",
-          headers: { "Content-Type": "application/json" },
-          body:    JSON.stringify(payload),
+          method: "POST",
+          credentials: "include",
         }
       );
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        alert("✅ User updated successfully");
-        localStorage.removeItem("adminData");
-        window.location.reload();
+      if (refreshResponse.ok) {
+        response = await fetch(
+          `${BASE_URL}/api/admin/workorders/admin/update-user`,
+          {
+            method: "PUT",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          }
+        );
       } else {
-        alert(`❌ ${data.message || "Update failed"}`);
+        alert("❌ Session expired. Please login again.");
+        window.location.href = "/admin/login";
+        return;
       }
-    } catch (error) {
-      console.error("Update Error:", error);
-      alert("❌ Server error");
-    } finally {
-      setLoading(false);
     }
-  };
+
+    const data = await response.json();
+
+    if (response.ok && data.success) {
+      alert("✅ User updated successfully");
+      window.location.reload();
+    } else {
+      alert(`❌ ${data.message || "Update failed"}`);
+    }
+  } catch (error) {
+    console.error("Update Error:", error);
+    alert("❌ Server error");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="update-user-container">

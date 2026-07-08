@@ -1245,7 +1245,7 @@ def check_description_usage():
         logging.exception("check_description_usage controller error")
         return jsonify({"error": str(e)}), 500
 
-@workorder_bp.route("/admin/register", methods=["POST"])
+@admin_workorder_bp.route("/admin/register", methods=["POST"])
 def register_admin():
     try:
         req_data = request.get_json()
@@ -1273,7 +1273,7 @@ def register_admin():
         
         
         
-@workorder_bp.route("/admin/get-user/<email>", methods=["GET"])
+@admin_workorder_bp.route("/admin/get-user/<email>", methods=["GET"])
 def get_admin_by_email(email):
     try:
         result = WorkOrder.get_admin_by_email(email)
@@ -1297,7 +1297,7 @@ def get_admin_by_email(email):
 # UPDATE USER
 # =========================================================
 
-@workorder_bp.route("/admin/update-user", methods=["PUT"])
+@admin_workorder_bp.route("/admin/update-user", methods=["PUT"])
 def update_admin():
     try:
         req_data = request.get_json()

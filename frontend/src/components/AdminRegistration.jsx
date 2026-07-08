@@ -150,44 +150,91 @@ const RegistrationPage = () => {
   // =====================================================
   // SUBMIT
   // =====================================================
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // =====================================================
+// SUBMIT
+// =====================================================
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    const validationErrors = validate();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
+  const validationErrors = validate();
+  if (Object.keys(validationErrors).length > 0) {
+    setErrors(validationErrors);
+    return;
+  }
 
-    setLoading(true);
-    try {
-      const response = await fetch(
-        `${BASE_URL}/api/workorders/admin/register`,
+  setLoading(true);
+
+  const payload = {
+    ...formData,
+    modules: formData.modules,
+  };
+
+  try {
+    // ============================
+    // First API Call
+    // ============================
+    let response = await fetch(
+      `${BASE_URL}/api/admin/workorders/admin/register`,
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    // ============================
+    // Token Expired -> Refresh
+    // ============================
+    if (response.status === 401) {
+      const refreshResponse = await fetch(
+        `${BASE_URL}/api/admin/refresh`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...formData,
-            modules: formData.modules,
-          }),
+          credentials: "include",
         }
       );
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        alert("✅ User Registered Successfully");
-        resetForm();
+      if (refreshResponse.ok) {
+        // Retry original request
+        response = await fetch(
+          `${BASE_URL}/api/admin/workorders/admin/register`,
+          {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          }
+        );
       } else {
-        alert(`❌ ${data.message || data.error || "Registration failed"}`);
+        alert("❌ Session expired. Please login again.");
+        window.location.href = "/admin/login";
+        return;
       }
-    } catch (error) {
-      console.error("API ERROR:", error);
-      alert("❌ Server error. Please try again.");
-    } finally {
-      setLoading(false);
     }
-  };
+
+    // ============================
+    // Handle Response
+    // ============================
+    const data = await response.json();
+
+    if (response.ok && data.success) {
+      alert("✅ User Registered Successfully");
+      resetForm();
+    } else {
+      alert(`❌ ${data.message || "Registration failed"}`);
+    }
+  } catch (error) {
+    console.error("Registration Error:", error);
+    alert("❌ Server error. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="registration-container">
