@@ -1,0 +1,138 @@
+.provider-rfq-container{
+
+    padding:30px;
+
+}
+
+.provider-rfq-header{
+
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+
+}
+
+.rfq-tabs{
+
+    display:flex;
+    gap:10px;
+    margin-bottom:20px;
+
+}
+
+.rfq-tabs button{
+
+    border:none;
+    padding:10px 25px;
+    border-radius:8px;
+    background:#ececec;
+    cursor:pointer;
+    font-weight:600;
+
+}
+
+.rfq-tabs button.active{
+
+    background:#0d6efd;
+    color:#fff;
+
+}
+
+.rfq-table-card{
+    background:#fff;
+    border-radius:10px;
+    padding:20px;
+    box-shadow:0 1px 6px rgba(0,0,0,.1);
+}
+
+.rfq-table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+.rfq-table th{
+    background:#f7f7f7;
+    padding:12px;
+    text-align:left;
+}
+
+.rfq-table td{
+    padding:12px;
+    border-bottom:1px solid #ececec;
+}
+
+.status-open{
+    background:#e8f7ec;
+    color:#1b8f3b;
+    padding:4px 10px;
+    border-radius:20px;
+    font-size:13px;
+}
+
+.view-btn{
+    background:#0d6efd;
+    color:#fff;
+    border:none;
+    padding:8px 16px;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+.loading{
+    padding:40px;
+    text-align:center;
+}
+
+.rfq-modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.5);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    z-index:9999;
+}
+
+.rfq-modal{
+    background:white;
+    width:900px;
+    max-height:90vh;
+    overflow:auto;
+    border-radius:10px;
+}
+
+.rfq-modal-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:20px;
+    border-bottom:1px solid #ddd;
+}
+
+.rfq-modal-body{
+    padding:20px;
+}
+
+.rfq-modal-footer{
+    padding:20px;
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+}
+
+.close-btn{
+    border:none;
+    background:none;
+    font-size:22px;
+    cursor:pointer;
+}
+
+.rfq-item-row {
+    display: grid;
+    grid-template-columns: 60% 10% 15% 15%;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid #dee2e6;
+}
