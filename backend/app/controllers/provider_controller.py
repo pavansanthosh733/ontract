@@ -35,7 +35,7 @@ ADMIN_EMAIL = Config.EMAIL_CONFIG['sender_email']
 
 class ProviderController:
     
-    # Base upload folder inside backend
+    # Base upload folder inside backend dhangss done 
     BASE_UPLOAD_DIR = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         "../../uploads"
