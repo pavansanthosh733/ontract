@@ -42,6 +42,11 @@ PUBLIC_ROUTES = [
     "/api/state/",
     "/api/city/",
     "/api/workorders",
+    "/api/category",
+    "/api/item",
+    "/api/workorder-type",
+    "api/description",
+    "/api/zone",
    
       
 
