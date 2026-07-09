@@ -28,6 +28,7 @@ function ProviderDashboardHome() {
   const { user } = useUser();
   const [completedOrders, setCompletedOrders] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
+  const [newRfqCount, setNewRfqCount] = useState(0);
   const [serviceCoverage, setServiceCoverage] = useState({
     regions: [],
     services: [],
@@ -115,6 +116,15 @@ function ProviderDashboardHome() {
             <p className="welcome-subtitle">Here's what's happening with your business today</p>
           </div>
           <div className="quick-actions d-none d-md-flex gap-3">
+
+            {/* RFQ Button */}
+              <Link to="/provider_home/rfq" className="btn btn-warning btn-action position-relative">
+                <FaClipboardList className="me-2" />
+                RFQs
+                <span className="badge bg-danger ms-2" style={{ fontSize: "12px" }}>
+                  {newRfqCount}
+                </span>
+              </Link>
                         <Link to="/provider_home/providerrating" className="btn btn-primary btn-action">
               <FaClipboardList className="me-2" />Rating Section
             </Link>

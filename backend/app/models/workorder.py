@@ -3648,3 +3648,470 @@ class WorkOrder(db.Model):
         except Exception as e:
             logging.exception("Error building full workorder history")
             return None, str(e)
+        
+        
+        
+    @classmethod
+    def create_rfq(cls, data):
+
+        try:
+
+            # =====================================
+            # GENERATE RFQ NUMBER
+            # =====================================
+            rfq_result = db.session.execute(text("""
+                SELECT COALESCE(MAX(rfq_id), 0) + 1 AS next_id
+                FROM rfq_master_t
+            """))
+
+            next_id = rfq_result.fetchone()[0]
+
+            rfq_no = f"RFQ{str(next_id).zfill(4)}"
+
+            # =====================================
+            # INSERT RFQ MASTER
+            # =====================================
+            sql = text("""
+                INSERT INTO rfq_master_t (rfq_no,category_id,region_id,state_id,city_id,rfq_title,
+                closing_date,description,remarks,attachments,status,created_by,created_at)
+                VALUES (:rfq_no,:category_id,:region_id,:state_id,:city_id,:rfq_title,:closing_date,
+                :description,:remarks,CAST(:attachments AS JSONB),'OPEN',:created_by,CURRENT_TIMESTAMP)
+                RETURNING *
+            """)
+
+            result = db.session.execute(
+                sql,
+                {
+                    "rfq_no": rfq_no,
+                    "category_id": data["CATEGORY_ID"],
+                    "region_id": data["REGION_ID"],
+                    "state_id": data["STATE_ID"],
+                    "city_id": data["CITY_ID"],
+                    "rfq_title": data["RFQ_TITLE"],
+                    "closing_date": data["CLOSING_DATE"],
+                    "description": data["DESCRIPTION"],
+                    "remarks": data["REMARKS"],
+                    "attachments": json.dumps(data.get("attachments", [])),
+                    "created_by": data["created_by"]
+                }
+            )
+
+            rfq = result.fetchone()
+
+            # =====================================
+            # SAVE RFQ ITEMS
+            # =====================================
+            rfq_id = rfq.rfq_id
+
+            for item in data.get("ITEMS", []):
+
+                db.session.execute(
+                    text("""
+                        INSERT INTO rfq_items_t (rfq_id,item_description,unit_price,quantity,
+                        total,created_at) VALUES (:rfq_id,:item_description,:unit_price,
+                        :quantity,:total,CURRENT_TIMESTAMP)
+                    """),
+                    {
+                        "rfq_id": rfq_id,
+                        "item_description": item.get("description"),
+                        "unit_price": item.get("unitPrice", 0),
+                        "quantity": item.get("quantity", 0),
+                        "total": item.get("total", 0)
+                    }
+                )
+
+            db.session.commit()
+
+            return dict(rfq._mapping), None
+
+        except Exception as e:
+
+            db.session.rollback()
+
+            return None, str(e)
+
+    @classmethod
+    def get_all_rfq_contractors(cls):
+
+        try:
+
+            query = text("""
+                SELECT user_uid,name,email_id FROM users_t
+                WHERE email_id IS NOT NULL and active_status ='t'
+            """)
+
+            result = db.session.execute(query).mappings().fetchall()
+
+            return [dict(row) for row in result]
+
+        except Exception as e:
+
+            logging.error(
+                f"Error fetching contractors: {str(e)}"
+            )
+
+            return []
+        
+    @classmethod
+    def get_provider_new_rfqs(cls, contractor_id):
+
+        try:
+            query = text("""
+                SELECT rm.rfq_id,rm.rfq_no,rm.rfq_title,rm.closing_date,rm.status
+                FROM rfq_master_t rm WHERE rm.status='OPEN'
+                AND NOT EXISTS (SELECT 1 FROM rfq_response_master_t rr
+                WHERE rr.rfq_id = rm.rfq_id AND rr.contractor_id = :contractor_id)
+                ORDER BY rm.created_at DESC
+
+            """)
+
+            result = db.session.execute(query,
+
+                {
+                    "contractor_id": contractor_id
+                }
+
+            ).mappings().fetchall()
+
+            return [
+                dict(row)
+                for row in result
+            ]
+
+        except Exception as e:
+            logging.exception("NEW RFQ ERROR")
+            return []
+
+    @classmethod
+    def get_provider_rfq_details(cls, rfq_no):
+
+        try:
+            header_query = text("""
+                SELECT rm.rfq_id,rm.rfq_no,rm.rfq_title,rm.description,rm.remarks,
+                rm.closing_date,attachments,rm.status,c.category_name,r.region_name,
+                s.state_name,ci.city_name FROM rfq_master_t rm
+                INNER JOIN category_master_t c ON rm.category_id = c.category_id
+                INNER JOIN region_master_t r ON rm.region_id = r.region_id
+                INNER JOIN state_master_t s ON rm.state_id = s.state_id
+                INNER JOIN city_master_t ci ON rm.city_id = ci.city_id
+                WHERE rm.rfq_no = :rfq_no
+            """)
+
+            header = db.session.execute(header_query,
+                {
+                    "rfq_no": rfq_no
+                }
+            ).mappings().first()
+
+            if not header:
+                return None
+
+            # RFQ ITEMS
+            items_query = text("""
+                SELECT ri.rfq_item_id,ri.item_description,ri.quantity FROM rfq_items_t ri
+                INNER JOIN rfq_master_t rm ON rm.rfq_id = ri.rfq_id
+                WHERE rm.rfq_no = :rfq_no ORDER BY ri.rfq_item_id
+            """)
+
+            items = db.session.execute(items_query,
+                {
+                    "rfq_no": rfq_no
+                }
+            ).mappings().fetchall()
+
+            return {
+                "header": dict(header),
+                "items": [
+                    dict(row)
+                    for row in items
+                ],
+                "attachments": header["attachments"] or []
+            }
+
+        except Exception as e:
+            logging.exception("GET PROVIDER RFQ DETAILS ERROR")
+            return None
+        
+    @classmethod
+    def submit_provider_rfq_response(cls, data):
+
+        try:
+            existing = db.session.execute(
+
+                text("""
+                    SELECT response_id FROM rfq_response_master_t
+                    WHERE rfq_id = :rfq_id AND contractor_id = :contractor_id
+                """),
+
+                {
+                    "rfq_id": data["rfq_id"],
+                    "contractor_id": data["contractor_id"]
+                }
+
+            ).first()
+
+            if existing:
+                return None, "You have already submitted quotation for this RFQ."
+
+
+            rfq = db.session.execute(
+
+                text("""
+                    SELECT rfq_id,status FROM rfq_master_t WHERE rfq_id = :rfq_id
+                """),
+
+                {
+                    "rfq_id": data["rfq_id"]
+                }
+
+            ).mappings().first()
+
+            if not rfq:
+                return None, "RFQ not found."
+
+            if rfq["status"] != "OPEN":
+                return None, "RFQ is already closed."
+
+            # =====================================================
+
+            master_sql = text("""
+
+                INSERT INTO rfq_response_master_t (rfq_id,contractor_id,remarks,grand_total,
+                status,submitted_at) VALUES (:rfq_id,:contractor_id,:remarks,:grand_total,
+                'RESPONDED',CURRENT_TIMESTAMP)
+                RETURNING response_id
+
+            """)
+
+            result = db.session.execute(master_sql,
+                {
+                    "rfq_id": data["rfq_id"],
+                    "contractor_id": data["contractor_id"],
+                    "remarks": data.get("remarks"),
+                    "grand_total": data["grand_total"]
+                }
+
+            )
+            response_id = result.scalar()
+            # =====================================================
+
+            item_sql = text("""
+
+                INSERT INTO rfq_response_items_t (response_id,rfq_item_id,quantity,
+                unit_price,total) VALUES (:response_id,:rfq_item_id,:quantity,
+                :unit_price,:total)
+
+            """)
+
+            for item in data["items"]:
+                db.session.execute(item_sql,
+                    {
+                        "response_id": response_id,
+                        "rfq_item_id": item["rfq_item_id"],
+                        "quantity": item["quantity"],
+                        "unit_price": item["unit_price"],
+                        "total": item["total"]
+                    }
+
+                )
+
+            # =====================================================
+
+            db.session.commit()
+            return {
+                "response_id": response_id,
+                "rfq_id": data["rfq_id"],
+                "grand_total": data["grand_total"],
+                "message": "Quotation submitted successfully."
+            }, None
+
+        except Exception as e:
+            db.session.rollback()
+            logging.exception("SUBMIT PROVIDER RFQ RESPONSE ERROR")
+            return None, str(e)
+        
+    @classmethod
+    def get_provider_responded_rfqs(cls, contractor_id):
+
+        try:
+            query = text("""
+                SELECT rm.rfq_id,rm.rfq_no,rm.rfq_title,rm.closing_date,rr.grand_total,
+                rr.status,rr.submitted_at FROM rfq_response_master_t rr
+                INNER JOIN rfq_master_t rm ON rm.rfq_id=rr.rfq_id
+                WHERE rr.contractor_id=:contractor_id
+                ORDER BY rr.submitted_at DESC
+            """)
+
+            result = db.session.execute(query,
+                {
+                    "contractor_id": contractor_id
+                }
+
+            ).mappings().fetchall()
+
+            return [
+                dict(row)
+                for row in result
+            ]
+
+        except Exception:
+            logging.exception("RESPONDED RFQ ERROR")
+            return []
+        
+    @classmethod
+    def get_admin_rfq_responses(cls, rfq_no):
+        try:
+            contractor_sql = text("""
+
+                SELECT rrm.response_id,rrm.contractor_id,
+                    CASE
+                        WHEN u.service_type = '1'
+                        THEN cd.company_name
+                        ELSE u.name
+                    END AS contractor_name,rrm.grand_total,rrm.remarks,rrm.status,
+                    rrm.submitted_at FROM rfq_response_master_t rrm
+                INNER JOIN rfq_master_t rm ON rm.rfq_id = rrm.rfq_id
+                INNER JOIN users_t u ON u.user_uid = rrm.contractor_id
+                LEFT JOIN company_details_t cd ON cd.user_uid = u.user_uid
+                WHERE rm.rfq_no = :rfq_no ORDER BY rrm.grand_total ASC
+
+            """)
+
+            contractors = db.session.execute(contractor_sql,
+                {
+                    "rfq_no": rfq_no
+                }
+
+            ).mappings().fetchall()
+
+            response_data = []
+
+            # =====================================================
+
+            item_sql = text("""
+
+                SELECT ri.rfq_item_id,ri.item_description,rri.quantity,rri.unit_price,
+                rri.total FROM rfq_response_items_t rri
+                INNER JOIN rfq_items_t ri ON ri.rfq_item_id = rri.rfq_item_id
+                WHERE rri.response_id = :response_id ORDER BY ri.rfq_item_id
+
+            """)
+
+            for contractor in contractors:
+
+                items = db.session.execute(item_sql,
+                    {
+                        "response_id": contractor["response_id"]
+                    }
+
+                ).mappings().fetchall()
+
+                response_data.append({
+                    "response_id": contractor["response_id"],
+                    "contractor_id": contractor["contractor_id"],
+                    "contractor_name": contractor["contractor_name"],
+                    "grand_total": contractor["grand_total"],
+                    "remarks": contractor["remarks"],
+                    "status": contractor["status"],
+                    "submitted_at": contractor["submitted_at"],
+                    "items": [
+
+                        dict(item)
+                        for item in items
+                    ]
+
+                })
+
+            return response_data
+
+        except Exception as e:
+
+            logging.exception("ADMIN RFQ RESPONSES")
+
+            return []
+
+    @classmethod
+    def get_admin_rfq_list(cls):
+        try:
+            query = text("""
+
+                SELECT rm.rfq_id,rm.rfq_no,rm.rfq_title,rm.closing_date,rm.status,
+                COUNT(rr.response_id) AS response_count FROM rfq_master_t rm
+                LEFT JOIN rfq_response_master_t rr ON rm.rfq_id = rr.rfq_id
+                GROUP BY rm.rfq_id,rm.rfq_no,rm.rfq_title,rm.closing_date,rm.status
+                ORDER BY rm.created_at DESC
+
+            """)
+
+            result = db.session.execute(query).mappings().fetchall()
+
+            return [
+                dict(row)
+                for row in result
+            ]
+
+        except Exception:
+            logging.exception("GET ADMIN RFQ LIST")
+
+            return []
+
+    @classmethod
+    def get_admin_rfq_response_details(cls, response_id):
+
+        try:
+
+            header_sql = text("""
+
+                SELECT rrm.response_id,rrm.rfq_id,rrm.contractor_id,
+                    CASE
+                        WHEN u.service_type = '1'
+                        THEN cd.company_name
+                        ELSE u.name
+                    END AS contractor_name,rrm.grand_total,rrm.remarks,rrm.status,
+                    rrm.submitted_at FROM rfq_response_master_t rrm
+                INNER JOIN users_t u ON u.user_uid = rrm.contractor_id
+                LEFT JOIN company_details_t cd ON cd.user_uid = u.user_uid
+                WHERE rrm.response_id = :response_id
+
+            """)
+
+            header = db.session.execute(header_sql,
+                {
+                    "response_id": response_id
+                }
+
+            ).mappings().first()
+
+            if not header:
+                return None
+
+            # ======================================================
+
+            item_sql = text("""
+
+                SELECT ri.rfq_item_id,ri.item_description,rri.quantity,rri.unit_price,
+                rri.total FROM rfq_response_items_t rri
+                INNER JOIN rfq_items_t ri ON ri.rfq_item_id = rri.rfq_item_id
+                WHERE rri.response_id = :response_id ORDER BY ri.rfq_item_id
+
+            """)
+
+            items = db.session.execute(item_sql,
+                {
+                    "response_id": response_id
+                }
+
+            ).mappings().fetchall()
+
+            return {
+                "header": dict(header),
+                "items": [
+                    dict(item)
+                    for item in items
+                ]
+
+            }
+
+        except Exception:
+            logging.exception("GET ADMIN RFQ RESPONSE DETAILS")
+            return None

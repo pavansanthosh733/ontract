@@ -18,6 +18,8 @@ import RegistrationPage from './AdminRegistration';
 import AdminUpdate from './AdminUpdate';
 import AIReport from './AiReport';
 import ManualAssignedWorkorders from './ManualAssignedWorkorders';
+import RFQ from "./RFQ";
+import AdminRFQResponses from "./AdminRFQResponses";
 
 function AdminApp({ admin, setAdmin }) {
   const {admin: ctxAdmin,loading,logoutAdmin,} = useAdmin();
@@ -30,6 +32,7 @@ function AdminApp({ admin, setAdmin }) {
   const [registrationOpen, setRegistrationOpen] = useState(false);
   const [workorderOpen, setWorkorderOpen] = useState(false);
   const [auditOpen, setAuditOpen] = useState(false);
+  const [rfqOpen, setRfqOpen] = useState(false);
 
   // 🔥 Get assigned modules from DB  ok
   const modules = ctxAdmin?.modules
@@ -55,6 +58,7 @@ function AdminApp({ admin, setAdmin }) {
       setReportsOpen(false);
       setWorkorderOpen(false);
       setAuditOpen(false);
+       setRfqOpen(false);
 
     };
 
@@ -81,6 +85,7 @@ function AdminApp({ admin, setAdmin }) {
     setReportsOpen(false);
     setWorkorderOpen(false);
      setAuditOpen(false);
+      setRfqOpen(false);
   };
 
   if (loading) return null;
@@ -199,6 +204,40 @@ function AdminApp({ admin, setAdmin }) {
       </Link>
     </li>
   )}
+
+
+
+  <li className="nav-item rfq-menu">
+    <div className="nav-link-Home"
+      onClick={(e) => {
+        e.stopPropagation();
+        setRegistrationOpen(false);
+        setReportsOpen(false);
+        setWorkorderOpen(false);
+        setAuditOpen(false);
+        setRfqOpen(!rfqOpen);
+      }}
+    > RFQ
+    </div>
+
+    <ul className={`reports-dropdown ${rfqOpen ? "open" : ""}`}>
+      <li>
+        <Link
+          to="/admin/rfq"
+          onClick={() => handleLinkClick("rfq_create")}
+        >
+          Create RFQ
+        </Link>
+      </li>
+      <li>
+        <Link
+          to="/admin/rfq/responses"
+          onClick={() => handleLinkClick("rfq_responses")}
+        > Responses
+        </Link>
+      </li>
+    </ul>
+  </li>
 
   {/* Standard Rate */}
   {hasModule('Standard Rate') && (
@@ -381,6 +420,15 @@ function AdminApp({ admin, setAdmin }) {
           <Route
             path="/invoice"
             element={<InvoiceCreate />}
+            
+          />
+            <Route
+            path="/rfq"
+            element={<RFQ />}
+          />
+          <Route
+              path="/rfq/responses"
+              element={<AdminRFQResponses />}
           />
 
           <Route

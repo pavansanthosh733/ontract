@@ -1,0 +1,325 @@
+/* ======================================================
+   RFQ RESPONSES PAGE
+====================================================== */
+
+.rfq-response-card{
+    border:none;
+    border-radius:12px;
+    box-shadow:0 12px 30px rgba(0,0,0,.08);
+}
+
+.rfq-response-header{
+    background:linear-gradient(90deg,#0d6efd,#2563eb);
+    color:#fff;
+    padding:18px 25px;
+}
+
+.rfq-response-header h4{
+    margin:0;
+    font-size:22px;
+    font-weight:700;
+}
+
+.rfq-response-header small{
+    display:block;
+    margin-top:5px;
+    color:#dbeafe;
+    font-size:14px;
+}
+
+/* ======================================================
+   RFQ TABLE
+====================================================== */
+
+.rfq-table{
+    width:100%;
+}
+
+.rfq-table thead th{
+    background:#eef4fb;
+    color:#1e3a8a;
+    font-size:14px;
+    font-weight:700;
+    text-align:center;
+    vertical-align:middle;
+    border-bottom:2px solid #dbeafe;
+    padding:14px 10px;
+}
+
+.rfq-table tbody td{
+    text-align:center;
+    vertical-align:middle;
+    padding:18px 10px;
+}
+
+.rfq-table tbody tr{
+    transition:.25s;
+}
+
+.rfq-table tbody tr:hover{
+    background:#f8fbff;
+    transform:scale(1.002);
+}
+
+/* ======================================================
+   RESPONSE BADGE
+====================================================== */
+
+.response-count{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:32px;
+    height:32px;
+    border-radius:50%;
+    background:#059669;
+    color:#fff;
+    font-size:13px;
+    font-weight:700;
+}
+
+/* ======================================================
+   BUTTONS
+====================================================== */
+
+.btn-view{
+    min-width:100px;
+    height:38px;
+    display:inline-flex;
+    justify-content:center;
+    align-items:center;
+    gap:6px;
+    border-radius:8px;
+    padding:0 14px;
+    font-weight:600;
+}
+
+.btn-view:hover{
+    transform:translateY(-2px);
+    box-shadow:0 6px 18px rgba(13,110,253,.25);
+}
+
+.btn-view i{
+    font-size:13px;
+}
+
+.btn-response{
+    min-width:120px;
+}
+
+/* ======================================================
+   MODAL
+====================================================== */
+
+.response-modal .modal-content{
+    border:none;
+    border-radius:12px;
+    overflow:hidden;
+    box-shadow:0 10px 35px rgba(0,0,0,.18);
+}
+
+.response-modal .modal-header{
+    background:linear-gradient(90deg,#0d6efd,#2563eb);
+    color:#fff;
+}
+
+.response-modal .modal-title{
+    font-size:20px;
+    font-weight:700;
+}
+
+.response-modal .btn-close{
+    filter:invert(1);
+}
+
+/* ======================================================
+   CONTRACTOR TABLE
+====================================================== */
+
+.contractor-table{
+    margin-bottom:0;
+}
+
+.contractor-table thead th{
+    background:#eef4fb;
+    color:#1e3a8a;
+    text-align:center;
+    font-size:14px;
+    font-weight:700;
+    vertical-align:middle;
+    border-bottom:2px solid #dbeafe;
+    padding:14px 10px;
+}
+
+.contractor-table tbody td{
+    text-align:center;
+    vertical-align:middle;
+    padding:15px 10px;
+}
+
+.contractor-table tbody tr{
+    transition:.25s;
+}
+
+.contractor-table tbody tr:hover{
+    background:#f8fbff;
+    transform:scale(1.002);
+}
+
+/* ======================================================
+   EMPTY DATA
+====================================================== */
+
+.no-data{
+    padding:40px;
+    text-align:center;
+    color:#6b7280;
+    font-size:16px;
+    font-weight:500;
+}
+
+/* ======================================================
+   RESPONSIVE
+====================================================== */
+
+@media (max-width:992px){
+
+    .rfq-table,
+    .contractor-table{
+
+        font-size:13px;
+
+    }
+
+    .btn-view{
+
+        min-width:80px;
+
+    }
+
+}
+
+@media (max-width:768px){
+
+    .rfq-response-header{
+
+        padding:15px;
+
+    }
+
+    .rfq-response-header h4{
+
+        font-size:18px;
+
+    }
+
+    .rfq-response-header small{
+
+        font-size:12px;
+
+    }
+
+    .btn-response{
+
+        width:100%;
+
+        margin-top:10px;
+
+    }
+
+}
+.rfq-table th,
+.rfq-table td{
+    vertical-align:middle;
+    text-align:center;
+}
+/* ======================================================
+   CONTRACTOR CARDS
+====================================================== */
+
+.contractor-list{
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+    padding:10px;
+}
+
+.contractor-card{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:#ffffff;
+    border:1px solid #e5e7eb;
+    border-radius:12px;
+    padding:20px;
+    transition:all .25s ease;
+    box-shadow:0 4px 12px rgba(0,0,0,.05);
+}
+
+.contractor-card:hover{
+    transform:translateY(-3px);
+    box-shadow:0 10px 25px rgba(0,0,0,.12);
+}
+
+.contractor-left{
+    display:flex;
+    align-items:center;
+    gap:16px;
+}
+
+.contractor-avatar{
+    width:60px;
+    height:60px;
+    border-radius:50%;
+    background:#2563eb;
+    color:#fff;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:28px;
+}
+
+.contractor-left h5{
+    margin:0;
+    font-size:18px;
+    font-weight:700;
+    color:#111827;
+}
+
+.quote-rank{
+    display:inline-block;
+    margin-top:6px;
+    font-size:13px;
+    color:#059669;
+    font-weight:600;
+}
+
+.contractor-right{
+    display:flex;
+    align-items:center;
+    gap:30px;
+}
+
+.contractor-price{
+    font-size:22px;
+    font-weight:700;
+    color:#2563eb;
+    min-width:140px;
+    text-align:right;
+}
+
+.contractor-date{
+    color:#6b7280;
+    min-width:120px;
+}
+
+.contractor-btn{
+    min-width:170px;
+    height:44px;
+    border-radius:10px;
+    font-weight:600;
+}
+
+.contractor-btn i{
+    margin-right:8px;
+}

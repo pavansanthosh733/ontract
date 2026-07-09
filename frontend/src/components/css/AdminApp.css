@@ -374,3 +374,16 @@
     display: flex;
   }
 }
+
+
+.rfq-menu{
+    position: relative;
+}
+
+.rfq-menu .reports-dropdown{
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 180px;
+    z-index: 1000;
+}

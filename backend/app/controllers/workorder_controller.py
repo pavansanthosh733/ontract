@@ -1772,3 +1772,202 @@ def get_workorder_full_history(workorder):
         return jsonify({"error": error}), status_code
 
     return jsonify(data), 200
+
+
+
+@admin_workorder_bp.route("/rfq/create", methods=["POST"])
+def create_rfq():
+    try:
+
+        if not request.content_type.startswith("multipart/form-data"):
+            return jsonify({
+                "error": "Content-Type must be multipart/form-data"
+            }), 400
+
+        form = request.form
+        files = request.files
+
+        def get_int(name):
+            val = form.get(name)
+            return int(val) if val and str(val).isdigit() else None
+
+        data = {
+            "CATEGORY_ID": get_int("CATEGORY_ID"),
+            "REGION_ID": get_int("REGION_ID"),
+            "STATE_ID": get_int("STATE_ID"),
+            "CITY_ID": get_int("CITY_ID"),
+            "RFQ_TITLE": form.get("RFQ_TITLE", "").strip(),
+            "CLOSING_DATE": form.get("CLOSING_DATE"),
+            "DESCRIPTION": form.get("DESCRIPTION", "").strip(),
+            "REMARKS": form.get("REMARKS", "").strip(),
+            "ITEMS": json.loads(form.get("ITEMS", "[]")),
+            "created_by": form.get("ADMIN_ID")
+        }
+
+        required = ["CATEGORY_ID","REGION_ID","STATE_ID","CITY_ID","RFQ_TITLE","CLOSING_DATE"]
+        missing = [x for x in required if not data.get(x)]
+
+        if missing:
+            return jsonify({
+                "error": f"Missing: {', '.join(missing)}"
+            }), 400
+
+        # ==========================================
+        # ATTACHMENTS
+        # ==========================================
+        attachment_list = []
+
+        for file in files.getlist("attachments[]"):
+
+            if not file or not file.filename:
+                continue
+
+            filename = secure_filename(file.filename)
+            unique_name = (f"{datetime.now().strftime('%Y%m%d%H%M%S%f')}_{filename}")
+            save_dir = os.path.join(UPLOAD_FOLDER,"rfqattachments")
+            os.makedirs(save_dir, exist_ok=True)
+            save_path = os.path.join(save_dir,unique_name)
+            file.save(save_path)
+            db_path = (f"/uploads/rfqattachments/{unique_name}")
+            attachment_list.append(db_path)
+
+        data["attachments"] = attachment_list
+
+        # ==========================================
+        # SAVE RFQ
+        # ==========================================
+        rfq, error = WorkOrder.create_rfq(data)
+
+        if error:
+            return jsonify({
+                "error": error
+            }), 400
+
+        # ==========================================
+        # SEND EMAILS IN BACKGROUND
+        # ==========================================
+        try:
+
+            send_rfq_notifications_async(rfq)
+            logging.info(f"Background RFQ mail started for {rfq['rfq_no']}")
+
+        except Exception:
+
+            logging.exception("Unable to start RFQ background mail thread.")
+
+        # ==========================================
+        # RETURN RESPONSE IMMEDIATELY
+        # ==========================================
+        return jsonify({
+            "success": True,
+            "message": "RFQ Created Successfully",
+            "rfq": rfq
+        }), 201
+
+    except Exception as e:
+
+        logging.exception("CREATE RFQ ERROR")
+        return jsonify({
+            "error": str(e)
+        }), 500
+    
+@workorder_bp.route("/provider/rfq/new/<int:contractor_id>", methods=["GET"])
+def get_provider_new_rfqs(contractor_id):
+
+    try:
+        data = WorkOrder.get_provider_new_rfqs(contractor_id)
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+@workorder_bp.route("/provider/rfq/<string:rfq_no>", methods=["GET"])
+def get_provider_rfq_details(rfq_no):
+    print("######## CONTROLLER HIT ########")
+    print("RFQ NO =", rfq_no)
+    try:
+        data = WorkOrder.get_provider_rfq_details(rfq_no)
+        if not data:
+            return jsonify({"error": "RFQ Not Found"}), 404
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@workorder_bp.route("/provider/rfq/respond", methods=["POST"])
+def submit_provider_rfq_response():
+    try:
+        data = request.get_json()
+        response, error = WorkOrder.submit_provider_rfq_response(data)
+        if error:
+            return jsonify({
+                "success": False,
+                "error": error
+            }), 400
+
+        return jsonify({
+            "success": True,
+            "message": "Quotation submitted successfully.",
+            "response": response
+        }), 200
+
+    except Exception as e:
+        logging.exception("SUBMIT RFQ RESPONSE ERROR")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+    
+@workorder_bp.route("/provider/rfq/responded/<int:contractor_id>", methods=["GET"])
+def get_provider_responded_rfqs(contractor_id):
+    try:
+        data = WorkOrder.get_provider_responded_rfqs(contractor_id)
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({
+            "error": str(e)
+        }), 500
+    
+@admin_workorder_bp.route("/admin/rfq/<string:rfq_no>/responses", methods=["GET"])
+def get_admin_rfq_responses(rfq_no):
+    try:
+        data = WorkOrder.get_admin_rfq_responses(rfq_no)
+        return jsonify(data),200
+    except Exception as e:
+        return jsonify({
+            "error":str(e)
+        }),500
+    
+@admin_workorder_bp.route("/admin/rfq/list", methods=["GET"])
+def get_admin_rfq_list():
+    try:
+        data = WorkOrder.get_admin_rfq_list()
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@admin_workorder_bp.route("/admin/rfq/response/<int:response_id>", methods=["GET"])
+def get_admin_rfq_response_details(response_id):
+
+    try:
+        data = WorkOrder.get_admin_rfq_response_details(response_id)
+        if not data:
+            return jsonify({
+                "success": False,
+                "message": "Quotation not found."
+            }), 404
+
+        return jsonify(data), 200
+
+    except Exception as e:
+
+        logging.exception("ADMIN RFQ RESPONSE DETAILS")
+
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500

@@ -47,6 +47,7 @@ import ProviderDashboardHome from "./components/ProviderDashboardHome";
 import CompanyRating from "./components/company/CompanyRating";
 import ProviderRating from "./components/ProviderRating";
 import WorkorderHistoryPage from "./components/WorkorderHistoryPage"; 
+import ProviderRFQ from "./components/ProviderRFQ";
 
 function PublicCompanyProfileRoute() {
   const location = useLocation();
@@ -130,6 +131,7 @@ const isApk = params.get("source") === "apk";
             <Route path="providerrating" element={<ProviderRating />} />
             <Route path="workorders" element={<ProviderWorkOrders />} />
             <Route path="invoice" element={<ProviderInvoice />} />
+            <Route path="rfq" element={<ProviderRFQ />} />
             <Route
               path="providerupdateprofile"
               element={<ProviderUpdateProfile user={user} />}

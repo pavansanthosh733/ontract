@@ -37,6 +37,10 @@ PUBLIC_ROUTES = [
     "/api/admin/send_otp",
     "/api/admin/logout",
     "/api/admin/refresh",
+    "/api/admin/workorders/rfq/create",
+    "/api/region/",
+    "/api/state/",
+    "/api/city/",
    
       
 
