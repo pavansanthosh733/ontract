@@ -1,4 +1,5 @@
 import os, uuid, bcrypt, random, string, json, base64
+
 from datetime import datetime
 from werkzeug.utils import secure_filename
 from sqlalchemy.exc import IntegrityError
@@ -7,6 +8,7 @@ import logging
 from app import db
 import traceback
 import jwt
+
 from datetime import datetime, timedelta
 from flask import current_app
 from flask import jsonify, make_response, current_app
@@ -24,6 +26,8 @@ from app.utils.email_utils import (
 from app.utils.encrypt_utils import encrypt_value, decrypt_value
 from app.utils.file_utils import save_uploaded_file
 from app.config import Config
+import os
+LOCAL_DEV = os.getenv("FLASK_ENV") == "development"
 
 
 ADMIN_EMAIL = Config.EMAIL_CONFIG['sender_email']
@@ -150,7 +154,6 @@ class ProviderController:
         }, 200
     
     
-    
     @staticmethod
     def verify_otp(email, otp):
 
@@ -159,10 +162,13 @@ class ProviderController:
 
         record = ProviderModel.get_otp(email)
 
-        if not record or record["otp_code"].strip() != otp.strip():
-            return {"error": "Invalid or expired OTP"}, 401
+        # In local development, accept a fixed OTP
+        if not (LOCAL_DEV and otp == "123456"):
+            if not record or record["otp_code"].strip() != otp.strip():
+                return {"error": "Invalid or expired OTP"}, 401
 
-        ProviderModel.delete_otp(email)
+        if record:
+            ProviderModel.delete_otp(email)
 
         user = ProviderModel.get_user_for_context(email)
 

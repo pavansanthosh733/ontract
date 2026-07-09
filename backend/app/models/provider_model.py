@@ -200,16 +200,33 @@ class ProviderModel:
         db.session.execute(sql, {"email": email, "otp": otp})
         db.session.commit()
 
+    # @staticmethod
+    # def get_otp(email):
+    #     sql = text("""
+    #         SELECT otp_code 
+    #         FROM otp_codes_t
+    #         WHERE email_id = :email
+    #           AND created_at > (NOW() - INTERVAL '5 minutes')
+    #     """)
+    #     row = db.session.execute(sql, {"email": email}).fetchone()
+    #     return dict(row._mapping) if row else None
+    
     @staticmethod
     def get_otp(email):
         sql = text("""
-            SELECT otp_code 
+            SELECT otp_code
             FROM otp_codes_t
             WHERE email_id = :email
               AND created_at > (NOW() - INTERVAL '5 minutes')
+            ORDER BY created_at DESC
+            LIMIT 1
         """)
         row = db.session.execute(sql, {"email": email}).fetchone()
-        return dict(row._mapping) if row else None
+        return dict(row._mapping) if row else None    
+    
+
+
+
 
     @staticmethod
     def delete_otp(email):
