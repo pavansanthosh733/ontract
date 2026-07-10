@@ -52,7 +52,7 @@ class AdminController:
         # Step 5: Generate OTP
         otp = ''.join(random.choices(string.digits, k=6))
         AdminModel.save_otp(email, otp)
-        #send_admin_otp_email(email, otp)
+        send_admin_otp_email(email, otp)
 
         return {
             "message": "OTP sent to email"
@@ -65,7 +65,7 @@ class AdminController:
             return {"error": "Email and OTP required"}, 400
 
         ok = AdminModel.verify_otp(email, otp)
-        ok = True
+        
         if not ok:
             return {"error": "Invalid OTP"}, 401
 
