@@ -67,6 +67,7 @@ jobs:
           ALLOWED_ORIGINS:  ${{ vars.ALLOWED_ORIGINS }}
           PUBLIC_BASE_URL:  ${{ vars.PUBLIC_BASE_URL }}
           FRONTEND_URL:     ${{ vars.FRONTEND_URL }}
+          FLASK_ENV:        ${{ vars.FLASK_ENV }}   # <-- Add this
           AWS_ACCOUNT_ID:   ${{ secrets.AWS_ACCOUNT_ID }}
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
         run: |
