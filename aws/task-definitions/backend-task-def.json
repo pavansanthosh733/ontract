@@ -33,6 +33,7 @@
         { "name": "ALLOWED_ORIGINS", "value": "__ALLOWED_ORIGINS__" },
         { "name": "PUBLIC_BASE_URL", "value": "__PUBLIC_BASE_URL__" },
         { "name": "FRONTEND_URL", "value": "__FRONTEND_URL__" },
+        { "name": "FLASK_ENV", "value": "__FLASK_ENV__" },
         { "name": "FIREBASE_SERVICE_ACCOUNT_JSON", "value": "__FIREBASE_SERVICE_ACCOUNT_JSON__" },
         { "name": "FIREBASE_CREDENTIALS_PATH", "value": "/app/serviceAccountKey.json" }
       ],
