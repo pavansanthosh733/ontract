@@ -162,11 +162,16 @@ class ProviderController:
 
         record = ProviderModel.get_otp(email)
 
-        # In local development, accept a fixed OTP
-        if not (LOCAL_DEV and otp == "123456"):
+        # =====================================================
+        # TEMPORARY BYPASS FOR DEMO
+        # Accept OTP "123456" without checking the database.
+        # Remove this before deploying to production.
+        # =====================================================
+        if otp != "123456":
             if not record or record["otp_code"].strip() != otp.strip():
                 return {"error": "Invalid or expired OTP"}, 401
 
+        # Delete stored OTP if it exists
         if record:
             ProviderModel.delete_otp(email)
 
