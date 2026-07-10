@@ -7,6 +7,7 @@ on:
       - "backend/**"
       - ".github/workflows/deploy-backend.yml"
       - "aws/task-definitions/backend-task-def.json"
+      - "scripts/render-task-def.sh"   # <-- Add this line
   workflow_dispatch:
 
 env:
