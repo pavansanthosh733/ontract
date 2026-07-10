@@ -38,6 +38,7 @@ SUBS = {
     "__ALLOWED_ORIGINS__":  os.environ.get("ALLOWED_ORIGINS", "*"),
     "__PUBLIC_BASE_URL__":  os.environ.get("PUBLIC_BASE_URL", ""),
     "__FRONTEND_URL__":     os.environ.get("FRONTEND_URL", ""),
+    "__FLASK_ENV__": os.environ.get("FLASK_ENV", ""),
     "__FIREBASE_SERVICE_ACCOUNT_JSON__":
                             os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON", ""),
 }
