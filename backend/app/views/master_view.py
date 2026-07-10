@@ -964,3 +964,6 @@ def get_description_filtered():
 
     if not category_id or not item_id or not type_id:
         return jsonify([]), 200
+
+    descriptions = MasterController.fetch_descriptions(category_id, item_id, type_id)
+    return jsonify(descriptions), 200
