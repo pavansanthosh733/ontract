@@ -38,7 +38,7 @@ def generate_report():
                 "error": str(validation_error)
             }), 400
 
-        # Generate AI Report
+        # Generate AI Report fir the application
         result = generate_ai_report(prompt, data)
 
         return jsonify(result), 200
