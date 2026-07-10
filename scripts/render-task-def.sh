@@ -10,6 +10,7 @@
 # NOTE (production): this is NOT how you should ship real secrets.
 # In prod, swap to AWS Secrets Manager and use the `secrets` block in
 # the task def — see PRODUCTION_BACKLOG.md.
+#one coment added for deploying again
 set -euo pipefail
 
 IN="$1"
