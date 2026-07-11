@@ -8,6 +8,8 @@ on:
       - ".github/workflows/deploy-backend.yml"
       - "aws/task-definitions/backend-task-def.json"
       - "scripts/render-task-def.sh"   # <-- Add this line
+      #branches-ignore:
+        
   workflow_dispatch:
 
 env:
