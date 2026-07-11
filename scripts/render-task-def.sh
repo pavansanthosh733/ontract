@@ -35,6 +35,8 @@ SUBS = {
     "__SMTP_PORT__":        os.environ.get("SMTP_PORT", "587"),
     "__SMTP_USER__":        os.environ.get("SMTP_USER", ""),
     "__SMTP_PASSWORD__":    os.environ.get("SMTP_PASSWORD", ""),
+    "__SMTP_USE_TLS__":     os.environ.get("SMTP_USE_TLS", "false"),
+    "__SMTP_USE_SSL__":     os.environ.get("SMTP_USE_SSL", "true"),
     "__FROM_EMAIL__":       os.environ.get("FROM_EMAIL", ""),
     "__ALLOWED_ORIGINS__":  os.environ.get("ALLOWED_ORIGINS", "*"),
     "__PUBLIC_BASE_URL__":  os.environ.get("PUBLIC_BASE_URL", ""),
