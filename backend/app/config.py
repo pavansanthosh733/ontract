@@ -14,10 +14,14 @@ class Config:
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True, "pool_recycle": 280}
 
     EMAIL_CONFIG = {
-        "sender_email":    os.getenv("SMTP_USER"),
+        "sender_email": os.getenv("SMTP_USER"),
         "sender_password": os.getenv("SMTP_PASSWORD"),
-        "smtp_server":     os.getenv("SMTP_HOST"),
-        "smtp_port":       int(os.getenv("SMTP_PORT", "587")),
+        "smtp_server": os.getenv("SMTP_HOST"),
+        "smtp_port": int(os.getenv("SMTP_PORT", "587")),
+        "use_ssl": os.getenv(
+            "SMTP_USE_SSL",
+            "false"
+        ).lower() == "true",
     }
     FROM_EMAIL = os.getenv("FROM_EMAIL", "info@jhaishna.com")
     FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
