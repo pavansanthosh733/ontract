@@ -319,3 +319,37 @@
     flex: 1;
   }
 }
+.rfq-table-wrapper {
+  overflow-x: auto;
+}
+.rfq-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.rfq-total-cell {
+  font-weight: 600;
+  text-align: center;
+}
+.rfq-item-actions {
+  margin-top: 15px;
+  display: flex;
+  justify-content: flex-start;
+}
+.rfq-grand-total {
+  margin-top: 15px;
+  text-align: right;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Remove spinner arrows in Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}

@@ -18,6 +18,8 @@ function RFQ() {
   const [description, setDescription] = useState("");
   const [remarks, setRemarks] = useState("");
   const [attachments, setAttachments] = useState([]);
+  const [showItems, setShowItems] = useState(false);
+  const [amount, setAmount] = useState("");
   const [items, setItems] = useState([
     {
       description: "",
@@ -163,9 +165,7 @@ function RFQ() {
     try {
 
         const formData = new FormData();
-
         formData.append("ADMIN_ID",admin?.admin_id || "");
-
         formData.append("CATEGORY_ID", selectedCategory);
         formData.append("REGION_ID", selectedRegionId);
         formData.append("STATE_ID", selectedStateId);
@@ -174,11 +174,13 @@ function RFQ() {
         formData.append("CLOSING_DATE", closingDate);
         formData.append("DESCRIPTION", description);
         formData.append("REMARKS", remarks);
-        formData.append("ITEMS",JSON.stringify(items));
-
-        attachments.forEach((item) => {
-        formData.append("attachments[]", item.file);
-        });
+        if (showItems) {
+          formData.append("ITEMS", JSON.stringify(items));
+        } else {
+          formData.append("ITEMS", JSON.stringify([]));
+        }
+        formData.append("AMOUNT", amount);
+        attachments.forEach((item) => {formData.append("attachments[]", item.file);});
 
         const res = await fetch(
         `${BASE_URL}/api/admin/workorders/rfq/create`,
@@ -237,7 +239,7 @@ function RFQ() {
     </div>
 
     <div className="field">
-      <label>RFQ Closing Date</label>
+      <label>Delivery Date</label>
       <input
         type="date"
         min={today}
@@ -361,20 +363,55 @@ function RFQ() {
             }
           />
         </div>
+          <div className="field">
+            <label>Amount</label>
+            <input
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              onWheel={(e) => e.currentTarget.blur()}
+              placeholder="Enter Amount"
+              min="0"
+            />
+          </div>
       </div>
+      
+      {!showItems ? (
+        <button
+          type="button"
+          className="create-btn"
+          onClick={() => setShowItems(true)}
+        >
+          + Add RFQ Items
+        </button>
+      ) : (
+        <button
+          type="button"
+          className="cancel-btn"
+          onClick={() => {
+            setShowItems(false);
+            setItems([
+              {
+                description: "",
+                unitPrice: "",
+                quantity: "",
+                total: 0,
+              },
+            ]);
+          }}
+        >
+          Remove RFQ Items
+        </button>
+      )}
 
+      {showItems && (
       <div className="rfq-card">
         <h3 style={{ marginBottom: "15px" }}>
           RFQ Items
         </h3>
 
-        <div style={{ overflowX: "auto" }}>
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-            }}
-          >
+        <div className="rfq-table-wrapper">
+          <table className="rfq-table">
             <thead>
               <tr>
                 <th>S.No</th>
@@ -438,12 +475,7 @@ function RFQ() {
                     />
                   </td>
 
-                  <td
-                    style={{
-                      fontWeight: 600,
-                      textAlign: "center",
-                    }}
-                  >
+                  <td className="rfq-total-cell">
                     ₹{item.total}
                   </td>
 
@@ -466,13 +498,7 @@ function RFQ() {
         </div>
 
         {/* Add Item Button */}
-        <div
-          style={{
-            marginTop: "15px",
-            display: "flex",
-            justifyContent: "flex-start",
-          }}
-        >
+        <div className="rfq-item-actions">
           <button
             type="button"
             className="create-btn"
@@ -483,14 +509,7 @@ function RFQ() {
         </div>
 
         {/* Grand Total */}
-        <div
-          style={{
-            marginTop: "15px",
-            textAlign: "right",
-            fontWeight: "bold",
-            fontSize: "18px",
-          }}
-        >
+        <div className="rfq-grand-total">
           Grand Total : ₹
           {items.reduce(
             (sum, item) =>
@@ -499,7 +518,7 @@ function RFQ() {
           )}
         </div>
       </div>
-
+      )}
       {/* Attachment */}
       <div className="rfq-card">
         <h3>Attachments</h3>

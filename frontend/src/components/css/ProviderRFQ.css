@@ -136,3 +136,34 @@
     padding: 10px 0;
     border-bottom: 1px solid #dee2e6;
 }
+
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+}
+
+.pagination-container button {
+    padding: 6px 12px;
+    border: 1px solid #ddd;
+    background: #fff;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.pagination-container button:hover {
+    background: #f1f1f1;
+}
+
+.pagination-container .active-page {
+    background: #0d6efd;
+    color: #fff;
+    border-color: #0d6efd;
+}
+
+.pagination-container button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

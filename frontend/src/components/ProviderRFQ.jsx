@@ -12,6 +12,16 @@ function ProviderRFQ() {
     const [showModal, setShowModal] = useState(false);
     const [quotedItems, setQuotedItems] = useState([]);
     const [contractorRemarks, setContractorRemarks] = useState("");
+    const [quotationAmount, setQuotationAmount] = useState("");
+    const [newCount, setNewCount] = useState(0);
+    const [respondedCount, setRespondedCount] = useState(0);
+    const [ignoredCount, setIgnoredCount] = useState(0)
+    const [currentPage, setCurrentPage] = useState(1);
+    const recordsPerPage = 5;
+    const lastIndex = currentPage * recordsPerPage;
+    const firstIndex = lastIndex - recordsPerPage;
+    const currentRfqs = rfqs.slice(firstIndex, lastIndex);
+    const totalPages = Math.ceil(rfqs.length / recordsPerPage);
 
     useEffect(() => {
         setLoading(true);
@@ -26,6 +36,7 @@ function ProviderRFQ() {
     const submitQuotation = async () => {
 
         try {
+            if (quotedItems.length > 0) {
             const hasEmptyPrice = quotedItems.some(
                 item =>
                     item.unit_price === "" ||
@@ -36,16 +47,28 @@ function ProviderRFQ() {
                 alert("Please enter unit price for all items.");
                 return;
             }
+        }
 
             if (!contractorRemarks.trim()) {
                 alert("Please enter contractor remarks.");
+                return;
+            }
+            if (quotedItems.length === 0 && !quotationAmount) {
+                alert("Please enter quotation amount.");
                 return;
             }
             const payload = {
                 rfq_id: selectedRFQ.header.rfq_id,
                 contractor_id: user.user_uid,
                 remarks: contractorRemarks,
-                grand_total: quotedItems.reduce((sum, item) => sum + Number(item.total),0),
+                grand_total:
+                quotedItems.length > 0
+                    ? quotedItems.reduce(
+                        (sum, item) => sum + Number(item.total),
+                        0
+                    )
+                    : Number(quotationAmount),
+
                 items: quotedItems.map(item => ({
                     rfq_item_id: item.rfq_item_id,
                     quantity: item.quantity,
@@ -74,6 +97,8 @@ function ProviderRFQ() {
         try {
             const data = await apiGet(`/api/workorders/provider/rfq/new/${user.user_uid}`);
             setRfqs(Array.isArray(data) ? data : []);
+            setNewCount(Array.isArray(data) ? data.length : 0);
+            setCurrentPage(1);         
         } catch (err) {
 
             console.error(err);
@@ -88,12 +113,9 @@ function ProviderRFQ() {
     const fetchRespondedRfqs = async () => {
         try {
             const data = await apiGet(`/api/workorders/provider/rfq/responded/${user.user_uid}`);
-            setRfqs(
-                Array.isArray(data)
-                    ? data
-                    : []
-            );
-
+            setRfqs(Array.isArray(data) ? data : []);
+            setRespondedCount(Array.isArray(data) ? data.length : 0);
+            setCurrentPage(1);
         } catch (err) {
             console.error(err);
         } finally {
@@ -140,21 +162,21 @@ function ProviderRFQ() {
                     className={activeTab === "NEW" ? "active" : ""}
                     onClick={() => setActiveTab("NEW")}
                 >
-                    New
+                    New ({newCount})
                 </button>
 
                 <button
                     className={activeTab === "RESPONDED" ? "active" : ""}
                     onClick={() => setActiveTab("RESPONDED")}
                 >
-                    Responded
+                    Responded ({respondedCount})
                 </button>
 
                 <button
                     className={activeTab === "IGNORED" ? "active" : ""}
                     onClick={() => setActiveTab("IGNORED")}
                 >
-                    Ignored
+                    Ignored ({ignoredCount})
                 </button>
 
             </div>
@@ -168,7 +190,7 @@ function ProviderRFQ() {
                     </div>
 
                 ) : (
-
+                     <>
                     <table className="rfq-table">
 
                         <thead>
@@ -211,21 +233,13 @@ function ProviderRFQ() {
 
                             ) : (
 
-                                rfqs.map((rfq) => (
+                               currentRfqs.map((rfq) => (
 
                                     <tr key={rfq.rfq_id}>
-
                                         <td>{rfq.rfq_no}</td>
-
                                         <td>{rfq.rfq_title}</td>
-
                                         <td>{rfq.closing_date}</td>
-
-                                        <td>
-                                            <span className="status-open">
-                                                {rfq.status}
-                                            </span>
-                                        </td>
+                                        <td><span className="status-open">{rfq.status}</span></td>
                                         <td>
                                         {activeTab === "NEW" ? (
                                             <button
@@ -248,6 +262,37 @@ function ProviderRFQ() {
                             )}
                         </tbody>
                     </table>
+                    
+                    {totalPages > 1 && (
+                        <div className="pagination-container">
+
+                            <button
+                                disabled={currentPage === 1}
+                                onClick={() => setCurrentPage(currentPage - 1)}
+                            >
+                                Previous
+                            </button>
+
+                            {[...Array(totalPages)].map((_, index) => (
+                                <button
+                                    key={index}
+                                    className={currentPage === index + 1 ? "active-page" : ""}
+                                    onClick={() => setCurrentPage(index + 1)}
+                                >
+                                    {index + 1}
+                                </button>
+                            ))}
+
+                            <button
+                                disabled={currentPage === totalPages}
+                                onClick={() => setCurrentPage(currentPage + 1)}
+                            >
+                                Next
+                            </button>
+
+                        </div>
+                    )}
+                     </>
                 )}
             </div>
         </div> 
@@ -300,11 +345,32 @@ function ProviderRFQ() {
                         </tbody>
                     </table>
                     <br />
-                    <h5>Description</h5>
+                    <h5>Project Details Description</h5>
                     <p> {selectedRFQ.header.description} </p>
                     <h5>Remarks</h5>
                     <p> {selectedRFQ.header.remarks} </p>
+                    {quotedItems.length === 0 && (
+                        <div className="mt-3">
+                            <label className="form-label fw-bold">
+                                Quotation Amount (RM)
+                            </label>
 
+                            <div className="input-group">
+                                <span className="input-group-text">RM</span>
+
+                                <input
+                                    type="number"
+                                    className="form-control"
+                                    placeholder="Enter quotation amount"
+                                    value={quotationAmount}
+                                    onChange={(e) =>
+                                        setQuotationAmount(e.target.value)
+                                    }
+                                    onWheel={(e) => e.currentTarget.blur()}
+                                />
+                            </div>
+                        </div>
+                    )}
                     <hr />
                     <h5>Attachments</h5>
                     {selectedRFQ.attachments?.length > 0 ? (
@@ -320,6 +386,8 @@ function ProviderRFQ() {
                     ) : (
                         <p>No Attachments</p>
                     )}
+                {quotedItems.length > 0 && (
+                    <>
                     <h5 className="mb-3">Quotation Items</h5>
                     <div className="container-fluid p-0">
                         <div className="row fw-bold border-bottom pb-2 mb-2">
@@ -370,6 +438,8 @@ function ProviderRFQ() {
                             }
                         </h4>
                     </div>
+                </>
+            )}
                     <div className="mt-4">
                         <label className="form-label fw-bold">Contractor Remarks</label>
                         <textarea className="form-control" rows="4"
