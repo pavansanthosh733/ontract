@@ -1,9 +1,8 @@
-import smtplib
-
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 from app.config import Config
+from app.utils.smtp_utils import get_smtp_server
 
 
 EMAIL = Config.EMAIL_CONFIG
@@ -12,7 +11,6 @@ EMAIL = Config.EMAIL_CONFIG
 def send_acceptance_email(to_email, workorder_id):
 
     sender_email = EMAIL["sender_email"]
-    sender_password = EMAIL["sender_password"]
 
     accept_link = (
         f"{Config.FRONTEND_URL}/workorder/{workorder_id}/accept"
@@ -74,14 +72,5 @@ def send_acceptance_email(to_email, workorder_id):
 
     msg.attach(MIMEText(html, "html", "utf-8"))
 
-    with smtplib.SMTP_SSL(
-        EMAIL["smtp_server"],
-        EMAIL["smtp_port"]
-    ) as server:
-
-        server.login(
-            sender_email,
-            sender_password
-        )
-
+    with get_smtp_server() as server:
         server.send_message(msg)

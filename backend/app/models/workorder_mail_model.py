@@ -1,28 +1,21 @@
-import os, json, base64, traceback, smtplib, logging
+import os, json, base64, traceback, logging
+
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
 from sqlalchemy import text
 from flask import render_template, current_app
-from app.models.database import db
 from types import SimpleNamespace
-#from app.models.workorder import WorkOrder
 
-# ----------------------------------------------------------------------
-# 🧩 SMTP Configuration (from .env)
-# ----------------------------------------------------------------------
-EMAIL_USER = os.getenv("SMTP_USER")
-EMAIL_PASS = os.getenv("SMTP_PASSWORD")
-SMTP_HOST = os.getenv("SMTP_HOST")
-SMTP_PORT = int(os.getenv("SMTP_PORT", 465))
-SMTP_USE_SSL = os.getenv(
-    "SMTP_USE_SSL",
-    "true"
-).lower() == "true"
-FROM_EMAIL = os.getenv("FROM_EMAIL", EMAIL_USER)
-
+from app.config import Config
+from app.models.database import db
 from app.utils.datetime_utils import now_local
+from app.utils.smtp_utils import get_smtp_server
+
+
+EMAIL = Config.EMAIL_CONFIG
+FROM_EMAIL = Config.FROM_EMAIL
 
 
 def now_ist():
@@ -30,43 +23,13 @@ def now_ist():
     return now_local()
 
 
+
+
+
 # ----------------------------------------------------------------------
 # 🧩 SMTP Connection (single source of truth)
 # ----------------------------------------------------------------------
-def get_smtp_server():
-    """
-    Create and return an authenticated SMTP connection.
 
-    Uses implicit SSL (SMTP_SSL) on port 465 by default. Centralizing
-    this here means any future provider/port/auth change only needs
-    to happen in one place.
-    """
-    if not all([SMTP_HOST, SMTP_PORT, EMAIL_USER, EMAIL_PASS]):
-        logging.error("SMTP configuration is incomplete. Check .env values.")
-        raise RuntimeError("Missing SMTP configuration")
-
-    logging.info(
-        f"Connecting to SMTP server {SMTP_HOST}:{SMTP_PORT} as {EMAIL_USER}"
-    )
-
-    try:
-        if SMTP_USE_SSL:
-            server = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=30)
-        else:
-            # Fallback path for STARTTLS-style providers, kept for
-            # environments where SMTP_USE_SSL=false is intentionally set.
-            server = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30)
-            server.starttls()
-
-        server.login(EMAIL_USER, EMAIL_PASS)
-        return server
-
-    except smtplib.SMTPAuthenticationError as e:
-        logging.error(f"SMTP authentication failed for {EMAIL_USER}: {e}")
-        raise
-    except (smtplib.SMTPException, OSError) as e:
-        logging.error(f"SMTP connection failed to {SMTP_HOST}:{SMTP_PORT}: {e}")
-        raise
 
 
 # -----------------------------------------------------------------------

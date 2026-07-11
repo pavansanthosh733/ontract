@@ -1,14 +1,10 @@
 from datetime import datetime
 from sqlalchemy import text
 import logging
-import os
-import smtplib
-
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 
 from app.models.database import db
 from app.models.purchase_order_model import PurchaseOrder
+from app.services.mail_service import MailService
 
 
 # =====================================================
@@ -40,24 +36,6 @@ def send_po_mail(
 
     try:
 
-        smtp_host = os.getenv("SMTP_HOST")
-
-        smtp_port = int(
-
-            os.getenv("SMTP_PORT", 587)
-
-        )
-
-        smtp_user = os.getenv("SMTP_USER")
-
-        smtp_password = os.getenv("SMTP_PASSWORD")
-
-        from_email = os.getenv("FROM_EMAIL")
-
-        logging.info(
-            f"SMTP HOST: {smtp_host}"
-        )
-
         logging.info(
             f"SENDING MAIL TO: {contractor_email}"
         )
@@ -81,49 +59,17 @@ Ontract Services
 
         """
 
-        msg = MIMEMultipart()
+        MailService.send_email(
 
-        msg["From"] = from_email
+            to_email=contractor_email,
 
-        msg["To"] = contractor_email
+            subject=subject,
 
-        msg["Subject"] = subject
+            body=body,
 
-        msg.attach(
-
-            MIMEText(body, "plain")
+            body_type="plain"
 
         )
-
-        server = smtplib.SMTP(
-
-            smtp_host,
-
-            smtp_port
-
-        )
-
-        server.starttls()
-
-        server.login(
-
-            smtp_user,
-
-            smtp_password
-
-        )
-
-        server.sendmail(
-
-            from_email,
-
-            contractor_email,
-
-            msg.as_string()
-
-        )
-
-        server.quit()
 
         logging.info(
             "PO EMAIL SENT SUCCESSFULLY"

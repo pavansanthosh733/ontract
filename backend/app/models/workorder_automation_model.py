@@ -12,6 +12,7 @@ from sqlalchemy import text
 
 from app.models.database import db
 from app.models.workorder import WorkOrder
+from app.services.mail_service import MailService
 from app.models.workorder_mail_model import (
     get_expiry_minutes_from_db,
     build_assignment_email_html,
@@ -178,103 +179,239 @@ def send_admin_no_acceptance_email(workorder, all_attempts):
     """Send email to admin when no contractor accepts."""
     try:
         creator_id = workorder.created_by
+
         if not creator_id:
             print("[WARN] No creator_id found")
             return
-        
+
         creator_admin = get_admin_email_by_id(creator_id)
+
         if not creator_admin:
-            print(f"[WARN] No admin found for creator_id: {creator_id}")
+            print(
+                f"[WARN] No admin found for creator_id: {creator_id}"
+            )
             return
-        
+
         admin_email, admin_name = creator_admin
-        
-        # Build attempts table
+
+        # --------------------------------------------------------------
+        # BUILD ASSIGNMENT ATTEMPTS TABLE
+        # --------------------------------------------------------------
         attempts_html = ""
+
         for idx, attempt in enumerate(all_attempts, 1):
             attempts_html += f"""
             <tr>
-                <td style="padding:8px;border:1px solid #ddd;">{idx}</td>
-                <td style="padding:8px;border:1px solid #ddd;">{attempt['contractor_name']}</td>
-                <td style="padding:8px;border:1px solid #ddd;">{attempt['status']}</td>
-                <td style="padding:8px;border:1px solid #ddd;">{attempt.get('remark', 'N/A')}</td>
+                <td style="padding:8px;border:1px solid #ddd;">
+                    {idx}
+                </td>
+
+                <td style="padding:8px;border:1px solid #ddd;">
+                    {attempt['contractor_name']}
+                </td>
+
+                <td style="padding:8px;border:1px solid #ddd;">
+                    {attempt['status']}
+                </td>
+
+                <td style="padding:8px;border:1px solid #ddd;">
+                    {attempt.get('remark', 'N/A')}
+                </td>
             </tr>
             """
-        
+
+        # --------------------------------------------------------------
+        # BUILD EMAIL HTML
+        # --------------------------------------------------------------
         html = f"""
         <html>
-        <head><meta charset="UTF-8"></head>
-        <body style="font-family:Arial,sans-serif;line-height:1.6;color:#333;max-width:800px;margin:0 auto;padding:20px;">
-            <div style="background:#dc3545;padding:20px;border-radius:8px;margin-bottom:20px;">
-                <h2 style="margin:0;color:white;">⚠️ Work Order Assignment Failed</h2>
+        <head>
+            <meta charset="UTF-8">
+        </head>
+
+        <body style="
+            font-family:Arial,sans-serif;
+            line-height:1.6;
+            color:#333;
+            max-width:800px;
+            margin:0 auto;
+            padding:20px;
+        ">
+
+            <div style="
+                background:#dc3545;
+                padding:20px;
+                border-radius:8px;
+                margin-bottom:20px;
+            ">
+                <h2 style="margin:0;color:white;">
+                    ⚠️ Work Order Assignment Failed
+                </h2>
             </div>
 
-            <div style="background:#fff3cd;padding:15px;border-left:4px solid #dc3545;margin-bottom:20px;">
+            <div style="
+                background:#fff3cd;
+                padding:15px;
+                border-left:4px solid #dc3545;
+                margin-bottom:20px;
+            ">
                 <p style="margin:5px 0;font-size:16px;">
-                    <strong>Work Order {workorder.WORKORDER}</strong> could not be assigned.
-                    All available contractors either rejected or did not respond.
+                    <strong>
+                        Work Order {workorder.WORKORDER}
+                    </strong>
+                    could not be assigned.
+
+                    All available contractors either rejected
+                    or did not respond.
                 </p>
             </div>
 
-            <table border="1" cellspacing="0" cellpadding="12"
-                   style="border-collapse:collapse;width:100%;margin-bottom:25px;">
+            <table
+                border="1"
+                cellspacing="0"
+                cellpadding="12"
+                style="
+                    border-collapse:collapse;
+                    width:100%;
+                    margin-bottom:25px;
+                "
+            >
+
                 <tr style="background:#f8f9fa;">
-                    <th align="left" style="width:40%;">Work Order</th>
-                    <td><strong>{workorder.WORKORDER}</strong></td>
+                    <th align="left" style="width:40%;">
+                        Work Order
+                    </th>
+
+                    <td>
+                        <strong>{workorder.WORKORDER}</strong>
+                    </td>
                 </tr>
+
                 <tr>
-                    <th align="left" style="background:#f8f9fa;">Area</th>
-                    <td>{workorder.WORKORDER_AREA}</td>
+                    <th
+                        align="left"
+                        style="background:#f8f9fa;"
+                    >
+                        Area
+                    </th>
+
+                    <td>
+                        {workorder.WORKORDER_AREA}
+                    </td>
                 </tr>
+
                 <tr>
-                    <th align="left" style="background:#f8f9fa;">Client</th>
-                    <td>{workorder.client or 'N/A'}</td>
+                    <th
+                        align="left"
+                        style="background:#f8f9fa;"
+                    >
+                        Client
+                    </th>
+
+                    <td>
+                        {workorder.client or 'N/A'}
+                    </td>
                 </tr>
+
             </table>
 
-            <h3 style="color:#dc3545;">Assignment Attempts:</h3>
-            <table border="1" cellspacing="0" cellpadding="8" style="border-collapse:collapse;width:100%;">
+            <h3 style="color:#dc3545;">
+                Assignment Attempts:
+            </h3>
+
+            <table
+                border="1"
+                cellspacing="0"
+                cellpadding="8"
+                style="
+                    border-collapse:collapse;
+                    width:100%;
+                "
+            >
+
                 <thead>
                     <tr style="background:#f8f9fa;">
-                        <th style="padding:8px;border:1px solid #ddd;">#</th>
-                        <th style="padding:8px;border:1px solid #ddd;">Contractor</th>
-                        <th style="padding:8px;border:1px solid #ddd;">Status</th>
-                        <th style="padding:8px;border:1px solid #ddd;">Remark</th>
+
+                        <th style="
+                            padding:8px;
+                            border:1px solid #ddd;
+                        ">
+                            #
+                        </th>
+
+                        <th style="
+                            padding:8px;
+                            border:1px solid #ddd;
+                        ">
+                            Contractor
+                        </th>
+
+                        <th style="
+                            padding:8px;
+                            border:1px solid #ddd;
+                        ">
+                            Status
+                        </th>
+
+                        <th style="
+                            padding:8px;
+                            border:1px solid #ddd;
+                        ">
+                            Remark
+                        </th>
+
                     </tr>
                 </thead>
-                <tbody>{attempts_html}</tbody>
+
+                <tbody>
+                    {attempts_html}
+                </tbody>
+
             </table>
 
-            <div style="background:#f8f9fa;padding:15px;border-radius:5px;margin-top:20px;">
-                <p style="margin:0;"><strong>Action Required:</strong> Please manually assign this work order.</p>
+            <div style="
+                background:#f8f9fa;
+                padding:15px;
+                border-radius:5px;
+                margin-top:20px;
+            ">
+
+                <p style="margin:0;">
+                    <strong>Action Required:</strong>
+
+                    Please manually assign this work order.
+                </p>
+
             </div>
+
         </body>
         </html>
         """
-        
-        import smtplib
-        from email.mime.text import MIMEText
-        from email.mime.multipart import MIMEMultipart
-        
-        EMAIL_USER = os.getenv("MAIL_USER")
-        EMAIL_PASS = os.getenv("MAIL_PASS")
-        
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = f"⚠️ Assignment Failed – {workorder.WORKORDER}"
-        msg["From"] = EMAIL_USER
-        msg["To"] = admin_email
-        msg.attach(MIMEText(html, "html"))
-        
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(EMAIL_USER, EMAIL_PASS)
-            server.send_message(msg)
-        
-        print(f"[ADMIN] No-acceptance email sent to: {admin_email}")
-        
-    except Exception as e:
-        print(f"[ERROR] send_admin_no_acceptance_email: {e}")
-        traceback.print_exc()
 
+        # --------------------------------------------------------------
+        # SEND EMAIL USING COMMON MAIL SERVICE
+        # --------------------------------------------------------------
+        MailService.send_email(
+            to_email=admin_email,
+            subject=(
+                f"⚠️ Assignment Failed – "
+                f"{workorder.WORKORDER}"
+            ),
+            body=html,
+            body_type="html",
+        )
+
+        print(
+            f"[ADMIN] No-acceptance email sent to: "
+            f"{admin_email}"
+        )
+
+    except Exception as e:
+        print(
+            f"[ERROR] send_admin_no_acceptance_email: {e}"
+        )
+
+        traceback.print_exc()
 
 # ----------------------------------------------------------------------
 # CORE AUTOMATION LOGIC
