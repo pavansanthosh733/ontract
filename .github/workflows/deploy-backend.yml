@@ -9,6 +9,7 @@ on:
       - "aws/task-definitions/backend-task-def.json"
       - "scripts/render-task-def.sh"   # <-- Add this line
       #branches-ignore:
+      #paths-ignore: 
         
   workflow_dispatch:
 
