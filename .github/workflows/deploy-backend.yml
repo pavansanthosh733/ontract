@@ -68,6 +68,8 @@ jobs:
           SMTP_USER:        ${{ secrets.SMTP_USER }}
           SMTP_PASSWORD:    ${{ secrets.SMTP_PASSWORD }}
           FROM_EMAIL:       ${{ secrets.FROM_EMAIL }}
+          SMTP_USE_TLS:     ${{ vars.SMTP_USE_TLS }}
+          SMTP_USE_SSL:     ${{ vars.SMTP_USE_SSL }}
           ALLOWED_ORIGINS:  ${{ vars.ALLOWED_ORIGINS }}
           PUBLIC_BASE_URL:  ${{ vars.PUBLIC_BASE_URL }}
           FRONTEND_URL:     ${{ vars.FRONTEND_URL }}
