@@ -1800,6 +1800,7 @@ def create_rfq():
             "CLOSING_DATE": form.get("CLOSING_DATE"),
             "DESCRIPTION": form.get("DESCRIPTION", "").strip(),
             "REMARKS": form.get("REMARKS", "").strip(),
+            "AMOUNT": form.get("AMOUNT"),
             "ITEMS": json.loads(form.get("ITEMS", "[]")),
             "created_by": form.get("ADMIN_ID")
         }

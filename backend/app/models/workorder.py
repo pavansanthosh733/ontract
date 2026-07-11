@@ -3653,7 +3653,7 @@ class WorkOrder(db.Model):
         
     @classmethod
     def create_rfq(cls, data):
-
+        logging.info(f"check theamountsddjkd: '{data}'")
         try:
 
             # =====================================
@@ -3673,9 +3673,9 @@ class WorkOrder(db.Model):
             # =====================================
             sql = text("""
                 INSERT INTO rfq_master_t (rfq_no,category_id,region_id,state_id,city_id,rfq_title,
-                closing_date,description,remarks,attachments,status,created_by,created_at)
+                closing_date,description,remarks,amount,attachments,status,created_by,created_at)
                 VALUES (:rfq_no,:category_id,:region_id,:state_id,:city_id,:rfq_title,:closing_date,
-                :description,:remarks,CAST(:attachments AS JSONB),'OPEN',:created_by,CURRENT_TIMESTAMP)
+                :description,:remarks,:amount,CAST(:attachments AS JSONB),'OPEN',:created_by,CURRENT_TIMESTAMP)
                 RETURNING *
             """)
 
@@ -3691,13 +3691,14 @@ class WorkOrder(db.Model):
                     "closing_date": data["CLOSING_DATE"],
                     "description": data["DESCRIPTION"],
                     "remarks": data["REMARKS"],
+                    "amount": data["AMOUNT"],
                     "attachments": json.dumps(data.get("attachments", [])),
                     "created_by": data["created_by"]
                 }
             )
-
+            
             rfq = result.fetchone()
-
+            
             # =====================================
             # SAVE RFQ ITEMS
             # =====================================
@@ -4005,21 +4006,22 @@ class WorkOrder(db.Model):
                     }
 
                 ).mappings().fetchall()
+                
+                quoted_amount = float(contractor["grand_total"] or 0)
+                grand_total = round(quoted_amount * 1.10, 2)
 
                 response_data.append({
                     "response_id": contractor["response_id"],
                     "contractor_id": contractor["contractor_id"],
                     "contractor_name": contractor["contractor_name"],
-                    "grand_total": contractor["grand_total"],
+                    "grand_total": grand_total,
                     "remarks": contractor["remarks"],
                     "status": contractor["status"],
                     "submitted_at": contractor["submitted_at"],
                     "items": [
-
                         dict(item)
                         for item in items
                     ]
-
                 })
 
             return response_data
@@ -4029,7 +4031,6 @@ class WorkOrder(db.Model):
             logging.exception("ADMIN RFQ RESPONSES")
 
             return []
-
     @classmethod
     def get_admin_rfq_list(cls):
         try:
@@ -4084,6 +4085,10 @@ class WorkOrder(db.Model):
 
             if not header:
                 return None
+            
+            header = dict(header)
+            quoted_amount = float(header["grand_total"] or 0)
+            header["grand_total"] = round(quoted_amount * 1.10, 2)
 
             # ======================================================
 
