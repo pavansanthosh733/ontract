@@ -21,9 +21,14 @@ def send_email(to_email, subject, body, attachment=None):
         part['Content-Disposition'] = f'attachment; filename="{os.path.basename(attachment)}"'
         msg.attach(part)
 
-    with smtplib.SMTP(EMAIL['smtp_server'], EMAIL['smtp_port']) as server:
-        server.starttls()
-        server.login(EMAIL['sender_email'], EMAIL['sender_password'])
+    with smtplib.SMTP_SSL(
+        EMAIL['smtp_server'],
+        EMAIL['smtp_port']
+    ) as server:
+        server.login(
+            EMAIL['sender_email'],
+            EMAIL['sender_password']
+        )
         server.send_message(msg)
 
 

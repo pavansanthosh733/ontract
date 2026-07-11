@@ -9,15 +9,18 @@ from app.models.database import db
 from types import SimpleNamespace
 #from app.models.workorder import WorkOrder
 
-# ✅ Gmail credentials from .env
+# ----------------------------------------------------------------------
+# 🧩 SMTP Configuration (from .env)
+# ----------------------------------------------------------------------
 EMAIL_USER = os.getenv("SMTP_USER")
 EMAIL_PASS = os.getenv("SMTP_PASSWORD")
 SMTP_HOST = os.getenv("SMTP_HOST")
-SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
-SMTP_USE_TLS = os.getenv(
-    "SMTP_USE_TLS",
+SMTP_PORT = int(os.getenv("SMTP_PORT", 465))
+SMTP_USE_SSL = os.getenv(
+    "SMTP_USE_SSL",
     "true"
 ).lower() == "true"
+FROM_EMAIL = os.getenv("FROM_EMAIL", EMAIL_USER)
 
 from app.utils.datetime_utils import now_local
 
@@ -25,6 +28,46 @@ from app.utils.datetime_utils import now_local
 def now_ist():
     """Return current app-local time based on .env."""
     return now_local()
+
+
+# ----------------------------------------------------------------------
+# 🧩 SMTP Connection (single source of truth)
+# ----------------------------------------------------------------------
+def get_smtp_server():
+    """
+    Create and return an authenticated SMTP connection.
+
+    Uses implicit SSL (SMTP_SSL) on port 465 by default. Centralizing
+    this here means any future provider/port/auth change only needs
+    to happen in one place.
+    """
+    if not all([SMTP_HOST, SMTP_PORT, EMAIL_USER, EMAIL_PASS]):
+        logging.error("SMTP configuration is incomplete. Check .env values.")
+        raise RuntimeError("Missing SMTP configuration")
+
+    logging.info(
+        f"Connecting to SMTP server {SMTP_HOST}:{SMTP_PORT} as {EMAIL_USER}"
+    )
+
+    try:
+        if SMTP_USE_SSL:
+            server = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=30)
+        else:
+            # Fallback path for STARTTLS-style providers, kept for
+            # environments where SMTP_USE_SSL=false is intentionally set.
+            server = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30)
+            server.starttls()
+
+        server.login(EMAIL_USER, EMAIL_PASS)
+        return server
+
+    except smtplib.SMTPAuthenticationError as e:
+        logging.error(f"SMTP authentication failed for {EMAIL_USER}: {e}")
+        raise
+    except (smtplib.SMTPException, OSError) as e:
+        logging.error(f"SMTP connection failed to {SMTP_HOST}:{SMTP_PORT}: {e}")
+        raise
+
 
 # -----------------------------------------------------------------------
 # 🧩 Image Helpers
@@ -109,8 +152,6 @@ def get_workorder_from_db(workorder_id):
     except Exception as e:
         logging.error(f"Error fetching workorder {workorder_id}: {e}")
         return None
-
-
 
 
 def get_contractor_from_db(provider_id):
@@ -288,10 +329,9 @@ def build_admin_notification_html(workorder, contractor_name, contractor_id, act
 # ----------------------------------------------------------------------
 def send_email_with_attachments(workorder, recipient, name, html_body):
 
-
     msg = MIMEMultipart("mixed")
     msg["Subject"] = f"Work Order Assigned – {workorder.workorder}"
-    msg["From"] = EMAIL_USER
+    msg["From"] = FROM_EMAIL
     msg["To"] = recipient
 
     related = MIMEMultipart("related")
@@ -302,31 +342,29 @@ def send_email_with_attachments(workorder, recipient, name, html_body):
     attach_workorder_images(msg, related, workorder)
     msg.attach(related)
 
+    server = None
     try:
-        logging.info(f"Connecting to Gmail SMTP as {EMAIL_USER} ...")
-        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
-
-        if SMTP_USE_TLS:
-         server.starttls()
-
-        server.login(EMAIL_USER, EMAIL_PASS)
-
+        server = get_smtp_server()
         server.send_message(msg)
-
-        server.quit()
         logging.info(f"Email successfully sent to {recipient}")
         return "SENT", 0, 0
     except Exception as e:
         logging.error(f"Failed to send email to {recipient}: {e}")
         traceback.print_exc()
         return f"FAILED: {e}", 0, 0
+    finally:
+        if server is not None:
+            try:
+                server.quit()
+            except Exception:
+                pass
 
 
 def send_email_with_attachments_auto(wr, recipient, name, html_body):
 
     msg = MIMEMultipart("mixed")
     msg["Subject"] = f"Work Order Assigned – {wr.workorder}"
-    msg["From"] = EMAIL_USER
+    msg["From"] = FROM_EMAIL
     msg["To"] = recipient
 
     related = MIMEMultipart("related")
@@ -337,31 +375,29 @@ def send_email_with_attachments_auto(wr, recipient, name, html_body):
     attach_workorder_images(msg, related, wr)
     msg.attach(related)
 
+    server = None
     try:
-        logging.info(f"Connecting to Gmail SMTP as {EMAIL_USER} ...")
-        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
-
-        if SMTP_USE_TLS:
-            server.starttls()
-
-        server.login(EMAIL_USER, EMAIL_PASS)
-
+        server = get_smtp_server()
         server.send_message(msg)
-
-        server.quit()
         logging.info(f"Email successfully sent to {recipient}")
         return "SENT", 0, 0
     except Exception as e:
         logging.error(f"Failed to send email to {recipient}: {e}")
         traceback.print_exc()
         return f"FAILED: {e}", 0, 0
+    finally:
+        if server is not None:
+            try:
+                server.quit()
+            except Exception:
+                pass
+
 
 def send_email_with_attachments_manual(request_data, recipient, name, html_body):
 
-
     msg = MIMEMultipart("mixed")
     msg["Subject"] = f"Work Order Assigned – {request_data['workorder']}"
-    msg["From"] = EMAIL_USER
+    msg["From"] = FROM_EMAIL
     msg["To"] = recipient
 
     related = MIMEMultipart("related")
@@ -374,26 +410,24 @@ def send_email_with_attachments_manual(request_data, recipient, name, html_body)
     if wo:
         attach_workorder_images(msg, related, wo)
     msg.attach(related)
-    
 
+    server = None
     try:
-        logging.info(f"Connecting to Gmail SMTP as {EMAIL_USER} ...")
-        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
-
-        if SMTP_USE_TLS:
-            server.starttls()
-
-        server.login(EMAIL_USER, EMAIL_PASS)
-
+        server = get_smtp_server()
         server.send_message(msg)
-
-        server.quit()
         logging.info(f"Email successfully sent to {recipient}")
         return "SENT", 0, 0
     except Exception as e:
         logging.error(f"Failed to send email to {recipient}: {e}")
         traceback.print_exc()
         return f"FAILED: {e}", 0, 0
+    finally:
+        if server is not None:
+            try:
+                server.quit()
+            except Exception:
+                pass
+
 
 def get_workorder_from_db_auto(workorder_id):
     try:
@@ -462,10 +496,9 @@ def build_creation_email_html(workorder, provider, response_url, expiry_minutes)
 def send_email_with_attachments_creation(workorder, recipient, name, html_body):
     logging.info(f"Preparing email to {recipient} ({workorder['workorder']})")
 
-
     msg = MIMEMultipart("mixed")
     msg["Subject"] = f"Work Order Assigned – {workorder['workorder']}"
-    msg["From"] = EMAIL_USER
+    msg["From"] = FROM_EMAIL
     msg["To"] = recipient
 
     related = MIMEMultipart("related")
@@ -476,26 +509,24 @@ def send_email_with_attachments_creation(workorder, recipient, name, html_body):
     attach_workorder_images(msg, related, workorder)
     msg.attach(related)
 
+    server = None
     try:
-        logging.info(f"Connecting to Gmail SMTP as {EMAIL_USER} ...")
-        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
-
-        if SMTP_USE_TLS:
-            server.starttls()
-
-        server.login(EMAIL_USER, EMAIL_PASS)
-
+        server = get_smtp_server()
         server.send_message(msg)
-
-        server.quit()   
         logging.info(f"Email successfully sent to {recipient}")
         return "SENT", 0, 0
     except Exception as e:
         logging.error(f"Failed to send email to {recipient}: {e}")
         traceback.print_exc()
         return f"FAILED: {e}", 0, 0
-    
-    
+    finally:
+        if server is not None:
+            try:
+                server.quit()
+            except Exception:
+                pass
+
+
 def get_workorder_details(workorder):
     try:
         query = text("""
@@ -611,8 +642,6 @@ def insert_workorder_assignment(workorder, provider_id, expiry_times):
         )
         raise
     
-    
-          
     
 def update_workorder_status_assignment(workorder, contractor_id, status):
     logging.info(
@@ -738,7 +767,6 @@ def build_withdraw_notification_html_contractor(workorder, reason):
     )
     
     
-    
 def build_rfq_email_html(rfq):
 
     return render_template(
@@ -746,12 +774,12 @@ def build_rfq_email_html(rfq):
         rfq=rfq
     )
 
-def send_rfq_email(recipient,html_body,rfq_no):
+def send_rfq_email(recipient, html_body, rfq_no):
 
     msg = MIMEMultipart("mixed")
 
     msg["Subject"] = (f"New RFQ Published - {rfq_no}")
-    msg["From"] = EMAIL_USER
+    msg["From"] = FROM_EMAIL
     msg["To"] = recipient
     related = MIMEMultipart("related")
     alt = MIMEMultipart("alternative")
@@ -760,23 +788,22 @@ def send_rfq_email(recipient,html_body,rfq_no):
     related.attach(alt)
     msg.attach(related)
 
+    server = None
     try:
-
-        server = smtplib.SMTP(SMTP_HOST,SMTP_PORT)
-
-        if SMTP_USE_TLS:
-            server.starttls()
-
-        server.login(EMAIL_USER,EMAIL_PASS)
+        server = get_smtp_server()
         server.send_message(msg)
-        server.quit()
         logging.info(f"RFQ Mail Sent: {recipient}")
         return "SENT"
-
     except Exception as e:
-
         logging.error(f"RFQ Mail Failed: {str(e)}")
         return "FAILED"
+    finally:
+        if server is not None:
+            try:
+                server.quit()
+            except Exception:
+                pass
+
 
 def get_all_rfq_contractors():
 
@@ -798,5 +825,3 @@ def get_all_rfq_contractors():
         )
 
         return []
-
-
