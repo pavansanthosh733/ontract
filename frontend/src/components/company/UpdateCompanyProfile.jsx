@@ -1516,18 +1516,24 @@ const servicesArray = locationServiceList.map(item => ({
             )}
           </div>
 
-          {/* CERTIFICATE */}
-          <div className="certificate-section shadow-sm p-4 rounded bg-white">
-            <h5 className="fw-semibold text-secondary mb-3">Documents</h5>
-            <a
-              href={`${BASE_URLS.user}/api/contractor/get_image/${contractor.email_id}/contractor_certificate`}
-              target="_blank"
-              rel="noreferrer"
-              className="btn btn-outline-primary btn-sm"
-            >
-              View Certificate
-            </a>
-          </div>
+	{/* CERTIFICATES */}
+<div className="certificate-section shadow-sm p-4 rounded bg-white">
+  <h5 className="fw-semibold text-secondary mb-3">Documents</h5>
+
+  {Array.isArray(profile.certificate_path) &&
+    profile.certificate_path.map((file, index) => (
+      <div key={index} className="mb-2">
+        <a
+          href={`${BASE_URLS.user}${file}`}
+          target="_blank"
+          rel="noreferrer"
+          className="btn btn-outline-primary btn-sm"
+        >
+          View Certificate {index + 1}
+        </a>
+      </div>
+    ))}
+</div>
 
           {successMessage && <div className="alert alert-success mt-3">{successMessage}</div>}
         </div>

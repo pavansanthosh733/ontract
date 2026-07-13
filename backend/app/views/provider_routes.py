@@ -139,15 +139,15 @@ def update_bank():
             "/uploads/provider_bank_statements"
         )
         
+        bank_path = file_info.get("file_path")
         result, status = ProviderController.update_bank(
-            email,
-            bank_name,
-            holder_name,
-            account_number,
-            swift,
-            file_info["file_path"]
+          email,
+          bank_name,
+          holder_name,
+          account_number,
+          swift,
+          file_info.get("db_path")
         )
-
         return jsonify(result), status
 
     except Exception as e:
