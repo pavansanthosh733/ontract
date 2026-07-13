@@ -57,6 +57,7 @@ PUBLIC_ROUTES = [
     "/api/logout",
     "/api/profile",
     "/api/update_profile",
+    "/api/zone",
 
     # ✅ Contractor auth routes
     "/api/contractor/verify_otp",
@@ -272,7 +273,7 @@ def register_auth_middleware(app):
                 "/api/region": {Roles.ADMIN, Roles.PROVIDER, Roles.CONTRACTOR},
                 "/api/state": {Roles.ADMIN, Roles.PROVIDER, Roles.CONTRACTOR},
                 "/api/city": {Roles.ADMIN, Roles.PROVIDER, Roles.CONTRACTOR},
-                "/api/zone": {Roles.ADMIN},
+                "/api/zone": {Roles.ADMIN, Roles.PROVIDER, Roles.CONTRACTOR},
                 "/api/master": {Roles.ADMIN},
                 "/api/mapping": {Roles.ADMIN},
                 "/api/workorder-type": {Roles.ADMIN, Roles.PROVIDER},
