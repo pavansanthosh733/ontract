@@ -70,27 +70,27 @@ function CompanyWorkorders() {
 
   const fetchWorkorders = async (tab) => {
     try {
-      let url = "/api/workorders/provider/workorders/pending";
+      let url = "/api/contractor/workorders/provider/workorders/pending";
 
       switch (tab) {
         case "OPEN":
-          url = "/api/workorders/provider/workorders/open";
+          url = "/api/contractor/workorders/provider/workorders/open";
           break;
 
         case "COMPLETED":
-          url = "/api/workorders/provider/workorders/completed";
+          url = "/api/contractor/workorders/provider/workorders/completed";
           break;
 
         case "REOPEN":
-          url = "/api/workorders/provider/workorders/reopen";
+          url = "/api/contractor/workorders/provider/workorders/reopen";
           break;
 
         case "CLOSED":
-          url = "/api/workorders/provider/workorders/closed";
+          url = "/api/contractor/workorders/provider/workorders/closed";
           break;
 
         default:
-          url = "/api/workorders/provider/workorders/pending";
+          url = "/api/contractor/workorders/provider/workorders/pending";
       }
 
       const res = await apiPost(url, {

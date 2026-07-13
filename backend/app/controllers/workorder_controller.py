@@ -33,6 +33,7 @@ from app.controllers.purchase_order_controller import (
 
 workorder_bp = Blueprint("workorder", __name__)
 admin_workorder_bp = Blueprint("admin_workorder", __name__)
+contractor_workorder_bp = Blueprint("contractor_workorder", __name__)
 view = WorkOrderView()
 
 
@@ -618,6 +619,68 @@ def get_closed_workorders():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
+@contractor_workorder_bp.route("/provider/workorders/pending", methods=["POST"])
+def get_pending_workorders():
+    try:
+        json_data = request.get_json(silent=True) or {}
+        provider_id = (
+            request.form.get("provider_id")
+            or json_data.get("provider_id")
+        )
+        if not provider_id:
+            return jsonify({"error": "provider_id is required"}), 400
+        data = WorkOrder.get_pending_workorders_by_provider(provider_id)
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@contractor_workorder_bp.route("/provider/workorders/assigned", methods=["POST"])
+def get_assigned_workorder_details():
+    logging.info(f"checkthe input: ")
+    try:
+        data = request.get_json(silent=True) or request.form
+        workorder_id = data.get("workorder_id")
+        logging.info(f"checkthe input: '{workorder_id}'")
+        if not workorder_id:
+            return jsonify({"error": "workorder_id is required"}), 400
+
+        result = WorkOrder.get_assigned_workorder_details(workorder_id)
+        return jsonify(result), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+    
+@contractor_workorder_bp.route("/provider/workorders/open", methods=["POST"])
+def get_open_workorders():
+    try:
+        json_data = request.get_json(silent=True) or {}
+        provider_id = (
+            request.form.get("provider_id")
+            or json_data.get("provider_id")
+        )
+        if not provider_id:
+            return jsonify({"error": "provider_id is required"}), 400
+        data = WorkOrder.get_open_workorders_by_provider(provider_id)
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@contractor_workorder_bp.route("/provider/workorders/closed", methods=["POST"])
+def get_closed_workorders():
+    try:
+        json_data = request.get_json(silent=True) or {}
+        provider_id = (
+            request.form.get("provider_id")
+            or json_data.get("provider_id")
+        )
+        if not provider_id:
+            return jsonify({"error": "provider_id is required"}), 400
+        data = WorkOrder.get_closed_workorders_by_provider(provider_id)
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
     
 @admin_workorder_bp.route("/workorder-lifecycle", methods=["GET"])
 def get_workorder_lifecycle():
@@ -1079,7 +1142,37 @@ def get_completed_workorders_by_provider():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
+@contractor_workorder_bp.route("/provider/workorders/completed", methods=["POST"])
+def get_completed_workorders_by_provider():
+    try:
+        json_data = request.get_json(silent=True) or {}
+        provider_id = (
+            request.form.get("provider_id")
+            or json_data.get("provider_id")
+        )
+        if not provider_id:
+            return jsonify({"error": "provider_id is required"}), 400
+        data = WorkOrder.get_completed_workorders_by_provider(provider_id)
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
 @workorder_bp.route("/provider/workorders/reopen", methods=["POST"])
+def get_reopen_workorders_for_provider():
+    try:
+        json_data = request.get_json(silent=True) or {}
+        provider_id = (
+            request.form.get("provider_id")
+            or json_data.get("provider_id")
+        )
+        if not provider_id:
+            return jsonify({"error": "provider_id is required"}), 400
+        data = WorkOrder.get_reopen_workorders_for_provider(provider_id)
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@contractor_workorder_bp.route("/provider/workorders/reopen", methods=["POST"])
 def get_reopen_workorders_for_provider():
     try:
         json_data = request.get_json(silent=True) or {}
@@ -1800,7 +1893,7 @@ def create_rfq():
             "CLOSING_DATE": form.get("CLOSING_DATE"),
             "DESCRIPTION": form.get("DESCRIPTION", "").strip(),
             "REMARKS": form.get("REMARKS", "").strip(),
-            "AMOUNT": form.get("AMOUNT"),
+			"AMOUNT": form.get("AMOUNT"),
             "ITEMS": json.loads(form.get("ITEMS", "[]")),
             "created_by": form.get("ADMIN_ID")
         }

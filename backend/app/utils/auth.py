@@ -38,15 +38,9 @@ PUBLIC_ROUTES = [
     "/api/admin/logout",
     "/api/admin/refresh",
     "/api/admin/workorders/rfq/create",
-    "/api/region/",
-    "/api/state/",
-    "/api/city/",
-    "/api/workorders",
-    "/api/category",
-    "/api/item",
     "/api/workorder-type",
-    "api/description",
-    "/api/zone",
+    
+   
    
       
 
@@ -275,9 +269,9 @@ def register_auth_middleware(app):
                 "/api/admin": {Roles.ADMIN},
                 "/api/contractor": {Roles.ADMIN, Roles.CONTRACTOR},
                 "/api/workorders": {Roles.ADMIN, Roles.PROVIDER, Roles.CONTRACTOR},
-                "/api/region": {Roles.ADMIN},
-                "/api/state": {Roles.ADMIN},
-                "/api/city": {Roles.ADMIN},
+                "/api/region": {Roles.ADMIN, Roles.PROVIDER, Roles.CONTRACTOR},
+                "/api/state": {Roles.ADMIN, Roles.PROVIDER, Roles.CONTRACTOR},
+                "/api/city": {Roles.ADMIN, Roles.PROVIDER, Roles.CONTRACTOR},
                 "/api/zone": {Roles.ADMIN},
                 "/api/master": {Roles.ADMIN},
                 "/api/mapping": {Roles.ADMIN},
