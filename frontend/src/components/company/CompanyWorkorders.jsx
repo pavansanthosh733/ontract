@@ -182,7 +182,7 @@ function CompanyWorkorders() {
   try {
     setLoading(true);
     const res = await apiPost(
-      "/api/workorders/provider/workorders/assigned",
+      "/api/contractor/workorders/provider/workorders/assigned",
       { workorder_id: row.WORKORDER_ID }
     );
     setDetails(res?.[0] || null);
