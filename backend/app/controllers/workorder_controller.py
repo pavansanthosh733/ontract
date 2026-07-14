@@ -381,7 +381,7 @@ def filter_workorders():
 
 
 
-@workorder_bp.route("/standard-rates", methods=["GET"])
+@admin_workorder_bp.route("/standard-rates", methods=["GET"])
 def get_standard_rates():
     try:
         category = request.args.get("category_id")
