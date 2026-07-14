@@ -1162,7 +1162,8 @@ class WorkOrder(db.Model):
         try:
             sql = text("""
                 SELECT DISTINCT ON (a.user_uid) a.user_uid AS provider_id,a.email_id,
-                a.name AS full_name,b.service_rate AS rate,c.region_name,d.category_name,a.average_rating,a.total_ratings,b.city,
+                a.name AS full_name,ROUND(b.service_rate + (b.service_rate * pr.percentage / 100.0),2
+                ) AS rate,c.region_name,d.category_name,a.average_rating,a.total_ratings,b.city,
                 b.region AS service_locations,cd.company_id,cd.company_name,cd.brn_number,
                 cd.logo_path,cd.certificate_path,cd.updated_at FROM users_t a
                 INNER JOIN services_t b ON a.user_uid = b.user_uid
@@ -1174,6 +1175,7 @@ class WorkOrder(db.Model):
                 INNER JOIN type_master_t i ON b.type_name = i.type_name
                 INNER JOIN description_master_t j ON b.description_name = j.description_name
                 LEFT JOIN company_details_t cd ON cd.user_uid = a.user_uid
+                LEFT JOIN provider_rate_percentage_t pr ON pr.status = 'active'
                 WHERE c.region_name = :region_name AND e.state_name = :state_name
                 AND f.city_name = :city_name AND d.category_name = :category_name
                 AND g.item_name = :item_name AND i.type_name = :type_name
@@ -1198,7 +1200,6 @@ class WorkOrder(db.Model):
 
         except Exception as e:
             return None, str(e)
-
 
 
         
