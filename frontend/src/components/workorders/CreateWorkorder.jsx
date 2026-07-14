@@ -82,7 +82,7 @@ const CreateWorkOrder = () => {
       }
 
       const url =
-        `/api/workorders/standard-rates?` +
+        `/api/admin/workorders/standard-rates?` +
         `category_id=${categoryId}&` +
         `item_id=${itemId}&` +
         `type_id=${typeId}&` +

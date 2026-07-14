@@ -381,7 +381,7 @@ def filter_workorders():
 
 
 
-@workorder_bp.route("/standard-rates", methods=["GET"])
+@admin_workorder_bp.route("/standard-rates", methods=["GET"])
 def get_standard_rates():
     try:
         category = request.args.get("category_id")
@@ -396,6 +396,8 @@ def get_standard_rates():
     except Exception as e:
         logging.exception("get_standard_rates controller error")
         return jsonify({"error": str(e)}), 500
+
+
 
 
 @admin_workorder_bp.route("/code/<string:workorder>", methods=["GET"])
