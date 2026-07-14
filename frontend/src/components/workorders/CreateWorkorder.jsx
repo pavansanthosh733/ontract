@@ -411,10 +411,11 @@ if (ticketAssignmentType === "manual") {
   navigate(
     `/admin/workorder/contractor/workorderdetails/${workorderNumber}`
   );
-  return;
+} else {
+  navigate("/admin/workorder/WorkorderAssignment");
 }
 
-window.location.reload();
+return;
     } catch (err) {
       console.error(err);
       Swal.fire(

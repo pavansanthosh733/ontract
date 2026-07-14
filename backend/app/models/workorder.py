@@ -202,7 +202,7 @@ class WorkOrder(db.Model):
             JOIN description_master_t d ON LOWER(TRIM(sr.description)) = LOWER(TRIM(d.description_name))
             WHERE c.category_id = :category_id AND i.item_id = :item_id
             AND t.type_id = :type_id AND d.description_id = :description_id
-            AND sr.client = :client AND sr.is_active = TRUE ORDER BY sr.id DESC
+            AND TRIM(sr.client) = TRIM(:client) AND sr.is_active = TRUE ORDER BY sr.id DESC
             LIMIT 1
         """)
 
