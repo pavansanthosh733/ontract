@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   Briefcase, 
   CheckCircle, 
@@ -20,6 +21,7 @@ import { useAdmin } from "../context/AdminContext";
 
 function AdminHome() {
   const { admin, loading } = useAdmin();
+  const navigate = useNavigate();
 const permissionLevel = admin?.email?.permission_level;
 console.log("logina admin detils",permissionLevel)
   const [dashboardData, setDashboardData] = useState({
@@ -116,31 +118,53 @@ console.log("logina admin detils",permissionLevel)
   // ------------------------------------------
   // CARD COMPONENT
   // ------------------------------------------
-  const StatCard = ({ title, value, icon: Icon, trend, color, subtitle }) => (
-    <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <p className="text-gray-500 text-sm font-medium mb-1">{title}</p>
-          <h3 className="text-3xl font-bold text-gray-800 mb-2">{value}</h3>
+  const StatCard = ({
+  title,
+  value,
+  icon: Icon,
+  trend,
+  color,
+  subtitle,
+  onClick,
+}) => (
+<div
+  className="dashboard-card-hover"
+  onClick={onClick}
+>
+    <div className="flex items-start justify-between">
+      <div className="flex-1">
+        <p className="text-gray-500 text-sm font-medium mb-1">{title}</p>
 
-          {subtitle && <p className="text-sm text-gray-600">{subtitle}</p>}
+        <h3 className="text-3xl font-bold text-gray-800 mb-2">
+          {value}
+        </h3>
 
-          {trend && (
-            <span className={`inline-flex items-center text-sm font-medium mt-2 ${
-              trend.startsWith("+") ? "text-green-600" : "text-red-600"
-            }`}>
-              <TrendingUp className="w-4 h-4 mr-1" />
-              {trend} from last months
-            </span>
-          )}
-        </div>
+        {subtitle && (
+          <p className="text-sm text-gray-600">
+            {subtitle}
+          </p>
+        )}
 
-        <div className={`p-3 rounded-lg ${color}`}>
-          <Icon className="w-6 h-6 text-white" />
-        </div>
+        {trend && (
+          <span
+            className={`inline-flex items-center text-sm font-medium mt-2 ${
+              trend.startsWith("+")
+                ? "text-green-600"
+                : "text-red-600"
+            }`}
+          >
+            <TrendingUp className="w-4 h-4 mr-1" />
+            {trend} from last months
+          </span>
+        )}
+      </div>
+
+      <div className={`p-3 rounded-lg ${color}`}>
+        <Icon className="w-6 h-6 text-white" />
       </div>
     </div>
-  );
+  </div>
+);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -163,37 +187,65 @@ console.log("logina admin detils",permissionLevel)
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
+                        <StatCard
+                            title="Total Work Orders"
+                            value={dashboardData.workOrders.total}
+                            icon={FileText}
+                            trend={dashboardData.workOrders.trend}
+                            color="bg-blue-500"
+                            onClick={() =>
+                                navigate("/admin/workorder/workorder", {
+                                    state: {
+                                        status: "All",
+                                    },
+                                })
+                            }
+                        />
+
+                        <StatCard
+                              title="Open Work Orders"
+                              value={dashboardData.workOrders.active}
+                              icon={Activity}
+                              color="bg-green-500"
+                              subtitle="Currently in progress"
+                              onClick={() =>
+                                  navigate("/admin/workorder/workorder", {
+                                      state: {
+                                          status: "Open",
+                                      },
+                                  })
+                              }
+                          />
+
             <StatCard
-              title="Total Work Orders"
-              value={dashboardData.workOrders.total}
-              icon={FileText}
-              trend={dashboardData.workOrders.trend}
-              color="bg-blue-500"
+                title="Completed"
+                value={dashboardData.workOrders.completed}
+                icon={CheckCircle}
+                color="bg-purple-500"
+                subtitle="Successfully finished"
+                onClick={() =>
+                    navigate("/admin/workorder/workorder", {
+                        state: {
+                            status: "COMPLETED",
+                        },
+                    })
+                }
             />
 
             <StatCard
-              title="Open Work Orders"
-              value={dashboardData.workOrders.active}
-              icon={Activity}
-              color="bg-green-500"
-              subtitle="Currently in progress"
-            />
-
-            <StatCard
-              title="Completed"
-              value={dashboardData.workOrders.completed}
-              icon={CheckCircle}
-              color="bg-purple-500"
-              subtitle="Successfully finished"
-            />
-
-            <StatCard
-              title="Today Created"
-              value={dashboardData.workOrders.today}
-              icon={Clock}
-              color="bg-orange-500"
-              subtitle="Created today"
-            />
+                  title="Today Created"
+                  value={dashboardData.workOrders.today}
+                  icon={Clock}
+                  color="bg-orange-500"
+                  subtitle="Created today"
+                  onClick={() =>
+                      navigate("/admin/workorder/workorder", {
+                          state: {
+                              status: "Today",
+                          },
+                      })
+                  }
+              />
 
           </div>
         </div>
