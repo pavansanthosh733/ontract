@@ -1,54 +1,55 @@
-import React, { useEffect } from "react";
+import React, { Suspense, useEffect, lazy } from "react";
 import { Routes, Route,useLocation, Navigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
-import { apiPost, apiGet } from "./api";
+import "./components/css/AdminLogin.css";
 import { useContractor } from "./context/ContractorContext";
+import LoadingScreen from "./components/LoadingScreen";
 
 /* Common / Individual */
-import Home from "./components/Home";
-import Login from "./components/Login";
-import Signup from "./components/Signup";
-import OTPVerification from "./components/OTPVerification";
-import ActivateAccount from "./components/ActivateAccount";
-import ProviderProfile from "./components/ProviderProfile";
-import ProviderServices from "./components/ProviderServices";
-import ProviderHome from "./components/ProviderHome";
-import ForgotPassword from "./components/ForgotPassword";
-import ProviderUpdateProfile from "./components/ProviderUpdateProfile";
-import ProviderPersonalDetails from "./components/ProviderPersonalDetails";
-import ProviderBankDetails from "./components/ProviderBankDetails";
-import ProviderInvoice from "./components/ProviderInvoice";
+const Home = lazy(() => import("./components/Home"));
+const Login = lazy(() => import("./components/Login"));
+const Signup = lazy(() => import("./components/Signup"));
+const OTPVerification = lazy(() => import("./components/OTPVerification"));
+const ActivateAccount = lazy(() => import("./components/ActivateAccount"));
+const ProviderProfile = lazy(() => import("./components/ProviderProfile"));
+const ProviderServices = lazy(() => import("./components/ProviderServices"));
+const ProviderHome = lazy(() => import("./components/ProviderHome"));
+const ForgotPassword = lazy(() => import("./components/ForgotPassword"));
+const ProviderUpdateProfile = lazy(() => import("./components/ProviderUpdateProfile"));
+const ProviderPersonalDetails = lazy(() => import("./components/ProviderPersonalDetails"));
+const ProviderBankDetails = lazy(() => import("./components/ProviderBankDetails"));
+const ProviderInvoice = lazy(() => import("./components/ProviderInvoice"));
 
 /* Admin */
-import AdminLogin from "./components/AdminLogin";
-import AdminDashboard from "./components/AdminDashboard";
+const AdminLogin = lazy(() => import("./components/AdminLogin"));
+const AdminDashboard = lazy(() => import("./components/AdminDashboard"));
 
 /* Contractor (company) components changes done */
-import CompanyLogin from "./components/company/CompanyLogin";
-import CompanySignup from "./components/company/CompanySignup";
-import CompanyActivateAccount from "./components/company/CompanyActivateAccount";
-import CompanyOTPVerification from "./components/company/CompanyOTPVerification";
-import CompanyDashboardHome from "./components/company/CompanyDashboardHome";
-import CompanyProfile from "./components/company/CompanyProfile";
-import CompanyServices from "./components/company/CompanyServices";
-import AdminApp from "./components/AdminApp";
-import Notifications from "./components/Notifications";
-import CompanyApp from "./components/company/CompanyApp";
-import CompanyNotifications from "./components/company/CompanyNotifications";
-import ProviderWorkOrders from "./components/ProviderWorkOrders";
-import CompanyWorkorders from "./components/company/CompanyWorkorders";
-import UpdateCompanyProfile from "./components/company/UpdateCompanyProfile";
-import ContractorPersonalDetails from "./components/company/ContractorPersonalDetails";
-import ContractorBankDetails from "./components/company/ContractorBankDetails";
-import CompanyInvoice from "./components/company/CompanyInvoice";
-import RateComparisonReport from "./components/RateComparisonReport";
-import ProviderDashboardHome from "./components/ProviderDashboardHome";
-import CompanyRating from "./components/company/CompanyRating";
-import ProviderRating from "./components/ProviderRating";
-import WorkorderHistoryPage from "./components/WorkorderHistoryPage"; 
-import ProviderRFQ from "./components/ProviderRFQ";
-import ContractorRFQ from "./components/company/ContractorRFQ";
+const CompanyLogin = lazy(() => import("./components/company/CompanyLogin"));
+const CompanySignup = lazy(() => import("./components/company/CompanySignup"));
+const CompanyActivateAccount = lazy(() => import("./components/company/CompanyActivateAccount"));
+const CompanyOTPVerification = lazy(() => import("./components/company/CompanyOTPVerification"));
+const CompanyDashboardHome = lazy(() => import("./components/company/CompanyDashboardHome"));
+const CompanyProfile = lazy(() => import("./components/company/CompanyProfile"));
+const CompanyServices = lazy(() => import("./components/company/CompanyServices"));
+const AdminApp = lazy(() => import("./components/AdminApp"));
+const Notifications = lazy(() => import("./components/Notifications"));
+const CompanyApp = lazy(() => import("./components/company/CompanyApp"));
+const CompanyNotifications = lazy(() => import("./components/company/CompanyNotifications"));
+const ProviderWorkOrders = lazy(() => import("./components/ProviderWorkOrders"));
+const CompanyWorkorders = lazy(() => import("./components/company/CompanyWorkorders"));
+const UpdateCompanyProfile = lazy(() => import("./components/company/UpdateCompanyProfile"));
+const ContractorPersonalDetails = lazy(() => import("./components/company/ContractorPersonalDetails"));
+const ContractorBankDetails = lazy(() => import("./components/company/ContractorBankDetails"));
+const CompanyInvoice = lazy(() => import("./components/company/CompanyInvoice"));
+const RateComparisonReport = lazy(() => import("./components/RateComparisonReport"));
+const ProviderDashboardHome = lazy(() => import("./components/ProviderDashboardHome"));
+const CompanyRating = lazy(() => import("./components/company/CompanyRating"));
+const ProviderRating = lazy(() => import("./components/ProviderRating"));
+const WorkorderHistoryPage = lazy(() => import("./components/WorkorderHistoryPage"));
+const ProviderRFQ = lazy(() => import("./components/ProviderRFQ"));
+const ContractorRFQ = lazy(() => import("./components/company/ContractorRFQ"));
 
 function PublicCompanyProfileRoute() {
   const location = useLocation();
@@ -78,6 +79,7 @@ const isApk = params.get("source") === "apk";
     >
       {/* ROUTES */}
       <main className="flex-fill">
+        <Suspense fallback={<LoadingScreen message="Loading page..." />}>
         <Routes>
           {/* Common / Individuals routes */}
           {/* <Route path="/" element={<Home user={user} />} /> */}
@@ -243,17 +245,18 @@ const isApk = params.get("source") === "apk";
 
           {/* Admin */}
           <Route
-            path="/admin/*"
-            element={<AdminApp admin={admin} setAdmin={setAdmin} />}
-          />
-          <Route
             path="/admin/login"
             element={<AdminLogin setAdmin={setAdmin} />}
+          />
+          <Route
+            path="/admin/*"
+            element={<AdminApp admin={admin} setAdmin={setAdmin} />}
           />
 
           {/* Fallback TO THE HOME PAGE */}
           <Route path="*" element={<Home user={user} />} />
         </Routes>
+        </Suspense>
       </main>
     </div>
   );

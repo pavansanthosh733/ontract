@@ -1,25 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect, lazy } from 'react';
 import { Routes, Route, Link, useNavigate } from 'react-router-dom';
-import AdminDashboard from './AdminDashboard';
 import './css/AdminApp.css';
-import AdminStandardRate from './AdminStandardRate';
-import AdminHome from './AdminHome';
 import { Menu, X } from 'lucide-react';
-import WorkOrderLayout from './workorders/WorkOrderLayout';
-import SetuppageLayout from './setuppgae/SetuppageLayout';
-import InvoiceCreate from './InvoiceCreate';
-import AdminNotifications from './AdminNotifications';
 import { useAdmin } from '../context/AdminContext';
-import ContractorReport from './ContractorReport';
-import WorkorderReport from './WorkorderReport';
-import SummaryReport from './SummaryReport';
-import RateComparisonReport from './RateComparisonReport';
-import RegistrationPage from './AdminRegistration';
-import AdminUpdate from './AdminUpdate';
-import AIReport from './AiReport';
-import ManualAssignedWorkorders from './ManualAssignedWorkorders';
-import RFQ from "./RFQ";
-import AdminRFQResponses from "./AdminRFQResponses";
+import LoadingScreen from './LoadingScreen';
+
+const AdminDashboard = lazy(() => import('./AdminDashboard'));
+const AdminStandardRate = lazy(() => import('./AdminStandardRate'));
+const AdminHome = lazy(() => import('./AdminHome'));
+const WorkOrderLayout = lazy(() => import('./workorders/WorkOrderLayout'));
+const SetuppageLayout = lazy(() => import('./setuppgae/SetuppageLayout'));
+const InvoiceCreate = lazy(() => import('./InvoiceCreate'));
+const AdminNotifications = lazy(() => import('./AdminNotifications'));
+const ContractorReport = lazy(() => import('./ContractorReport'));
+const WorkorderReport = lazy(() => import('./WorkorderReport'));
+const SummaryReport = lazy(() => import('./SummaryReport'));
+const RateComparisonReport = lazy(() => import('./RateComparisonReport'));
+const RegistrationPage = lazy(() => import('./AdminRegistration'));
+const AdminUpdate = lazy(() => import('./AdminUpdate'));
+const AIReport = lazy(() => import('./AiReport'));
+const ManualAssignedWorkorders = lazy(() => import('./ManualAssignedWorkorders'));
+const RFQ = lazy(() => import('./RFQ'));
+const AdminRFQResponses = lazy(() => import('./AdminRFQResponses'));
 
 function AdminApp({ admin, setAdmin }) {
   const {admin: ctxAdmin,loading,logoutAdmin,} = useAdmin();
@@ -30,7 +32,6 @@ function AdminApp({ admin, setAdmin }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportsOpen, setReportsOpen] = useState(false);
   const [registrationOpen, setRegistrationOpen] = useState(false);
-  const [workorderOpen, setWorkorderOpen] = useState(false);
   const [auditOpen, setAuditOpen] = useState(false);
   const [rfqOpen, setRfqOpen] = useState(false);
 
@@ -56,9 +57,8 @@ function AdminApp({ admin, setAdmin }) {
     const closeMenus = () => {
       setRegistrationOpen(false);
       setReportsOpen(false);
-      setWorkorderOpen(false);
       setAuditOpen(false);
-       setRfqOpen(false);
+      setRfqOpen(false);
 
     };
 
@@ -83,9 +83,8 @@ function AdminApp({ admin, setAdmin }) {
 
     setRegistrationOpen(false);
     setReportsOpen(false);
-    setWorkorderOpen(false);
-     setAuditOpen(false);
-      setRfqOpen(false);
+    setAuditOpen(false);
+    setRfqOpen(false);
   };
 
   if (loading) return null;
@@ -136,7 +135,6 @@ function AdminApp({ admin, setAdmin }) {
           e.stopPropagation();
 
           setReportsOpen(false);
-          setWorkorderOpen(false);
 
           setRegistrationOpen(!registrationOpen);
         }}
@@ -213,7 +211,6 @@ function AdminApp({ admin, setAdmin }) {
         e.stopPropagation();
         setRegistrationOpen(false);
         setReportsOpen(false);
-        setWorkorderOpen(false);
         setAuditOpen(false);
         setRfqOpen(!rfqOpen);
       }}
@@ -287,7 +284,6 @@ function AdminApp({ admin, setAdmin }) {
 
       setRegistrationOpen(false);
       setReportsOpen(false);
-      setWorkorderOpen(false);
 
       setAuditOpen(!auditOpen);
     }}
@@ -318,7 +314,6 @@ function AdminApp({ admin, setAdmin }) {
           e.stopPropagation();
 
           setRegistrationOpen(false);
-          setWorkorderOpen(false);
 
           setReportsOpen(!reportsOpen);
         }}
@@ -391,6 +386,7 @@ function AdminApp({ admin, setAdmin }) {
           PAGE CONTENT
       ========================================= */}
       <div className="admin-content">
+        <Suspense fallback={<LoadingScreen message="Loading admin page..." />}>
         <Routes>
           <Route
             path="/home"
@@ -474,6 +470,7 @@ function AdminApp({ admin, setAdmin }) {
             element={<AdminUpdate />}
           />
         </Routes>
+        </Suspense>
       </div>
     </div>
   );

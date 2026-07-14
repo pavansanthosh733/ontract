@@ -2,10 +2,14 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 
+// import "./css/login.css";
+
+
 import "./css/AdminLogin.css";
 
 import { BASE_URLS } from "../api";
 import { useAdmin } from "../context/AdminContext";
+
 
 // Firebase
 import { getToken } from "firebase/messaging";
@@ -33,9 +37,8 @@ function AdminLogin() {
 
   const [loading, setLoading] = useState(false);
 
-  const [resendLoading, setResendLoading] = useState(false);
-const [countdown, setCountdown] = useState(30);
-const [canResend, setCanResend] = useState(false);
+  const [countdown, setCountdown] = useState(30);
+  const [canResend, setCanResend] = useState(false);
 
 
 
@@ -100,7 +103,7 @@ const [canResend, setCanResend] = useState(false);
 
     alert(data.message);
 
-  } catch (err) {
+  } catch {
     setError("Failed to resend OTP");
   }
 };
@@ -178,11 +181,11 @@ const [canResend, setCanResend] = useState(false);
         );
       }
 
-    } catch (err) {
+    } catch (error) {
 
       console.error(
         "Admin login API error:",
-        err
+        error
       );
 
       setError("Something went wrong");
@@ -529,9 +532,31 @@ await new Promise((resolve) =>
     }
   };
 
+  const pageStyle = {
+    minHeight: "100vh",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    background: "#ffffff",
+    padding: "10px 20px",
+    boxSizing: "border-box",
+    fontFamily: "Arial, Helvetica, sans-serif",
+  };
+
+  const cardStyle = {
+    width: "340px",
+    maxWidth: "100%",
+    border: "1px solid #cfcfcf",
+    background: "#ffffff",
+    textAlign: "center",
+    padding: 0,
+    overflow: "hidden",
+    borderRadius: "6px",
+  };
+
   return (
-    <div className="login-wrapper">
-      <div className="login-card">
+    <div className="admin-login-page" style={pageStyle}>
+      <div className="login-card" style={cardStyle}>
 
         <div className="contract-header"></div>
 

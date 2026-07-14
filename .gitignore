@@ -1,67 +1,105 @@
-# ===== Env files (real values live in GitHub Secrets only) =====
+# =========================================================
+# ENVIRONMENT FILES
+# Real values must never be committed
+# =========================================================
+
 .env
 .env.local
 .env.*.local
+
 **/.env
 **/.env.local
 **/.env.*.local
+
+# Allow environment templates
 !**/.env.example
 
-# ===== Firebase / service-account credentials =====
+
+# =========================================================
+# FIREBASE / SERVICE ACCOUNT CREDENTIALS
+# =========================================================
+
 backend/serviceAccountKey.json
-backend/.env
 backend/ontract-notifications-firebase-adminsdk-*.json
 **/serviceAccountKey.json
 
-# ===== Python =====
+frontend/src/firebase.js
+frontend/public/firebase-messaging-sw.js
+
+
+# =========================================================
+# PYTHON
+# =========================================================
+
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
+
 .venv/
 venv/
 env/
+
 *.egg-info/
+
 .pytest_cache/
 .mypy_cache/
 
-# ===== Node / Vite =====
+
+# =========================================================
+# NODE / VITE
+# =========================================================
+
 node_modules/
 dist/
 .vite/
+
 *.log
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# ===== Runtime artefacts =====
-backend/logs/
-# backend/uploads/
-*.log
 
-# ===== Editors / OS =====
+# =========================================================
+# RUNTIME ARTIFACTS
+# =========================================================
+
+backend/logs/
+
+# Keep uploads tracked for now
+# backend/uploads/
+
+
+# =========================================================
+# EDITORS / OPERATING SYSTEM
+# =========================================================
+
 .DS_Store
 .idea/
 .vscode/
+
 *.swp
 *.swo
+
 Thumbs.db
 
-# ===== Vercel (not used anymore, but keep ignored) =====
-.vercel
+
+# =========================================================
+# VERCEL
+# =========================================================
+
+.vercel/
+
+
+# =========================================================
+# PROJECT-SPECIFIC IGNORED FILES / DIRECTORIES
+# =========================================================
 
 .github/workflows/ecs-deploy.yml
 README-ecs.md
+
 backend/app/static/
+
 infra/
 workorder_mobile/
-
-# frontend
-frontend/src/firebase.js
-rontend/public/firebase-messaging-sw.js
- frontend/.env
-frontend/.env.local
-frontend/.env.*.local
-
- backend/.env
-backend/.env
