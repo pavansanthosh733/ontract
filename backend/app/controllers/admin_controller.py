@@ -394,67 +394,141 @@ class AdminController:
 
 
     @staticmethod
-    def approve_provider(email):
-        core = AdminModel.approve_provider_status(email)
-        logging.info("core resolved: %s", core)
-        if not core:
-            return {"error": "Provider not found or not pending"}, 404
-
-        # FIX: use user_uid instead of provider_id
-        user_uid = core["user_uid"]
-        logging.info("user_uid resolved: %s", user_uid)
-        
-        bank_exists = AdminModel.provider_bank_details_exists_by_user_uid(user_uid)
-        logging.info("provider bank exists: %s", bank_exists)
-
-        # fetch services
-        services = AdminModel.get_provider_services([user_uid])
-
-        # compose details for PDF
-        details = {
-            "Provider ID": user_uid,
-            "Full Name": core['name'],
-            "Email": email,
-            "Phone Number": core['contact_number'],
-            "Services": [
-                {
-                    "Service Name": s['service_name'],
-                    "Service Rate": s['service_rate'],
-                    "Service Location": s.get('state') or s.get('city') or 'N/A'
-                }
-                for s in services
+    def approve_provider(email, assignment_scope):
+        try:
+            allowed_scopes = [
+                "GENERAL",
+                "SPECIALIZED",
+                "PANEL"
             ]
-        }
 
-        pdf_path = generate_certificate_pdf(details, email)
+            # =====================================================
+            # VALIDATE EMAIL
+            # =====================================================
 
-        # 🔹 message logic (exactly as requested)
-        if bank_exists:
-            msg = "Your provider profile has been approved."
-        else:
-            msg = (
-                "Your provider profile has been approved. "
-                "Please proceed to submit your bank details."
+            if not email:
+                return {
+                    "error": "Email is required"
+                }, 400
+
+            # =====================================================
+            # VALIDATE ASSIGNMENT SCOPE
+            # =====================================================
+
+            if not assignment_scope:
+                return {
+                    "error": "Assignment scope is required"
+                }, 400
+
+            assignment_scope = assignment_scope.strip().upper()
+
+            if assignment_scope not in allowed_scopes:
+                return {
+                    "error": "Invalid assignment scope"
+                }, 400
+
+            # =====================================================
+            # APPROVE PROVIDER
+            # =====================================================
+
+            core = AdminModel.approve_provider_status(
+                email,
+                assignment_scope
             )
 
+            logging.info(
+                "Provider approval core resolved: %s",
+                core
+            )
 
-        AdminModel.insert_admin_message(
-            email=email,
-            recipient_type="provider",
-            title="Provider Profile Approved",
-            message=msg,
-            notification_type="approval",
-            reference_type="provider",
-            reference_id=user_uid,
-            action_url="/provider_home/providerupdateprofile"
-        )
+            if not core:
+                return {
+                    "error": "Provider not found or not pending"
+                }, 404
 
-        try:
-            send_email(email, "Profile Approved", msg, pdf_path)
-            return {"message": "Provider approved"}, 200
-        finally:
-            if os.path.exists(pdf_path):
-                os.remove(pdf_path)
+            # =====================================================
+            # PROVIDER INFORMATION
+            # =====================================================
+
+            user_uid = core.get("user_uid")
+            provider_name = core.get("name") or "Provider"
+
+            # =====================================================
+            # CHECK BANK DETAILS
+            # =====================================================
+
+            bank_details_exists = (
+                AdminModel.provider_bank_details_exists_by_user_uid(
+                    user_uid
+                )
+            )
+
+            logging.info(
+                "Provider bank details exists: %s",
+                bank_details_exists
+            )
+
+            # =====================================================
+            # CREATE ADMIN NOTIFICATION
+            # =====================================================
+
+            message = (
+                f"Your provider profile has been approved successfully. "
+                f"Assignment scope: {assignment_scope}."
+            )
+
+            AdminModel.insert_admin_message(
+                email=email,
+                recipient_type="provider",
+                title="Provider Profile Approved",
+                message=message,
+                notification_type="approval",
+                reference_type="provider",
+                reference_id=str(user_uid) if user_uid else None,
+                action_url="/provider_home/providerupdateprofile"
+            )
+
+            # =====================================================
+            # SEND APPROVAL EMAIL
+            # =====================================================
+
+            try:
+                send_email(
+                    email,
+                    "Provider Profile Approved",
+                    message
+                )
+
+            except Exception as email_error:
+                logging.exception(
+                    "Provider approval email failed: %s",
+                    email_error
+                )
+
+            # =====================================================
+            # SUCCESS RESPONSE
+            # =====================================================
+
+            return {
+                "message": "Provider approved successfully",
+                "provider": {
+                    "user_uid": user_uid,
+                    "name": provider_name,
+                    "email": email,
+                    "assignment_scope": assignment_scope,
+                    "bank_details_exists": bank_details_exists
+                }
+            }, 200
+
+        except Exception as e:
+            logging.exception(
+                "Error approving provider: %s",
+                e
+            )
+
+            return {
+                "error": str(e)
+            }, 500
 
 
     @staticmethod
@@ -554,62 +628,157 @@ class AdminController:
 
 
     @staticmethod
-    def approve_contractor(email):
-        if not AdminModel.approve_contractor(email):
-            return {"error": "Company not found or not pending"}, 404
-        
-        logging.info("email_id resolved: %s", email)
-        company = AdminModel.get_contractor_by_email(email)
-       
-        company_id = company["company_id"]
-    
-        logging.info("company_id resolved: %s", company_id)
-        services = AdminModel.get_contractor_services(company['user_uid'])
-        
-        details = {
-            "Company ID": company['brn_number'],
-            "Company Name": company['company_name'],
-            "Name": company.get('name'),  # comes from users_t now
-            "Email": company.get('email_id'),
-            "Contact Number": company.get('contact_number'),
-            "Services": [{
-                "Service Name": s['service_name'],
-                "Service Rate": s['service_rate'],
-                "Service Location":  ", ".join(filter(None, [s.get("city"), s.get("state"), s.get("region")]))
-            } for s in services]
-        }
-
-        pdf_path = generate_certificate_pdf(details, email)
-        # ✅ company_id-based bank check
-        bank_exists = AdminModel.company_bank_details_exists(company_id)
-    
-        logging.info("company bank exists: %s", bank_exists)
-    
-        if bank_exists:
-            msg = "Your provider profile has been approved."
-        else:
-            msg = (
-                "Your provider profile has been approved. "
-                "Please proceed to submit company bank details."
-            )
-    
-        AdminModel.insert_admin_message(
-            email=email,
-            recipient_type="contractor",
-            title="Company Approved",
-            message=msg,
-            notification_type="approval",
-            reference_type="company",
-            reference_id=company_id,
-            action_url="/contractor/dashboard/profile"
-        )
-
+    def approve_contractor(email, assignment_scope):
         try:
-            send_email(email, "Company Approved", msg, pdf_path)
-            return {"message": "Contractor approved"}, 200
-        finally:
-            if os.path.exists(pdf_path):
-                os.remove(pdf_path)  
+            allowed_scopes = [
+                "GENERAL",
+                "SPECIALIZED",
+                "PANEL"
+            ]
+
+            # =====================================================
+            # VALIDATE EMAIL
+            # =====================================================
+
+            if not email:
+                return {
+                    "error": "Email is required"
+                }, 400
+
+            # =====================================================
+            # VALIDATE ASSIGNMENT SCOPE
+            # =====================================================
+
+            if not assignment_scope:
+                return {
+                    "error": "Assignment scope is required"
+                }, 400
+
+            assignment_scope = assignment_scope.strip().upper()
+
+            if assignment_scope not in allowed_scopes:
+                return {
+                    "error": "Invalid assignment scope"
+                }, 400
+
+            # =====================================================
+            # GET CONTRACTOR INFORMATION BEFORE APPROVAL
+            # =====================================================
+
+            contractor = AdminModel.get_contractor_by_email(email)
+
+            if not contractor:
+                return {
+                    "error": "Company not found"
+                }, 404
+
+            company_id = contractor.get("company_id")
+            company_name = contractor.get("company_name") or "Company"
+            user_uid = contractor.get("user_uid")
+
+            # =====================================================
+            # APPROVE CONTRACTOR
+            # =====================================================
+
+            approved = AdminModel.approve_contractor(
+                email,
+                assignment_scope
+            )
+
+            logging.info(
+                "Contractor approval result: %s",
+                approved
+            )
+
+            if not approved:
+                return {
+                    "error": "Company not found or not pending"
+                }, 404
+
+            # =====================================================
+            # CHECK BANK DETAILS
+            # =====================================================
+
+            bank_details_exists = False
+
+            if company_id:
+                bank_details_exists = (
+                    AdminModel.company_bank_details_exists(
+                        company_id
+                    )
+                )
+
+            logging.info(
+                "Company bank details exists: %s",
+                bank_details_exists
+            )
+
+            # =====================================================
+            # CREATE APPROVAL MESSAGE
+            # =====================================================
+
+            message = (
+                f"Your company registration has been approved successfully. "
+                f"Assignment scope: {assignment_scope}."
+            )
+
+            # =====================================================
+            # CREATE ADMIN NOTIFICATION
+            # =====================================================
+
+            AdminModel.insert_admin_message(
+                email=email,
+                recipient_type="contractor",
+                title="Company Registration Approved",
+                message=message,
+                notification_type="approval",
+                reference_type="company",
+                reference_id=str(company_id) if company_id else None,
+                action_url="/contractor/dashboard/profile"
+            )
+
+            # =====================================================
+            # SEND APPROVAL EMAIL
+            # =====================================================
+
+            try:
+                send_email(
+                    email,
+                    "Company Registration Approved",
+                    message
+                )
+
+            except Exception as email_error:
+                logging.exception(
+                    "Contractor approval email failed: %s",
+                    email_error
+                )
+
+            # =====================================================
+            # SUCCESS RESPONSE
+            # =====================================================
+
+            return {
+                "message": "Contractor approved successfully",
+                "contractor": {
+                    "user_uid": user_uid,
+                    "company_id": company_id,
+                    "company_name": company_name,
+                    "email": email,
+                    "assignment_scope": assignment_scope,
+                    "bank_details_exists": bank_details_exists
+                }
+            }, 200
+
+        except Exception as e:
+            logging.exception(
+                "Error approving contractor: %s",
+                e
+            )
+
+            return {
+                "error": str(e)
+            }, 500 
                 
                   
     @staticmethod
