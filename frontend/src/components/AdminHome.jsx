@@ -265,36 +265,64 @@ console.log("logina admin detils",permissionLevel)
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
             <StatCard
-              title="Company Users"
-              value={dashboardData.users.companyUsers}
-              icon={Building2}
-              color="bg-indigo-500"
-              subtitle="Business accounts"
-            />
+  title="Company Users"
+  value={dashboardData.users.companyUsers}
+  icon={Building2}
+  color="bg-indigo-500"
+  subtitle="Business accounts"
+  onClick={() =>
+    navigate("/admin/admindashboard", {
+      state: {
+        userType: "company",
+      },
+    })
+  }
+/>
 
             <StatCard
-              title="Individual Users"
-              value={dashboardData.users.individualUsers}
-              icon={User}
-              color="bg-cyan-500"
-              subtitle="Personal accounts"
-            />
+  title="Individual Users"
+  value={dashboardData.users.individualUsers}
+  icon={User}
+  color="bg-cyan-500"
+  subtitle="Personal accounts"
+  onClick={() =>
+    navigate("/admin/admindashboard", {
+      state: {
+        userType: "individual",
+      },
+    })
+  }
+/>
 
             <StatCard
-              title="New This Month"
-              value={dashboardData.users.newThisMonth}
-              icon={TrendingUp}
-              color="bg-green-500"
-              subtitle="Recent sign-ups"
-            />
+  title="New This Month"
+  value={dashboardData.users.newThisMonth}
+  icon={TrendingUp}
+  color="bg-green-500"
+  subtitle="Recent sign-ups"
+  onClick={() =>
+    navigate("/admin/admindashboard", {
+      state: {
+        userType: "new",
+      },
+    })
+  }
+/>
 
             <StatCard
-              title="Active Today"
-              value={dashboardData.users.activeToday}
-              icon={Activity}
-              color="bg-blue-500"
-              subtitle="Currently online"
-            />
+  title="Active Today"
+  value={dashboardData.users.activeToday}
+  icon={Activity}
+  color="bg-blue-500"
+  subtitle="Currently online"
+  onClick={() =>
+    navigate("/admin/admindashboard", {
+      state: {
+        userType: "active",
+      },
+    })
+  }
+/>
 
           </div>
         </div>
