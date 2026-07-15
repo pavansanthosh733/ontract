@@ -40,10 +40,10 @@ function RFQ() {
 
   const fetchInitialData = async () => {
     try {
-      const cat = await apiGet("/api/category/active");
+      const cat = await apiGet("/api/admin/category/active");
       setCategories(Array.isArray(cat) ? cat : []);
 
-      const regs = await apiGet("/api/region/");
+      const regs = await apiGet("/api/admin/region/");
       setRegions(Array.isArray(regs) ? regs : []);
     } catch (error) {
       console.error("Initial Load Error:", error);
@@ -57,7 +57,7 @@ function RFQ() {
     if (!regionId) return setStates([]);
 
     try {
-      const data = await apiGet(`/api/state/by-region/${regionId}`);
+      const data = await apiGet(`/api/admin/state/by-region/${regionId}`);
       setStates(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error(error);
@@ -84,7 +84,7 @@ function RFQ() {
 
     try {
       const data = await apiGet(
-        `/api/city/by-region-state?region_id=${regionId}&state_id=${stateId}`
+        `/api/admin/city/by-region-state?region_id=${regionId}&state_id=${stateId}`
       );
 
       setCities(Array.isArray(data) ? data : []);
