@@ -14,6 +14,7 @@ from app.controllers.workorder_mail_controller import (
 
 # Blueprint Registration
 workorder_mail_bp = Blueprint("workorder_mail_bp", __name__)
+contractor_workorder_mail_bp = Blueprint("contractor_workorder_mail_bp", __name__)
 
 
 # ----------------------------------------------------------------------
@@ -122,8 +123,64 @@ def respond_workorder(workorder_id):
         )
         return html_content, status_code
     
+@contractor_workorder_mail_bp.route("/respond-workorder/<int:workorder_id>", methods=["GET", "POST"])
+def respond_workorder(workorder_id):
+    """
+    Contractor response page for accepting or rejecting work order.
+    GET: Display response form with Accept/Reject buttons
+    POST: Process the contractor's response and notify admins
+    """
+    # Extract common parameters
+    contractor_id = request.args.get("contractor_id")
+    contractor_name = unquote(request.args.get("contractor_name", ""))
+    timestamp = request.args.get("timestamp")
+    
+    if request.method == "GET":
+        # Display response form
+        html_content, status_code = handle_respond_workorder_get(
+            workorder_id=workorder_id,
+            contractor_id=contractor_id,
+            contractor_name=contractor_name,
+            timestamp=timestamp
+        )
+        return html_content, status_code
+    
+    else:  # POST
+        # Process accept/reject action
+        action = request.form.get("action")
+        remark = request.form.get("remark", "").strip()
+        
+        html_content, status_code = handle_respond_workorder_post(
+            workorder_id=workorder_id,
+            contractor_id=contractor_id,
+            contractor_name=contractor_name,
+            timestamp=timestamp,
+            action=action,
+            remark=remark
+        )
+        return html_content, status_code
+
+
+
+    
     
 @workorder_mail_bp.route("/respond-workorder", methods=["POST"])
+def respond_workorder_api():
+    if request.method == "OPTIONS":
+        return "", 200
+    request_data = request.get_json(silent=True)
+    if not request_data:
+        return jsonify({
+            "success": False,
+            "message": "Invalid JSON payload"
+        }), 400
+
+    response_data, status_code = handle_respond_workorder_api(request_data)
+    return jsonify(response_data), status_code
+
+
+
+@contractor_workorder_mail_bp.route("/respond-workorder", methods=["POST"])
 def respond_workorder_api():
     if request.method == "OPTIONS":
         return "", 200

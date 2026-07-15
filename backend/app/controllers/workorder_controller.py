@@ -398,6 +398,8 @@ def get_standard_rates():
         return jsonify({"error": str(e)}), 500
 
 
+
+
 @admin_workorder_bp.route("/code/<string:workorder>", methods=["GET"])
 def get_workorder_by_code(workorder):
     record, error = WorkOrder.get_by_workorder_code(workorder)
@@ -633,8 +635,26 @@ def get_pending_workorders():
         return jsonify(data), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+
 
 @contractor_workorder_bp.route("/provider/workorders/assigned", methods=["POST"])
+def get_assigned_workorder_details():
+    logging.info(f"checkthe input: ")
+    try:
+        data = request.get_json(silent=True) or request.form
+        workorder_id = data.get("workorder_id")
+        logging.info(f"checkthe input: '{workorder_id}'")
+        if not workorder_id:
+            return jsonify({"error": "workorder_id is required"}), 400
+
+        result = WorkOrder.get_assigned_workorder_details(workorder_id)
+        return jsonify(result), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@workorder_bp.route("/provider/workorders/assigned", methods=["POST"])
 def get_assigned_workorder_details():
     logging.info(f"checkthe input: ")
     try:
