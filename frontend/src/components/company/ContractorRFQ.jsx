@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { apiGet, apiPost } from "../../api";
 import "./css/ContractorRFQ.css";
 import { useContractor } from "../../context/ContractorContext";
+import { BASE_URL } from "../../api";
 function ContractorRFQ() {
 
     const { contractor } = useContractor();
@@ -12,6 +13,16 @@ function ContractorRFQ() {
     const [showModal, setShowModal] = useState(false);
     const [quotedItems, setQuotedItems] = useState([]);
     const [contractorRemarks, setContractorRemarks] = useState("");
+    const [newCount, setNewCount] = useState(0);
+    const [respondedCount, setRespondedCount] = useState(0);
+    const [ignoredCount, setIgnoredCount] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const recordsPerPage = 5;
+    const lastIndex = currentPage * recordsPerPage;
+    const firstIndex = lastIndex - recordsPerPage;
+    const currentRfqs = rfqs.slice(firstIndex, lastIndex);
+    const totalPages = Math.ceil(rfqs.length / recordsPerPage);
+    const [quotationAmount, setQuotationAmount] = useState("");
 
     useEffect(() => {
         if (!contractor?.user_uid) return;
@@ -26,6 +37,7 @@ function ContractorRFQ() {
     const submitQuotation = async () => {
 
         try {
+            if (quotedItems.length > 0) {
             const hasEmptyPrice = quotedItems.some(
                 item =>
                     item.unit_price === "" ||
@@ -36,16 +48,23 @@ function ContractorRFQ() {
                 alert("Please enter unit price for all items.");
                 return;
             }
-
+            }
             if (!contractorRemarks.trim()) {
                 alert("Please enter contractor remarks.");
+                return;
+            }
+            if (quotedItems.length === 0 && !quotationAmount) {
+                alert("Please enter quotation amount.");
                 return;
             }
             const payload = {
                 rfq_id: selectedRFQ.header.rfq_id,
                 contractor_id: contractor.user_uid,
                 remarks: contractorRemarks,
-                grand_total: quotedItems.reduce((sum, item) => sum + Number(item.total),0),
+                grand_total:
+                quotedItems.length > 0
+                    ? quotedItems.reduce((sum, item) => sum + Number(item.total), 0)
+                    : Number(quotationAmount),
                 items: quotedItems.map(item => ({
                     rfq_item_id: item.rfq_item_id,
                     quantity: item.quantity,
@@ -74,6 +93,8 @@ function ContractorRFQ() {
         try {
             const data = await apiGet(`/api/workorders/provider/rfq/new/${contractor.user_uid}`);
             setRfqs(Array.isArray(data) ? data : []);
+            setNewCount(Array.isArray(data) ? data.length : 0);
+            setCurrentPage(1);
         } catch (err) {
 
             console.error(err);
@@ -88,12 +109,9 @@ function ContractorRFQ() {
     const fetchRespondedRfqs = async () => {
         try {
             const data = await apiGet(`/api/workorders/provider/rfq/responded/${contractor.user_uid}`);
-            setRfqs(
-                Array.isArray(data)
-                    ? data
-                    : []
-            );
-
+            setRfqs(Array.isArray(data) ? data : []);
+            setRespondedCount(Array.isArray(data) ? data.length : 0);
+            setCurrentPage(1);
         } catch (err) {
             console.error(err);
         } finally {
@@ -140,21 +158,21 @@ function ContractorRFQ() {
                     className={activeTab === "NEW" ? "active" : ""}
                     onClick={() => setActiveTab("NEW")}
                 >
-                    New
+                    New ({newCount})
                 </button>
 
                 <button
                     className={activeTab === "RESPONDED" ? "active" : ""}
                     onClick={() => setActiveTab("RESPONDED")}
                 >
-                    Responded
+                    Responded ({respondedCount})
                 </button>
 
                 <button
                     className={activeTab === "IGNORED" ? "active" : ""}
                     onClick={() => setActiveTab("IGNORED")}
                 >
-                    Ignored
+                    Ignored ({ignoredCount})
                 </button>
 
             </div>
@@ -168,7 +186,7 @@ function ContractorRFQ() {
                     </div>
 
                 ) : (
-
+                   <>
                     <table className="rfq-table">
 
                         <thead>
@@ -211,7 +229,7 @@ function ContractorRFQ() {
 
                             ) : (
 
-                                rfqs.map((rfq) => (
+                                currentRfqs.map((rfq) => (
 
                                     <tr key={rfq.rfq_id}>
 
@@ -248,6 +266,36 @@ function ContractorRFQ() {
                             )}
                         </tbody>
                     </table>
+                    {totalPages > 1 && (
+                        <div className="pagination-container">
+
+                            <button
+                                disabled={currentPage === 1}
+                                onClick={() => setCurrentPage(currentPage - 1)}
+                            >
+                                Previous
+                            </button>
+
+                            {[...Array(totalPages)].map((_, index) => (
+                                <button
+                                    key={index}
+                                    className={currentPage === index + 1 ? "active-page" : ""}
+                                    onClick={() => setCurrentPage(index + 1)}
+                                >
+                                    {index + 1}
+                                </button>
+                            ))}
+
+                            <button
+                                disabled={currentPage === totalPages}
+                                onClick={() => setCurrentPage(currentPage + 1)}
+                            >
+                                Next
+                            </button>
+
+                        </div>
+                    )}
+                 </>
                 )}
             </div>
         </div> 
@@ -300,18 +348,39 @@ function ContractorRFQ() {
                         </tbody>
                     </table>
                     <br />
-                    <h5>Description</h5>
-                    <p> {selectedRFQ.header.description} </p>
+                    <h5 className="workorder-header">Project Details Description</h5>
+                    <div className="workorder-box">
+                        <div className="workorder-body">{selectedRFQ.header.description}</div>
+                    </div>
                     <h5>Remarks</h5>
                     <p> {selectedRFQ.header.remarks} </p>
+                    {quotedItems.length === 0 && (
+                        <div className="mt-3">
+                            <label className="form-label fw-bold">
+                                Quotation Amount (RM)
+                            </label>
 
+                            <div className="input-group">
+                                <span className="input-group-text">RM</span>
+
+                                <input
+                                    type="number"
+                                    className="form-control"
+                                    placeholder="Enter quotation amount"
+                                    value={quotationAmount}
+                                    onChange={(e) => setQuotationAmount(e.target.value)}
+                                    onWheel={(e) => e.currentTarget.blur()}
+                                />
+                            </div>
+                        </div>
+                    )}
                     <hr />
                     <h5>Attachments</h5>
                     {selectedRFQ.attachments?.length > 0 ? (
                         <ul>
                             {selectedRFQ.attachments.map((file,index)=>(
                                 <li key={index}>
-                                    <a href={file} target="_blank" rel="noreferrer">
+                                    <a href={`${BASE_URL}${file}`} target="_blank" rel="noreferrer">
                                         Attachment {index+1}
                                     </a>
                                 </li>
@@ -320,6 +389,8 @@ function ContractorRFQ() {
                     ) : (
                         <p>No Attachments</p>
                     )}
+                {quotedItems.length > 0 && (
+                    <>
                     <h5 className="mb-3">Quotation Items</h5>
                     <div className="container-fluid p-0">
                         <div className="row fw-bold border-bottom pb-2 mb-2">
@@ -370,6 +441,8 @@ function ContractorRFQ() {
                             }
                         </h4>
                     </div>
+                    </>
+                )}
                     <div className="mt-4">
                         <label className="form-label fw-bold">Contractor Remarks</label>
                         <textarea className="form-control" rows="4"

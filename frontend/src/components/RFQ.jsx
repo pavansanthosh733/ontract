@@ -527,6 +527,7 @@ function RFQ() {
         <input
             type="file"
             multiple
+            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
             onChange={handleFileChange}
         />
         </div>
