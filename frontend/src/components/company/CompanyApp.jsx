@@ -17,6 +17,7 @@ function CompanyApp() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [userName, setUserName] = useState("Company");
+  const [navOpen, setNavOpen] = useState(false);
 
   const { contractor, logoutContractor, loading } = useContractor();
 
@@ -165,13 +166,20 @@ if (!contractor) {
   /* =========================
      LOGOUT
      ========================= */
- const handleLogout = () => {
+const handleLogout = () => {
   console.group("🚪 Logout");
-  // console.log("Logging out contractor:", contractor);
+  setNavOpen(false);
+  setDropdownOpen(false);
   logoutContractor();
   navigate("/contractor/login", { replace: true });
   console.groupEnd();
 };
+
+
+useEffect(() => {
+  setNavOpen(false);
+  setDropdownOpen(false);
+}, [location.pathname]);
 
 
   /* =========================
@@ -213,32 +221,36 @@ if (!contractor) {
     </Link>
 
     {/* 🔥 MOBILE TOGGLER BUTTON */}
-    <button
-      className="navbar-toggler"
-      type="button"
-      data-bs-toggle="collapse"
-      data-bs-target="#contractorNavbar"
-      aria-controls="contractorNavbar"
-      aria-expanded="false"
-    >
-      <span className="navbar-toggler-icon"></span>
-    </button>
+   {/* 🔥 MOBILE TOGGLER BUTTON */}
+<button
+  className="navbar-toggler"
+  type="button"
+  onClick={() => setNavOpen((prev) => !prev)}
+  aria-expanded={navOpen}
+>
+  <span className="navbar-toggler-icon"></span>
+</button>
 
     {/* 🔥 COLLAPSIBLE MENU */}
-    <div className="collapse navbar-collapse" id="contractorNavbar">
+    <div className={`collapse navbar-collapse ${navOpen ? "show" : ""}`} id="contractorNavbar">
       <ul className="navbar-nav ms-auto align-items-center">
 
         <li className="nav-item">
-          <Link className="nav-link px-3" to="/contractor/dashboard/companydashboardhome">
-            Home
-          </Link>
+          <Link
+  className="nav-link px-3"
+  to="/contractor/dashboard/companydashboardhome"
+  onClick={() => setNavOpen(false)}
+>
+  Home
+</Link>
         </li>
 
         <li className="nav-item">
           <Link
-            to="/contractor/dashboard/notifications"
-            className="nav-link position-relative px-3"
-          >
+              to="/contractor/dashboard/notifications"
+              className="nav-link position-relative px-3"
+              onClick={() => setNavOpen(false)}
+            >
             <FaBell size={20} className="text-primary" />
             {unreadCount > 0 && (
               <span className="notification-badge">{unreadCount}</span>
@@ -260,20 +272,28 @@ if (!contractor) {
           {dropdownOpen && (
             <ul className="dropdown-menu dropdown-menu-end show mt-2">
               <li>
-                <Link
-                  className="dropdown-item"
-                  to="/contractor/dashboard/updatecompanyprofile"
-                >
-                  Profile
-                </Link>
+               <Link
+  className="dropdown-item"
+  to="/contractor/dashboard/updatecompanyprofile"
+  onClick={() => {
+    setNavOpen(false);
+    setDropdownOpen(false);
+  }}
+>
+  Profile
+</Link>
               </li>
               <li>
                 <Link
-                  className="dropdown-item"
-                  to="/contractor/dashboard/services"
-                >
-                  Services
-                </Link>
+  className="dropdown-item"
+  to="/contractor/dashboard/services"
+  onClick={() => {
+    setNavOpen(false);
+    setDropdownOpen(false);
+  }}
+>
+  Services
+</Link>
               </li>
               <li><hr className="dropdown-divider" /></li>
               <li>

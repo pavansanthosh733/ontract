@@ -14,6 +14,7 @@ function ProviderHome() {
   const navigate = useNavigate();
   const location = useLocation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
   const dropdownRef = useRef(null);
   const [userName, setUserName] = useState("Provider");
   const [unreadCount, setUnreadCount] = useState(0);
@@ -75,6 +76,11 @@ function ProviderHome() {
   }, [user]);
 
   useEffect(() => {
+  setNavOpen(false);
+  setDropdownOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
     if (!userEmail) return;
 
     const fetchUnreadCount = async () => {
@@ -100,11 +106,13 @@ function ProviderHome() {
     console.log("Unread Count State:", unreadCount);
   }, [unreadCount]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("provider_token");
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
+ const handleLogout = () => {
+  setNavOpen(false);
+  setDropdownOpen(false);
+  localStorage.removeItem("provider_token");
+  localStorage.removeItem("user");
+  navigate("/login");
+};
 
   const toggleDropdown = () => setDropdownOpen((prev) => !prev);
 
@@ -129,18 +137,33 @@ function ProviderHome() {
             <span className="ms-2">Ontract Services</span>
           </Link>
 
-          <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span className="navbar-toggler-icon"></span>
-          </button>
+          <button
+  className="navbar-toggler"
+  type="button"
+  onClick={() => setNavOpen((prev) => !prev)}
+  aria-expanded={navOpen}
+>
+  <span className="navbar-toggler-icon"></span>
+</button>
 
-          <div className="collapse navbar-collapse" id="navbarNav">
+          <div className={`collapse navbar-collapse ${navOpen ? "show" : ""}`} id="navbarNav">
             <ul className="navbar-nav ms-auto align-items-center">
               <li className="nav-item">
-                <Link className="nav-link px-3" to="/provider_home">HOME</Link>
+                <Link
+  className="nav-link px-3"
+  to="/provider_home"
+  onClick={() => setNavOpen(false)}
+>
+  HOME
+</Link>
               </li>
 
               <li className="nav-item">
-                <Link to="/provider_home/notifications" className="nav-link position-relative px-3">
+                <Link
+  to="/provider_home/notifications"
+  className="nav-link position-relative px-3"
+  onClick={() => setNavOpen(false)}
+>
                   <FaBell size={20} className="text-primary" />
                   <span
                     style={{
@@ -167,14 +190,28 @@ function ProviderHome() {
                 {dropdownOpen && (
                   <ul className="dropdown-menu dropdown-menu-end show mt-2">
                     <li>
-                      <Link className="dropdown-item" to="/provider_home/providerupdateprofile">
-                        <FaUserCircle className="me-2" />Profile
-                      </Link>
+                      <Link
+  className="dropdown-item"
+  to="/provider_home/providerupdateprofile"
+  onClick={() => {
+    setNavOpen(false);
+    setDropdownOpen(false);
+  }}
+>
+  <FaUserCircle className="me-2" />Profile
+</Link>
                     </li>
                     <li>
-                      <Link className="dropdown-item" to="/provider_home/workorders">
-                        <FaClipboardList className="me-2" />Work Orders
-                      </Link>
+                      <Link
+  className="dropdown-item"
+  to="/provider_home/workorders"
+  onClick={() => {
+    setNavOpen(false);
+    setDropdownOpen(false);
+  }}
+>
+  <FaClipboardList className="me-2" />Work Orders
+</Link>
                     </li>
                     <li><hr className="dropdown-divider" /></li>
                     <li>
