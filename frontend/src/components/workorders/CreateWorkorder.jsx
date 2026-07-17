@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import "./css/createworkorder.css";
 import Swal from "sweetalert2";
 import { apiGet, apiPost } from "../../api";
@@ -6,6 +7,7 @@ import { useAdmin } from "../../context/AdminContext";
 
 const CreateWorkOrder = () => {
   const { admin } = useAdmin();
+   const navigate = useNavigate();
   console.log("🧠 Admin from AdminContext (CreateWorkOrder):", admin);
 
   // ===== CLIENT / ASSIGNMENT / REMARKS / TIME / ADDRESS / STATUS =====
@@ -391,21 +393,29 @@ const handleImageChange = (files) => {
 
           const workorderNumber = data?.workorder?.workorder;
 
-          await Swal.fire({
-            title: "✅ Workorder Created",
-            html: `
-              <div style="font-size:14px;">
-                <b>Workorder Number:</b><br/>
-                <span style="color:green;font-size:18px;font-weight:bold;">
-                  ${workorderNumber}
-                </span>
-              </div>
-            `,
-            icon: "success",
-            confirmButtonText: "OK",
-          });
+await Swal.fire({
+  title: "✅ Workorder Created",
+  html: `
+    <div style="font-size:14px;">
+      <b>Workorder Number:</b><br/>
+      <span style="color:green;font-size:18px;font-weight:bold;">
+        ${workorderNumber}
+      </span>
+    </div>
+  `,
+  icon: "success",
+  confirmButtonText: "OK",
+});
 
-      window.location.reload();
+if (ticketAssignmentType === "manual") {
+  navigate(
+    `/admin/workorder/contractor/workorderdetails/${workorderNumber}`
+  );
+} else {
+  navigate("/admin/workorder/WorkorderAssignment");
+}
+
+return;
     } catch (err) {
       console.error(err);
       Swal.fire(

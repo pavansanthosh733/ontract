@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { apiGet, apiPost } from "../api";
 import "./css/ProviderRFQ.css";
 import { useUser } from "../context/UserContext";
+import { BASE_URL } from "../api";
 function ProviderRFQ() {
 
     const { user } = useUser();
@@ -345,8 +346,12 @@ function ProviderRFQ() {
                         </tbody>
                     </table>
                     <br />
-                    <h5>Project Details Description</h5>
-                    <p> {selectedRFQ.header.description} </p>
+                    <h5 className="workorder-header">Project Details Description</h5>
+                    <div className="workorder-box">
+                        <div className="workorder-body">
+                            {selectedRFQ.header.description}
+                        </div>
+                    </div>
                     <h5>Remarks</h5>
                     <p> {selectedRFQ.header.remarks} </p>
                     {quotedItems.length === 0 && (
@@ -377,8 +382,11 @@ function ProviderRFQ() {
                         <ul>
                             {selectedRFQ.attachments.map((file,index)=>(
                                 <li key={index}>
-                                    <a href={file} target="_blank" rel="noreferrer">
-                                        Attachment {index+1}
+                                    <a href={`${BASE_URL}${file}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                    >
+                                        Attachment {index + 1}
                                     </a>
                                 </li>
                             ))}

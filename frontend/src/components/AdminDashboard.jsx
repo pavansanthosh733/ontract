@@ -12,6 +12,9 @@ function AdminDashboard({ admin, setAdmin }) {
   const [providerModal, setProviderModal] = useState(null);
 const [contractorModal, setContractorModal] = useState(null);
 
+  const [approvalModal, setApprovalModal] = useState(null);
+  const [assignmentScope, setAssignmentScope] = useState("");
+
   const [providers, setProviders] = useState([]);
   const [contractors, setContractors] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null); // { email, type }
@@ -94,18 +97,14 @@ const handleDeactivate = async (email) => {
     }
   };
 
-  const handleApproveProvider = async (email) => {
-    if (!window.confirm("Approve this provider?")) return;
-    try {
-      await apiPost("/api/admin/approve_provider", { email });
-      // refresh
-      await fetchProviders();
-      alert("Provider approved");
-    } catch (err) {
-      console.error("Approve provider failed:", err);
-      alert(err.message || "Error approving provider");
-    }
-  };
+  const handleApproveProvider = (email) => {
+  setAssignmentScope("");
+
+  setApprovalModal({
+    email,
+    type: "provider",
+  });
+};
 
   const handleRejectProvider = async (email) => {
     if (!window.confirm("Reject this provider?")) return;
@@ -142,17 +141,59 @@ const handleDeactivate = async (email) => {
     }
   };
 
-  const handleApproveContractor = async (email) => {
-    if (!window.confirm("Approve this contractor?")) return;
-    try {
-      await apiPost("/api/admin/approve_contractor", { email });
+  const handleApproveContractor = (email) => {
+  setAssignmentScope("");
+
+  setApprovalModal({
+    email,
+    type: "contractor",
+  });
+};
+
+const confirmApproval = async () => {
+  if (!approvalModal) {
+    return;
+  }
+
+  if (!assignmentScope) {
+    alert("Please select Assignment Scope");
+    return;
+  }
+
+  try {
+    const route =
+      approvalModal.type === "provider"
+        ? "/api/admin/approve_provider"
+        : "/api/admin/approve_contractor";
+
+    await apiPost(route, {
+      email: approvalModal.email,
+      assignment_scope: assignmentScope,
+    });
+
+    if (approvalModal.type === "provider") {
+      await fetchProviders();
+    } else {
       await fetchContractors();
-      alert("Contractor approved");
-    } catch (err) {
-      console.error("Approve contractor failed:", err);
-      alert(err.message || "Error approving contractor");
     }
-  };
+
+    alert(
+      approvalModal.type === "provider"
+        ? "Provider approved"
+        : "Contractor approved"
+    );
+
+    setApprovalModal(null);
+    setAssignmentScope("");
+  } catch (err) {
+    console.error("Approval failed:", err);
+
+    alert(
+      err.message ||
+        `Error approving ${approvalModal.type}`
+    );
+  }
+};
 
   const handleRejectContractor = async (email) => {
     if (!window.confirm("Reject this contractor?")) return;
@@ -591,6 +632,10 @@ paginatedProviders.map((p) => (
   onClose={() => setContractorModal(null)}
 />
 
+{/* =========================================================
+    CERTIFICATE MODAL
+========================================================= */}
+
 {certificateModal && (
   <div
     className="modal fade show d-block"
@@ -602,14 +647,16 @@ paginatedProviders.map((p) => (
     >
       <div className="modal-content">
 
+        {/* HEADER */}
         <div className="modal-header">
-         <h5 className="modal-title">
-  {certificateModal.company_name
-    ? "Company Certificates"
-    : "Provider Certificates"}
-</h5>
+          <h5 className="modal-title">
+            {certificateModal.company_name
+              ? "Company Certificates"
+              : "Provider Certificates"}
+          </h5>
 
           <button
+            type="button"
             className="btn-close"
             onClick={() => {
               setCertificateModal(null);
@@ -618,46 +665,44 @@ paginatedProviders.map((p) => (
           />
         </div>
 
+        {/* BODY */}
         <div className="modal-body">
-
           <div className="row">
 
+            {/* DOCUMENT LIST */}
             <div className="col-md-3 border-end">
-
               <h6>Documents</h6>
 
-             	          
-				       {(
-                          certificateModal.certificate_path ||
-                          certificateModal.authorized_certificate ||
-                          []
-                         ).map((doc, index) => (
-                                <button
-                                      key={index}
-                                      className="btn btn-outline-primary w-100 mb-2"
-                                      onClick={() => setSelectedCertificate(doc)}
-                                 >
-                           Document {index + 1}
-                           </button>
-                         ))}
-		
-
+              {(
+                certificateModal.certificate_path ||
+                certificateModal.authorized_certificate ||
+                []
+              ).map((doc, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  className="btn btn-outline-primary w-100 mb-2"
+                  onClick={() => setSelectedCertificate(doc)}
+                >
+                  Document {index + 1}
+                </button>
+              ))}
             </div>
 
+            {/* DOCUMENT VIEW */}
             <div className="col-md-9">
-
               {selectedCertificate ? (
                 selectedCertificate.endsWith(".pdf") ? (
-<div className="text-center mt-5">
-      <a
-        href={`${BASE_URL}${selectedCertificate}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="btn btn-primary"
-      >
-        Open PDF Document
-      </a>
-    </div>
+                  <div className="text-center mt-5">
+                    <a
+                      href={`${BASE_URL}${selectedCertificate}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-primary"
+                    >
+                      Open PDF Document
+                    </a>
+                  </div>
                 ) : (
                   <img
                     src={`${BASE_URL}${selectedCertificate}`}
@@ -670,17 +715,125 @@ paginatedProviders.map((p) => (
                   Select a document
                 </div>
               )}
-
             </div>
 
           </div>
-
         </div>
 
       </div>
     </div>
   </div>
 )}
+
+
+{/* =========================================================
+    APPROVAL ASSIGNMENT SCOPE MODAL
+========================================================= */}
+
+{approvalModal && (
+  <div
+    className="modal fade show d-block"
+    tabIndex="-1"
+    style={{
+      background: "rgba(0, 0, 0, 0.5)",
+      zIndex: 9999,
+    }}
+  >
+    <div className="modal-dialog modal-dialog-centered">
+      <div className="modal-content">
+
+        {/* HEADER */}
+        <div className="modal-header">
+          <h5 className="modal-title">
+            Approve{" "}
+            {approvalModal.type === "provider"
+              ? "Individual"
+              : "Company"}
+          </h5>
+
+          <button
+            type="button"
+            className="btn-close"
+            onClick={() => {
+              setApprovalModal(null);
+              setAssignmentScope("");
+            }}
+          />
+        </div>
+
+        {/* BODY */}
+        <div className="modal-body">
+          <div className="mb-3">
+            <strong>Email:</strong>
+
+            <div className="mt-1">
+              {approvalModal.email}
+            </div>
+          </div>
+
+          <div className="mb-3">
+            <label
+              htmlFor="assignmentScope"
+              className="form-label"
+            >
+              Assignment Scope
+            </label>
+
+            <select
+              id="assignmentScope"
+              className="form-select"
+              value={assignmentScope}
+              onChange={(e) =>
+                setAssignmentScope(e.target.value)
+              }
+            >
+              <option value="">
+                Select Assignment Scope
+              </option>
+
+              <option value="GENERAL">
+                General
+              </option>
+
+              <option value="SPECIALIZED">
+                Specialized
+              </option>
+
+              <option value="PANEL">
+                Panel
+              </option>
+            </select>
+          </div>
+        </div>
+
+        {/* FOOTER */}
+        <div className="modal-footer">
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => {
+              setApprovalModal(null);
+              setAssignmentScope("");
+            }}
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            className="btn btn-success"
+            onClick={confirmApproval}
+            disabled={!assignmentScope}
+          >
+            Approve
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+)}
+
 
     </div>
   );

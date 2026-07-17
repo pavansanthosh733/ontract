@@ -79,7 +79,8 @@ PUBLIC_ROUTES = [
     "/api/dashboard/service-coverage-details", # ✅
     "/api/contractor/gate_status",             # ✅
     "/api/contractor/unread_count",            # ✅
-    "/api/contractor/gate-status",             # ✅
+    "/api/contractor/gate-status",
+    "/api/workorders/respond-workorder",       # ✅
     "/api/save_token",                         # ✅
 
     # ✅ Workorder public routes

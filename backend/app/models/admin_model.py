@@ -400,15 +400,32 @@ class AdminModel:
 
 
     @staticmethod
-    def approve_provider_status(email):
+    def approve_provider_status(email, assignment_scope):
         sql = text("""
             UPDATE users_t
-            SET status = 'approved'
-            WHERE email_id = :email AND status = 'pending' AND service_type = 0
-            RETURNING user_uid, name, contact_number
+            SET
+                status = 'approved',
+                assignment_scope = :assignment_scope
+            WHERE email_id = :email
+            AND status = 'pending'
+            AND service_type = 0
+            RETURNING
+                user_uid,
+                name,
+                contact_number,
+                assignment_scope
         """)
-        row = db.session.execute(sql, {"email": email}).fetchone()
+
+        row = db.session.execute(
+            sql,
+            {
+                "email": email,
+                "assignment_scope": assignment_scope
+            }
+        ).fetchone()
+
         db.session.commit()
+
         return dict(row._mapping) if row else None
 
     @staticmethod
@@ -620,14 +637,27 @@ class AdminModel:
 
 
     @staticmethod
-    def approve_contractor(email):
+    def approve_contractor(email, assignment_scope):
         sql = text("""
-            UPDATE users_t 
-            SET status='approved'
-            WHERE email_id=:email AND status='pending' AND service_type = 1
+            UPDATE users_t
+            SET
+                status = 'approved',
+                assignment_scope = :assignment_scope
+            WHERE email_id = :email
+            AND status = 'pending'
+            AND service_type = 1
         """)
-        result = db.session.execute(sql, {"email": email})
+
+        result = db.session.execute(
+            sql,
+            {
+                "email": email,
+                "assignment_scope": assignment_scope
+            }
+        )
+
         db.session.commit()
+
         return result.rowcount > 0
 
     @staticmethod

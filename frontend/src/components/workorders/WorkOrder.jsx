@@ -5,11 +5,13 @@
 // ==============================================
 
 import React, { useCallback, useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import "./css/workorders.css";
 import { apiGet, apiPost, BASE_URL } from "../../api";
 
 
 const WorkOrders = () => {
+  const location = useLocation();
   const [workorders, setWorkorders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -188,10 +190,54 @@ const WorkOrders = () => {
   // -----------------------------------
   // ✅ NEW: DEFAULT LOAD — show today's workorders on page load
   // -----------------------------------
-  useEffect(() => {
+useEffect(() => {
+    const status = location.state?.status;
+
+    if (status === "Today") {
+        handleQuickFilter("today");
+        return;
+    }
+
+    if (status === "Open") {
+        const range = getTodayRange();
+
+        setFromDate(range.from);
+        setToDate(range.to);
+        setStatusFilter("OPEN");
+        setActiveQuickFilter("today");
+
+        fetchWorkOrdersForRange(range.from, range.to, "OPEN");
+        return;
+    }
+
+    if (status === "COMPLETED") {
+      const range = getTodayRange();
+
+      setFromDate(range.from);
+      setToDate(range.to);
+      setStatusFilter("COMPLETED");
+      setActiveQuickFilter("today");
+
+      fetchWorkOrdersForRange(range.from, range.to, "COMPLETED");
+      return;
+  }
+
+    if (status === "All") {
+        const range = getTodayRange();
+
+        setFromDate(range.from);
+        setToDate(range.to);
+        setStatusFilter("All");
+        setActiveQuickFilter("today");
+
+        fetchWorkOrdersForRange(range.from, range.to, "All");
+        return;
+    }
+
     handleQuickFilter("today");
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+}, []);
 
   // -----------------------------------
   // AUTO REFRESH (unchanged, still works for quick filters & custom range)
@@ -525,6 +571,7 @@ const WorkOrders = () => {
                 <option value="OPEN">OPEN</option>
                 <option value="ACCEPTED">ACCEPTED</option>
                 <option value="REJECTED">REJECTED</option>
+                <option value="COMPLETED">COMPLETED</option>
                 <option value="CLOSED">CLOSED</option>
               </select>
             </div>

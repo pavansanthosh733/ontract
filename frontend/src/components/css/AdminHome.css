@@ -255,4 +255,15 @@ svg { vertical-align: middle; }
   }
 }
 
+.dashboard-card-hover {
+    background: #fff;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
 
+.dashboard-card-hover:hover {
+    transform: translateY(-10px) scale(1.08);
+    box-shadow: 0 25px 45px rgba(0, 0, 0, 0.25);
+    z-index: 100;
+}

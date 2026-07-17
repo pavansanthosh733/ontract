@@ -99,7 +99,8 @@ def reassign_expired_workorders(app):
                 # ---------------------------------------------------
                 provider_sql = text("""
                     SELECT a.user_uid AS provider_id,a.name AS full_name,a.email_id,a.service_type,
-                    b.service_rate,c.region_name,d.category_name,e.item_name,f.type_name,
+                    ROUND(b.service_rate * (1 + pr.percentage / 100.0),2) AS service_rate,
+                    c.region_name,d.category_name,e.item_name,f.type_name,
                     g.description_name,h.state_name,i.city_name FROM users_t a
                     JOIN services_t b ON a.user_uid = b.user_uid
                     JOIN region_master_t c ON b.region = c.region_name
@@ -109,6 +110,8 @@ def reassign_expired_workorders(app):
                     JOIN description_master_t g ON b.description_name = g.description_name
                     JOIN state_master_t h ON b.state = h.state_name
                     JOIN city_master_t i ON b.city = i.city_name
+                    CROSS JOIN (SELECT percentage FROM provider_rate_percentage_t
+                    WHERE status = 'active' LIMIT 1) pr             
                     WHERE d.category_id = :cat AND c.region_id = :reg AND e.item_id = :item
                     AND f.type_id = :type AND g.description_id = :description
                     AND h.state_id = :state AND i.city_id = :city AND a.active_status ='t'
