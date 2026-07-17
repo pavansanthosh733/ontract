@@ -173,4 +173,4 @@ export const apiDelete = (path, extraOptions = {}) =>
   apiFetch(path, {
     method: "DELETE",
     ...extraOptions,
-  }); 
+  });
