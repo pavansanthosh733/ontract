@@ -1,411 +1,363 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { 
-  Briefcase, 
-  CheckCircle, 
-  Clock, 
-  AlertCircle,
-  DollarSign,
-  Users,
-  Building2,
-  User,
-  TrendingUp,
-  Activity,
-  Calendar,
-  FileText
-} from "lucide-react";
-import { apiGet } from "../api";  // <-- Make sure path is correct
-import "./css/AdminHome.css";
-import { useAdmin } from "../context/AdminContext";
+// Home.jsx
+import React, { useEffect, useState, useRef } from "react";
+import { Search, ChevronDown } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import "./css/home.css";
 
+function Home({ user }) {
+  const [showHint, setShowHint] = useState(true);
+  const [navOpen, setNavOpen] = useState(false);
+  const [openSection, setOpenSection] = useState(null); // "login" | "signup" | null
+  const navRef = useRef(null);
+  const location = useLocation();
 
-function AdminHome() {
-  const { admin, loading } = useAdmin();
-  const navigate = useNavigate();
-const permissionLevel = admin?.email?.permission_level;
-console.log("logina admin detils",permissionLevel)
-  const [dashboardData, setDashboardData] = useState({
-    workOrders: {
-      total: 0,
-      active: 0,
-      completed: 0,
-      pending: 0,
-      today: 0,
-      trend: "+0%"
-    },
-    standardRate: {
-      hourly: 85,
-      overtime: 127.5,
-      weekend: 170,
-      emergency: 212.5
-    },
-    users: {
-      companyUsers: 0,
-      individualUsers: 0,
-      newThisMonth: 0,
-      activeToday: 0
-    },
-    revenue: {
-      thisMonth: 125840,
-      lastMonth: 108230,
-      growth: "+16.3%"
-    },
-    recentActivity: [
-      { id: 1, type: "workorder", desc: "New work order #WO-1249 created", time: "5 min ago" },
-      { id: 2, type: "user", desc: "New company user registered", time: "12 min ago" },
-      { id: 3, type: "complete", desc: "Work order #WO-1245 completed", time: "1 hour ago" },
-     { id: 4, type: "rate", desc: "Standard rate updated", time: "2 hours ago" }
-   ]
-  });
-
-  // ------------------------------------------
-  // 🚀 FETCH WORK ORDER COUNTS
-  // ------------------------------------------
   useEffect(() => {
-  async function loadDashboard() {
-    try {
-      const [
-        totalRes,
-        openRes,
-        closedRes,
-        todayWORes,
-        companyRes,
-        individualRes,
-        activeRes,
-        todayRes2
-      ] = await Promise.all([
-        apiGet("/api/admin/workorders/count/all"),
-        apiGet("/api/admin/workorders/count/open"),
-        apiGet("/api/admin/workorders/count/closed"),
-        apiGet("/api/admin/workorders/count/today"),
+    const interval = setInterval(() => {
+      setShowHint((prev) => !prev);
+    }, 9000);
 
-        apiGet("/api/admin/users/count/company"),
-        apiGet("/api/admin/users/count/individual"),
+    return () => clearInterval(interval);
+  }, []);
 
-        apiGet("/api/admin/users/count/active"),  
-        apiGet("/api/admin/users/count/today")     
-      ]);
+  // Close everything on any route change
+  useEffect(() => {
+    setNavOpen(false);
+    setOpenSection(null);
+  }, [location.pathname]);
 
-      setDashboardData(prev => ({
-        ...prev,
-        workOrders: {
-          ...prev.workOrders,
-          total: totalRes.total_count,
-          active: openRes.open_count,
-          completed: closedRes.closed_count,
-          today: todayWORes.today_count,
-          trend: "+12%"
-        },
-        users: {
-          ...prev.users,
-          companyUsers: companyRes.company_count,
-          individualUsers: individualRes.individual_count,
+  // Close the menu when tapping/clicking outside it
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (navRef.current && !navRef.current.contains(e.target)) {
+        setNavOpen(false);
+        setOpenSection(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
-          activeToday: activeRes.active_count,      // ⭐ NEW file changig stayr
-          newThisMonth: todayRes2.today_count      // ⭐ NEW
-        }
-      }));
+  const toggleSection = (section) => {
+    setOpenSection((prev) => (prev === section ? null : section));
+  };
 
-    } catch (err) {
-      console.error("Dashboard API Error:", err);
-    }
-  }
-
-  loadDashboard();
-}, []);
-
-
-  // ------------------------------------------
-  // CARD COMPONENT
-  // ------------------------------------------
-  const StatCard = ({
-  title,
-  value,
-  icon: Icon,
-  trend,
-  color,
-  subtitle,
-  onClick,
-}) => (
-<div
-  className="dashboard-card-hover"
-  onClick={onClick}
->
-    <div className="flex items-start justify-between">
-      <div className="flex-1">
-        <p className="text-gray-500 text-sm font-medium mb-1">{title}</p>
-
-        <h3 className="text-3xl font-bold text-gray-800 mb-2">
-          {value}
-        </h3>
-
-        {subtitle && (
-          <p className="text-sm text-gray-600">
-            {subtitle}
-          </p>
-        )}
-
-        {trend && (
-          <span
-            className={`inline-flex items-center text-sm font-medium mt-2 ${
-              trend.startsWith("+")
-                ? "text-green-600"
-                : "text-red-600"
-            }`}
-          >
-            <TrendingUp className="w-4 h-4 mr-1" />
-            {trend} from last months
-          </span>
-        )}
-      </div>
-
-      <div className={`p-3 rounded-lg ${color}`}>
-        <Icon className="w-6 h-6 text-white" />
-      </div>
-    </div>
-  </div>
-);
+  const services = [
+    {
+      title: "Home Cleaning",
+      img: "/assets/images/home_cleaning.jpeg",
+      desc: "Professional deep cleaning for a sparkling home.",
+    },
+    {
+      title: "Salon at Home",
+      img: "/assets/images/home_salon.jpeg",
+      desc: "Beauty & grooming by certified experts.",
+    },
+    {
+      title: "AC Repair",
+      img: "/assets/images/ac_repair.jpeg",
+      desc: "Reliable and fast air conditioner servicing.",
+    },
+    {
+      title: "Electrician",
+      img: "/assets/images/electrician.jpeg",
+      desc: "Expert help for wiring, installation & lighting.",
+    },
+    {
+      title: "Plumbing",
+      img: "/assets/images/plumbing.jpeg",
+      desc: "Fix leaks and blockages quickly and affordably.",
+    },
+    {
+      title: "Pest Control",
+      img: "/assets/images/pest_control.jpeg",
+      desc: "Safe and eco-friendly pest removal solutions.",
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <>
+      {/* NAVBAR */}
+      <nav className="navbar navbar-expand-lg sticky-top bg-white shadow-sm">
+        <div className="container">
+          <Link className="navbar-brand fw-bold" to="/">
+            Ontract Services
+          </Link>
 
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
-          <p className="text-gray-600">Welcome back! Here's your business overview.</p>
-        </div>
+          <div className="position-relative d-inline-block" ref={navRef}>
+            {showHint && !navOpen && (
+              <span
+                className="badge rounded-pill bg-danger d-lg-none"
+                style={{
+                  position: "absolute",
+                  top: "-10px",
+                  right: "-15px",
+                  fontSize: "10px",
+                  zIndex: 999,
+                  padding: "5px 8px",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Click Here
+              </span>
+            )}
 
-        {/* ------------------------------------------
-            WORK ORDERS SUMMARY
-        ------------------------------------------ */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-            <Briefcase className="w-5 h-5 mr-2" />
-            Work Orders Summary
-          </h2>
+            <button
+              className="navbar-toggler"
+              type="button"
+              onClick={() => setNavOpen((prev) => !prev)}
+              aria-expanded={navOpen}
+              aria-label="Toggle navigation"
+            >
+              <span className="navbar-toggler-icon"></span>
+            </button>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* MOBILE DROPDOWN - anchored below the hamburger, with accordion sections */}
+            <div className={`mobile-anchored-menu ${navOpen ? "open" : ""}`}>
+              <Link
+                className="anchored-link"
+                to="/"
+                onClick={() => setNavOpen(false)}
+              >
+                Home
+              </Link>
 
-                        <StatCard
-                            title="Total Work Orders"
-                            value={dashboardData.workOrders.total}
-                            icon={FileText}
-                            trend={dashboardData.workOrders.trend}
-                            color="bg-blue-500"
-                            onClick={() =>
-                                navigate("/admin/workorder/workorder", {
-                                    state: {
-                                        status: "All",
-                                    },
-                                })
-                            }
-                        />
+              <div className="anchored-divider"></div>
 
-                        <StatCard
-                              title="Open Work Orders"
-                              value={dashboardData.workOrders.active}
-                              icon={Activity}
-                              color="bg-green-500"
-                              subtitle="Currently in progress"
-                              onClick={() =>
-                                  navigate("/admin/workorder/workorder", {
-                                      state: {
-                                          status: "Open",
-                                      },
-                                  })
-                              }
-                          />
-
-            <StatCard
-                title="Completed"
-                value={dashboardData.workOrders.completed}
-                icon={CheckCircle}
-                color="bg-purple-500"
-                subtitle="Successfully finished"
-                onClick={() =>
-                    navigate("/admin/workorder/workorder", {
-                        state: {
-                            status: "COMPLETED",
-                        },
-                    })
-                }
-            />
-
-            <StatCard
-                  title="Today Created"
-                  value={dashboardData.workOrders.today}
-                  icon={Clock}
-                  color="bg-orange-500"
-                  subtitle="Created today"
-                  onClick={() =>
-                      navigate("/admin/workorder/workorder", {
-                          state: {
-                              status: "Today",
-                          },
-                      })
-                  }
-              />
-
-          </div>
-        </div>
-
-        {/* ------------------------------------------
-            STANDARD RATES SECTION
-        ------------------------------------------ */}
-               {/* ------------------------------------------
-            USERS SECTION
-        ------------------------------------------ */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-            <Users className="w-5 h-5 mr-2" />
-            Users Overview
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-
-            <StatCard
-  title="Company Users"
-  value={dashboardData.users.companyUsers}
-  icon={Building2}
-  color="bg-indigo-500"
-  subtitle="Business accounts"
-  onClick={() =>
-    navigate("/admin/admindashboard", {
-      state: {
-        userType: "company",
-      },
-    })
-  }
-/>
-
-            <StatCard
-  title="Individual Users"
-  value={dashboardData.users.individualUsers}
-  icon={User}
-  color="bg-cyan-500"
-  subtitle="Personal accounts"
-  onClick={() =>
-    navigate("/admin/admindashboard", {
-      state: {
-        userType: "individual",
-      },
-    })
-  }
-/>
-
-            <StatCard
-  title="New This Month"
-  value={dashboardData.users.newThisMonth}
-  icon={TrendingUp}
-  color="bg-green-500"
-  subtitle="Recent sign-ups"
-  onClick={() =>
-    navigate("/admin/admindashboard", {
-      state: {
-        userType: "new",
-      },
-    })
-  }
-/>
-
-            <StatCard
-  title="Active Today"
-  value={dashboardData.users.activeToday}
-  icon={Activity}
-  color="bg-blue-500"
-  subtitle="Currently online"
-  onClick={() =>
-    navigate("/admin/admindashboard", {
-      state: {
-        userType: "active",
-      },
-    })
-  }
-/>
-
-          </div>
-        </div>
-
-        {/* ------------------------------------------
-            REVENUE + RECENT ACTIVITY
-        ------------------------------------------ */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-          {/* Revenue Card */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-              <DollarSign className="w-5 h-5 mr-2" />
-              Revenue Overview
-            </h2>
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">This Month</p>
-                  <p className="text-2xl font-bold text-gray-800">
-                    ${dashboardData.revenue.thisMonth.toLocaleString()}
-                  </p>
-                </div>
-                <span className="text-green-600 font-semibold text-lg">
-                  {dashboardData.revenue.growth}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Last Month</p>
-                  <p className="text-2xl font-bold text-gray-800">
-                    ${dashboardData.revenue.lastMonth.toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Recent Activity */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-              <Activity className="w-5 h-5 mr-2" />
-              Recent Activity
-            </h2>
-
-            <div className="space-y-3">
-              {dashboardData.recentActivity.map(activity => (
-                <div
-                  key={activity.id}
-                  className="flex items-start p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+              {/* LOGIN accordion */}
+              <button
+                className="anchored-toggle"
+                onClick={() => toggleSection("login")}
+                type="button"
+              >
+                Login
+                <ChevronDown
+                  size={16}
+                  className={`chevron ${openSection === "login" ? "rotated" : ""}`}
+                />
+              </button>
+              <div className={`anchored-submenu ${openSection === "login" ? "expanded" : ""}`}>
+                <Link
+                  className="anchored-link secondary"
+                  to="/login"
+                  onClick={() => setNavOpen(false)}
                 >
-                  <div className={`p-2 rounded-full mr-3 ${
-                    activity.type === "workorder"
-                      ? "bg-blue-100"
-                      : activity.type === "user"
-                      ? "bg-green-100"
-                      : activity.type === "complete"
-                      ? "bg-purple-100"
-                      : "bg-orange-100"
-                  }`}>
-                    {activity.type === "workorder" && <FileText className="w-4 h-4 text-blue-600" />}
-                    {activity.type === "user" && <Users className="w-4 h-4 text-green-600" />}
-                    {activity.type === "complete" && <CheckCircle className="w-4 h-4 text-purple-600" />}
-                    {activity.type === "rate" && <DollarSign className="w-4 h-4 text-orange-600" />}
-                  </div>
+                  Individual
+                </Link>
+                <Link
+                  className="anchored-link secondary"
+                  to="/contractor/login"
+                  onClick={() => setNavOpen(false)}
+                >
+                  Contractor
+                </Link>
+              </div>
 
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-800">{activity.desc}</p>
-                    <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
-                  </div>
-                </div>
-              ))}
+              <div className="anchored-divider"></div>
+
+              {/* SIGN UP accordion */}
+              <button
+                className="anchored-toggle"
+                onClick={() => toggleSection("signup")}
+                type="button"
+              >
+                Sign Up
+                <ChevronDown
+                  size={16}
+                  className={`chevron ${openSection === "signup" ? "rotated" : ""}`}
+                />
+              </button>
+              <div className={`anchored-submenu ${openSection === "signup" ? "expanded" : ""}`}>
+                <Link
+                  className="anchored-link secondary"
+                  to="/signup"
+                  onClick={() => setNavOpen(false)}
+                >
+                  Individual
+                </Link>
+                <Link
+                  className="anchored-link secondary"
+                  to="/contractor/signup"
+                  onClick={() => setNavOpen(false)}
+                >
+                  Contractor
+                </Link>
+              </div>
             </div>
-
           </div>
 
-        </div>
+          {/* DESKTOP NAV - unchanged, only visible on large screens */}
+          <div className="collapse navbar-collapse d-none d-lg-flex" id="navbarNavDesktop">
+            <ul className="navbar-nav ms-auto align-items-center">
+              <li className="nav-item">
+                <Link className="nav-link" to="/">
+                  Home
+                </Link>
+              </li>
 
-      </div>
-    </div>
+              <li className="nav-item dropdown">
+                <button
+                  className="nav-link dropdown-toggle btn btn-link text-decoration-none"
+                  id="loginDropdown"
+                  type="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                >
+                  Login
+                </button>
+
+                <ul
+                  className="dropdown-menu dropdown-menu-end"
+                  aria-labelledby="loginDropdown"
+                >
+                  <li>
+                    <Link className="dropdown-item" to="/login">
+                      Individual
+                    </Link>
+                  </li>
+                  <li>
+                    <Link className="dropdown-item" to="/contractor/login">
+                      Contractor
+                    </Link>
+                  </li>
+                </ul>
+              </li>
+
+              <li className="nav-item dropdown ms-2">
+                <button
+                  className="nav-link dropdown-toggle btn btn-link text-decoration-none"
+                  id="signupDropdown"
+                  type="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                >
+                  Sign Up
+                </button>
+
+                <ul
+                  className="dropdown-menu dropdown-menu-end"
+                  aria-labelledby="signupDropdown"
+                >
+                  <li>
+                    <Link className="dropdown-item" to="/signup">
+                      Individual
+                    </Link>
+                  </li>
+                  <li>
+                    <Link className="dropdown-item" to="/contractor/signup">
+                      Contractor
+                    </Link>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+
+      {/* HERO */}
+      <section className="hero-section text-center text-white py-5">
+        <div className="container">
+          <h1 className="display-5 fw-bold mb-3">
+            Find Trusted Services Near You
+          </h1>
+          <p className="lead mb-4">
+            From home cleaning to Beauty & Repair – Book professionals instantly
+            and enjoy the life
+          </p>
+
+          <div className="bg-white rounded-4 p-3 shadow-lg mx-auto search-box">
+            <div className="row g-2 align-items-center">
+              <div className="col-md-4">
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Enter your location"
+                />
+              </div>
+              <div className="col-md-5">
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Search for a service"
+                />
+              </div>
+              <div className="col-md-3 d-grid">
+                <button className="btn btn-primary d-flex align-items-center justify-content-center">
+                  <Search size={18} className="me-2" /> Search
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SERVICES */}
+      <section className="py-5 bg-light">
+        <div className="container">
+          <h2 className="text-center mb-5 fw-semibold">Our Top Services</h2>
+          <div className="row g-4">
+            {services.map((service, index) => (
+              <div className="col-12 col-sm-6 col-lg-4" key={index}>
+                <div className="card h-100 shadow-sm border-0 service-card">
+                  <img
+                    src={service.img}
+                    className="card-img-top"
+                    alt={service.title}
+                  />
+                  <div className="card-body">
+                    <h5 className="card-title">{service.title}</h5>
+                    <p className="card-text text-muted">{service.desc}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="bg-dark text-light pt-5">
+        <div className="container">
+          <div className="row">
+            <div className="col-md-3 mb-4">
+              <h5 className="text-white">Ontract</h5>
+              <p className="small text-muted">
+                Connecting verified contractors and customers.
+              </p>
+              <p className="small mt-2">© 2026 Ontract Services</p>
+            </div>
+
+            <div className="col-md-3 mb-4">
+              <h6 className="text-white">Resources</h6>
+              <ul className="list-unstyled small">
+                <li>Help Center</li>
+                <li>Support</li>
+                <li>Developers</li>
+              </ul>
+            </div>
+
+            <div className="col-md-3 mb-4">
+              <h6 className="text-white">Company</h6>
+              <ul className="list-unstyled small">
+                <li>About</li>
+                <li>Careers</li>
+                <li>Blog</li>
+              </ul>
+            </div>
+
+            <div className="col-md-3 mb-4">
+              <h6 className="text-white">Stay Updated</h6>
+              <input
+                type="email"
+                className="form-control form-control-sm"
+                placeholder="Your email"
+              />
+            </div>
+          </div>
+        </div>
+      </footer>
+    </>
   );
 }
 
-export default AdminHome;
+export default Home;
