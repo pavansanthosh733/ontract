@@ -68,7 +68,7 @@
   text-align: center;
 }
 
-/* Dropdown */
+/* Dropdown (desktop) */
 .dropdown-menu {
   border: 1px solid #e9ecef;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
@@ -142,22 +142,9 @@
 }
 
 /* ===============================
-   RESPONSIVE DESIGN
+   RESPONSIVE - non-menu tweaks
    =============================== */
 @media (max-width: 992px) {
-  .navbar-collapse {
-    background-color: #fff;
-    padding: 1rem;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  }
-
-  .nav-link {
-    display: block;
-    color: #0d6efd !important;
-    margin: 0.3rem 0;
-  }
-
   .dashboard-content {
     padding: 1.25rem;
   }
@@ -199,4 +186,100 @@
 
 .dashboard-content {
   animation: fadeInDown 0.4s ease forwards;
+}
+
+/* =========================================
+   MOBILE ANCHORED DROPDOWN
+   Appears directly below the hamburger
+   button. Only affects screens below 992px.
+   Desktop nav (.navbar-collapse.d-lg-flex)
+   is completely untouched by this block.
+========================================= */
+@media (max-width: 991px) {
+  .navbar {
+    position: relative;
+  }
+
+  .mobile-anchored-menu {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    width: 240px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+    padding: 0.5rem 0;
+    z-index: 1060;
+
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+  }
+
+  .mobile-anchored-menu.open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  .anchored-user-block {
+    display: flex;
+    align-items: center;
+    padding: 0.6rem 1.25rem;
+  }
+
+  .anchored-link {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 0.6rem 1.25rem;
+    color: #333;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    background: none;
+    border: none;
+    text-align: left;
+    position: relative;
+  }
+
+  .anchored-link:hover,
+  .anchored-link:active {
+    background: #f4f6ff;
+    color: #6f42c1;
+  }
+
+  .anchored-link.logout {
+    color: #dc3545;
+  }
+
+  .anchored-link.logout:hover {
+    background: #fff0f0;
+    color: #dc3545;
+  }
+
+  .anchored-badge {
+    background: #dc3545;
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: bold;
+    padding: 1px 6px;
+    border-radius: 10px;
+    margin-left: auto;
+  }
+
+  .anchored-divider {
+    height: 1px;
+    background: #eee;
+    margin: 0.3rem 0;
+  }
+}
+
+/* Desktop: fully hide the anchored menu so it can never
+   appear or leak into the web layout. */
+@media (min-width: 992px) {
+  .mobile-anchored-menu {
+    display: none !important;
+  }
 }

@@ -3,6 +3,7 @@ import {
   FaUserCircle,
   FaBell,
   FaClipboardList,
+  FaHome,
 } from "react-icons/fa";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { useState, useRef, useEffect } from "react";
@@ -16,6 +17,7 @@ function ProviderHome() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const mobileNavRef = useRef(null);
   const [userName, setUserName] = useState("Provider");
   const [unreadCount, setUnreadCount] = useState(0);
   const [userEmail, setUserEmail] = useState("");
@@ -75,9 +77,10 @@ function ProviderHome() {
     setUserEmail(user.email_id);
   }, [user]);
 
+  // Close both menus on any route change
   useEffect(() => {
-  setNavOpen(false);
-  setDropdownOpen(false);
+    setNavOpen(false);
+    setDropdownOpen(false);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -88,9 +91,6 @@ function ProviderHome() {
         const data = await apiGet(
           `/api/unread_count?email=${encodeURIComponent(userEmail)}`
         );
-
-        console.log("Unread Count API Response:", data);
-
         setUnreadCount(data.count || 0);
       } catch (err) {
         console.error("Error fetching unread count:", err);
@@ -102,18 +102,15 @@ function ProviderHome() {
     return () => clearInterval(interval);
   }, [userEmail]);
 
-  useEffect(() => {
-    console.log("Unread Count State:", unreadCount);
-  }, [unreadCount]);
+  const handleLogout = () => {
+    setNavOpen(false);
+    setDropdownOpen(false);
+    localStorage.removeItem("provider_token");
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
 
- const handleLogout = () => {
-  setNavOpen(false);
-  setDropdownOpen(false);
-  localStorage.removeItem("provider_token");
-  localStorage.removeItem("user");
-  navigate("/login");
-};
-
+  /* Desktop dropdown behavior */
   const toggleDropdown = () => setDropdownOpen((prev) => !prev);
 
   useEffect(() => {
@@ -124,6 +121,17 @@ function ProviderHome() {
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  /* Mobile anchored menu behavior */
+  useEffect(() => {
+    const handleClickOutsideMobile = (event) => {
+      if (mobileNavRef.current && !mobileNavRef.current.contains(event.target)) {
+        setNavOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutsideMobile);
+    return () => document.removeEventListener("mousedown", handleClickOutsideMobile);
   }, []);
 
   if (loading || gate.loading) return null;
@@ -137,33 +145,71 @@ function ProviderHome() {
             <span className="ms-2">Ontract Services</span>
           </Link>
 
-          <button
-  className="navbar-toggler"
-  type="button"
-  onClick={() => setNavOpen((prev) => !prev)}
-  aria-expanded={navOpen}
->
-  <span className="navbar-toggler-icon"></span>
-</button>
+          {/* MOBILE TOGGLER + ANCHORED DROPDOWN */}
+          <div className="position-relative d-inline-block d-lg-none" ref={mobileNavRef}>
+            <button
+              className="navbar-toggler"
+              type="button"
+              onClick={() => setNavOpen((prev) => !prev)}
+              aria-expanded={navOpen}
+            >
+              <span className="navbar-toggler-icon"></span>
+            </button>
 
-          <div className={`collapse navbar-collapse ${navOpen ? "show" : ""}`} id="navbarNav">
+            <div className={`mobile-anchored-menu ${navOpen ? "open" : ""}`}>
+              <div className="anchored-user-block">
+                <FaUserCircle size={28} className="text-primary" />
+                <span className="ms-2 fw-semibold">{userName}</span>
+              </div>
+
+              <div className="anchored-divider"></div>
+
+              <Link className="anchored-link" to="/provider_home" onClick={() => setNavOpen(false)}>
+                <FaHome className="me-2" /> Home
+              </Link>
+
+              <Link
+                className="anchored-link"
+                to="/provider_home/notifications"
+                onClick={() => setNavOpen(false)}
+              >
+                <FaBell className="me-2" /> Notifications
+                {unreadCount > 0 && <span className="anchored-badge">{unreadCount}</span>}
+              </Link>
+
+              <Link
+                className="anchored-link"
+                to="/provider_home/providerupdateprofile"
+                onClick={() => setNavOpen(false)}
+              >
+                <FaUserCircle className="me-2" /> Profile
+              </Link>
+
+              <Link
+                className="anchored-link"
+                to="/provider_home/workorders"
+                onClick={() => setNavOpen(false)}
+              >
+                <FaClipboardList className="me-2" /> Work Orders
+              </Link>
+
+              <div className="anchored-divider"></div>
+
+              <button className="anchored-link logout" onClick={handleLogout}>
+                Logout
+              </button>
+            </div>
+          </div>
+
+          {/* Desktop nav - unchanged, only visible on large screens */}
+          <div className="collapse navbar-collapse d-none d-lg-flex" id="navbarNavDesktop">
             <ul className="navbar-nav ms-auto align-items-center">
               <li className="nav-item">
-                <Link
-  className="nav-link px-3"
-  to="/provider_home"
-  onClick={() => setNavOpen(false)}
->
-  HOME
-</Link>
+                <Link className="nav-link px-3" to="/provider_home">HOME</Link>
               </li>
 
               <li className="nav-item">
-                <Link
-  to="/provider_home/notifications"
-  className="nav-link position-relative px-3"
-  onClick={() => setNavOpen(false)}
->
+                <Link to="/provider_home/notifications" className="nav-link position-relative px-3">
                   <FaBell size={20} className="text-primary" />
                   <span
                     style={{
@@ -184,34 +230,28 @@ function ProviderHome() {
                   onClick={toggleDropdown}
                 >
                   <FaUserCircle size={32} className="text-primary" />
-                  <span className="d-none d-lg-inline text-dark">{userName}</span>
+                  <span className="text-dark">{userName}</span>
                 </button>
 
                 {dropdownOpen && (
                   <ul className="dropdown-menu dropdown-menu-end show mt-2">
                     <li>
                       <Link
-  className="dropdown-item"
-  to="/provider_home/providerupdateprofile"
-  onClick={() => {
-    setNavOpen(false);
-    setDropdownOpen(false);
-  }}
->
-  <FaUserCircle className="me-2" />Profile
-</Link>
+                        className="dropdown-item"
+                        to="/provider_home/providerupdateprofile"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <FaUserCircle className="me-2" />Profile
+                      </Link>
                     </li>
                     <li>
                       <Link
-  className="dropdown-item"
-  to="/provider_home/workorders"
-  onClick={() => {
-    setNavOpen(false);
-    setDropdownOpen(false);
-  }}
->
-  <FaClipboardList className="me-2" />Work Orders
-</Link>
+                        className="dropdown-item"
+                        to="/provider_home/workorders"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <FaClipboardList className="me-2" />Work Orders
+                      </Link>
                     </li>
                     <li><hr className="dropdown-divider" /></li>
                     <li>
@@ -254,4 +294,4 @@ function ProviderHome() {
   );
 }
 
-export default ProviderHome;//please deploy fast
+export default ProviderHome;

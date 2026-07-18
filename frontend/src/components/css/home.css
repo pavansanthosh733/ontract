@@ -65,3 +65,110 @@
   box-shadow: none;
   outline: none;
 }
+
+/* =========================================
+   MOBILE ANCHORED DROPDOWN with accordion
+   sections for Login / Sign Up.
+   Only affects screens below 992px.
+========================================= */
+@media (max-width: 991px) {
+  .mobile-anchored-menu {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    width: 220px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+    padding: 0.5rem 0;
+    z-index: 1060;
+
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+  }
+
+  .mobile-anchored-menu.open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  .anchored-link {
+    display: block;
+    padding: 0.6rem 1.25rem;
+    color: #333;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+  }
+
+  .anchored-link:hover,
+  .anchored-link:active {
+    background: #f4f6ff;
+    color: #4a74f1;
+  }
+
+  .anchored-link.secondary {
+    font-weight: 400;
+    padding-left: 1.5rem;
+  }
+
+  .anchored-divider {
+    height: 1px;
+    background: #eee;
+    margin: 0.3rem 0;
+  }
+
+  /* Accordion toggle buttons (Login / Sign Up) */
+  .anchored-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: none;
+    border: none;
+    padding: 0.6rem 1.25rem;
+    font-weight: 500;
+    font-size: 0.95rem;
+    color: #333;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .anchored-toggle:hover,
+  .anchored-toggle:active {
+    background: #f4f6ff;
+    color: #4a74f1;
+  }
+
+  .anchored-toggle .chevron {
+    transition: transform 0.2s ease;
+    color: #999;
+  }
+
+  .anchored-toggle .chevron.rotated {
+    transform: rotate(180deg);
+    color: #4a74f1;
+  }
+
+  /* Collapsible submenu under each accordion toggle */
+  .anchored-submenu {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.25s ease;
+  }
+
+  .anchored-submenu.expanded {
+    max-height: 200px;
+  }
+}
+
+/* Desktop: fully hide the anchored menu so it can never
+   appear or leak into the web layout. */
+@media (min-width: 992px) {
+  .mobile-anchored-menu {
+    display: none !important;
+  }
+}

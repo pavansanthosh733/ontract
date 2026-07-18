@@ -101,10 +101,11 @@ function AdminQuotationModal({ show, responseId, onClose }) {
                                     <table className="table quotation-table">
                                         <thead>
                                             <tr>
-                                                <th style={{width:"45%"}}>Item Description</th>
-                                                <th style={{width:"15%"}} className="text-center">Qty</th>
-                                                <th style={{width:"20%"}} className="text-end">Unit Price</th>
-                                                <th style={{width:"20%"}} className="text-end">Total</th>
+                                                <th style={{ width: "40%" }}>Item Description</th>
+                                                <th style={{ width: "10%" }} className="text-center">Qty</th>
+                                                <th style={{ width: "18%" }} className="text-end">Unit Price</th>
+                                                <th style={{ width: "17%" }} className="text-center">Warranty</th>
+                                                <th style={{ width: "15%" }} className="text-end">Total</th>
                                             </tr>
                                         </thead>
 
@@ -112,21 +113,11 @@ function AdminQuotationModal({ show, responseId, onClose }) {
                                             {
                                             quotation.items.map((item) => (
                                         <tr key={item.rfq_item_id}>
-                                            <td
-                                                style={{
-                                                    whiteSpace: "normal",
-                                                    wordBreak: "break-word"
-                                                }}
-                                            >
-                                                {item.item_description}
-                                            </td>
+                                            <td>{item.item_description}</td>
                                             <td className="text-center">{item.quantity}</td>
-                                            <td className="text-end">
-                                                RM {Number(item.unit_price).toFixed(2)}
-                                            </td>
-                                            <td className="text-end fw-bold">
-                                                RM {Number(item.total).toFixed(2)}
-                                            </td>
+                                            <td className="text-end">RM {Number(item.unit_price).toFixed(2)}</td>
+                                            <td className="text-center">{item.warranty_period || "-"}</td>
+                                            <td className="text-end fw-bold">RM {Number(item.total).toFixed(2)}</td>
                                         </tr>
                                     ))
                                 }

@@ -1903,6 +1903,10 @@ def create_rfq():
         def get_int(name):
             val = form.get(name)
             return int(val) if val and str(val).isdigit() else None
+        
+        def get_float(name):
+            val = form.get(name)
+            return float(val) if val not in (None, "") else None
 
         data = {
             "CATEGORY_ID": get_int("CATEGORY_ID"),
@@ -1913,13 +1917,15 @@ def create_rfq():
             "CLOSING_DATE": form.get("CLOSING_DATE"),
             "DESCRIPTION": form.get("DESCRIPTION", "").strip(),
             "REMARKS": form.get("REMARKS", "").strip(),
-			"AMOUNT": form.get("AMOUNT"),
+            "AMOUNT": get_float("AMOUNT"),
+            "SITE_SURVEY_REQUIRED": get_int("SITE_SURVEY_REQUIRED") or 0,
             "ITEMS": json.loads(form.get("ITEMS", "[]")),
             "created_by": form.get("ADMIN_ID")
         }
 
         required = ["CATEGORY_ID","REGION_ID","STATE_ID","CITY_ID","RFQ_TITLE","CLOSING_DATE"]
-        missing = [x for x in required if not data.get(x)]
+
+        missing = [field for field in required if not data.get(field)]
 
         if missing:
             return jsonify({
@@ -1937,18 +1943,18 @@ def create_rfq():
                 continue
 
             filename = secure_filename(file.filename)
-            unique_name = (f"{datetime.now().strftime('%Y%m%d%H%M%S%f')}_{filename}")
-            save_dir = os.path.join(UPLOAD_FOLDER,"rfqattachments")
+            unique_name = f"{datetime.now().strftime('%Y%m%d%H%M%S%f')}_{filename}"
+            save_dir = os.path.join(UPLOAD_FOLDER, "rfqattachments")
             os.makedirs(save_dir, exist_ok=True)
-            save_path = os.path.join(save_dir,unique_name)
+            save_path = os.path.join(save_dir, unique_name)
             file.save(save_path)
-            db_path = (f"/uploads/rfqattachments/{unique_name}")
+            db_path = f"/uploads/rfqattachments/{unique_name}"
             attachment_list.append(db_path)
 
         data["attachments"] = attachment_list
 
         # ==========================================
-        # SAVE RFQ
+        # CREATE RFQ
         # ==========================================
         rfq, error = WorkOrder.create_rfq(data)
 
@@ -1958,29 +1964,18 @@ def create_rfq():
             }), 400
 
         # ==========================================
-        # SEND EMAILS IN BACKGROUND
-        # ==========================================
-        try:
-
-            send_rfq_notifications_async(rfq)
-            logging.info(f"Background RFQ mail started for {rfq['rfq_no']}")
-
-        except Exception:
-
-            logging.exception("Unable to start RFQ background mail thread.")
-
-        # ==========================================
-        # RETURN RESPONSE IMMEDIATELY
+        # RETURN RESPONSE
         # ==========================================
         return jsonify({
             "success": True,
-            "message": "RFQ Created Successfully",
+            "message": f"RFQ Created Successfully.\nRFQ Number: {rfq['rfq_no']}",
             "rfq": rfq
         }), 201
 
     except Exception as e:
 
         logging.exception("CREATE RFQ ERROR")
+
         return jsonify({
             "error": str(e)
         }), 500
@@ -1998,8 +1993,6 @@ def get_provider_new_rfqs(contractor_id):
 
 @workorder_bp.route("/provider/rfq/<string:rfq_no>", methods=["GET"])
 def get_provider_rfq_details(rfq_no):
-    print("######## CONTROLLER HIT ########")
-    print("RFQ NO =", rfq_no)
     try:
         data = WorkOrder.get_provider_rfq_details(rfq_no)
         if not data:

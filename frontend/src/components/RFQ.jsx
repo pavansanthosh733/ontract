@@ -20,9 +20,11 @@ function RFQ() {
   const [attachments, setAttachments] = useState([]);
   const [showItems, setShowItems] = useState(false);
   const [amount, setAmount] = useState("");
+  const [siteSurveyRequired, setSiteSurveyRequired] = useState(false);
   const [items, setItems] = useState([
     {
       description: "",
+      deliveryDate: "",
       unitPrice: "",
       quantity: "",
       total: 0,
@@ -144,6 +146,7 @@ function RFQ() {
         ...items,
         {
           description: "",
+          deliveryDate: "",
           unitPrice: "",
           quantity: "",
           total: 0,
@@ -174,23 +177,26 @@ function RFQ() {
         formData.append("CLOSING_DATE", closingDate);
         formData.append("DESCRIPTION", description);
         formData.append("REMARKS", remarks);
+        formData.append("SITE_SURVEY_REQUIRED", siteSurveyRequired ? "1" : "0");
         if (showItems) {
           formData.append("ITEMS", JSON.stringify(items));
         } else {
           formData.append("ITEMS", JSON.stringify([]));
         }
-        formData.append("AMOUNT", amount);
+        if (!showItems) {
+            formData.append("AMOUNT", amount);
+        }
         attachments.forEach((item) => {formData.append("attachments[]", item.file);});
 
         const res = await fetch(
         `${BASE_URL}/api/admin/workorders/rfq/create`,
-        {
-            method: "POST",
-            body: formData,
-            headers: {
-            "ngrok-skip-browser-warning": "true",
-            },
-        }
+          {
+              method: "POST",
+              body: formData,
+              headers: {
+              "ngrok-skip-browser-warning": "true",
+              },
+          }
         );
 
         const data = await res.json();
@@ -201,7 +207,7 @@ function RFQ() {
         throw new Error(data.error || "RFQ Creation Failed");
         }
 
-        alert("RFQ Created Successfully");
+        alert(data.message);
         window.location.reload();
     } catch (err) {
         console.error(err);
@@ -239,7 +245,7 @@ function RFQ() {
     </div>
 
     <div className="field">
-      <label>Delivery Date</label>
+      <label>Requested date</label>
       <input
         type="date"
         min={today}
@@ -363,6 +369,7 @@ function RFQ() {
             }
           />
         </div>
+        {!showItems && (
           <div className="field">
             <label>Amount</label>
             <input
@@ -374,13 +381,26 @@ function RFQ() {
               min="0"
             />
           </div>
+        )}
+      </div>
+      <div className="site-survey-section">
+        <label className="site-survey-label">
+          <input
+            type="checkbox"
+            checked={siteSurveyRequired}
+            onChange={(e) =>
+              setSiteSurveyRequired(e.target.checked)
+            }
+          />
+          <span>Site Survey Required</span>
+        </label>   
       </div>
       
       {!showItems ? (
         <button
           type="button"
           className="create-btn"
-          onClick={() => setShowItems(true)}
+          onClick={() => {setShowItems(true);setAmount("");}}
         >
           + Add RFQ Items
         </button>
@@ -393,11 +413,13 @@ function RFQ() {
             setItems([
               {
                 description: "",
+                deliveryDate: "",
                 unitPrice: "",
                 quantity: "",
                 total: 0,
               },
             ]);
+            setAmount("");
           }}
         >
           Remove RFQ Items
@@ -416,6 +438,7 @@ function RFQ() {
               <tr>
                 <th>S.No</th>
                 <th>Item Description</th>
+                <th>Delivery Date</th>
                 <th>Unit Price</th>
                 <th>Quantity</th>
                 <th>Total</th>
@@ -442,13 +465,27 @@ function RFQ() {
                       }
                     />
                   </td>
-
+                  <td>
+                    <input
+                      type="date"
+                      min={today}
+                      value={item.deliveryDate}
+                      onChange={(e) =>
+                        handleItemChange(
+                          index,
+                          "deliveryDate",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </td>
                   <td>
                     <input
                       type="number"
                       min="0"
                       value={item.unitPrice}
                       placeholder="0"
+                      onWheel={(e) => e.currentTarget.blur()}
                       onChange={(e) =>
                         handleItemChange(
                           index,
@@ -465,6 +502,7 @@ function RFQ() {
                       min="0"
                       value={item.quantity}
                       placeholder="0"
+                      onWheel={(e) => e.currentTarget.blur()}
                       onChange={(e) =>
                         handleItemChange(
                           index,

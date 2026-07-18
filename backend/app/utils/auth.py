@@ -58,6 +58,8 @@ PUBLIC_ROUTES = [
     "/api/profile",
     "/api/update_profile",
     "/api/zone",
+    "/api/workorders/respond-workorder",
+    "/api/workorders",
 
     # ✅ Contractor auth routes
     "/api/contractor/verify_otp",
@@ -79,8 +81,7 @@ PUBLIC_ROUTES = [
     "/api/dashboard/service-coverage-details", # ✅
     "/api/contractor/gate_status",             # ✅
     "/api/contractor/unread_count",            # ✅
-    "/api/contractor/gate-status",
-    "/api/workorders/respond-workorder",       # ✅
+    "/api/contractor/gate-status",             # ✅
     "/api/save_token",                         # ✅
 
     # ✅ Workorder public routes
@@ -102,6 +103,7 @@ PUBLIC_ROUTES = [
     "/api/workorder-type",
     "/api/master",
     "/api/ai-report",
+    
    
 ]
 

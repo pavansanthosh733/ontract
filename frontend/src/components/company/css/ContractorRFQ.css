@@ -85,19 +85,21 @@
 }
 
 .rfq-modal-overlay{
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,.5);
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    z-index:9999;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.5);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    overflow-y: auto;
+    padding: 40px 20px;
+    z-index: 9999;
 }
 
 .rfq-modal{
-    background:white;
+    background:#fff;
     width:900px;
-    max-height:90vh;
+    max-height:calc(100vh - 80px);
     overflow:auto;
     border-radius:10px;
 }
@@ -190,4 +192,100 @@
     padding: 12px;
     white-space: pre-line;
     line-height: 1.8;
+}
+.quotation-title{
+    text-align:center;
+    font-size:26px;
+    font-weight:700;
+    margin:0;
+}
+
+.rfq-number{
+    margin:18px 0;
+    font-size:16px;
+    font-weight:600;
+    text-align:left;
+}
+
+.section-heading{
+    text-align:center;
+    font-size:22px;
+    font-weight:700;
+    margin:25px 0 18px;
+    color:#1f2937;
+}
+
+.left-heading{
+    text-align:left;
+    font-size:20px;
+    font-weight:600;
+    margin:20px 0 12px;
+}
+.quotation-header-row{
+    background:#f4f7fb;
+    border:1px solid #dce4ec;
+    border-radius:8px;
+    padding:12px 0;
+    margin-bottom:10px;
+    font-weight:700;
+    color:#243b53;
+}
+.quotation-item-row{
+    background:#fff;
+    border:1px solid #e5e7eb;
+    border-radius:8px;
+    padding:12px 0;
+    margin-bottom:10px;
+    box-shadow:0 2px 6px rgba(0,0,0,.05);
+}
+.quotation-table-wrapper{
+    width:100%;
+    overflow-x:auto;
+    border:1px solid #d6dde8;
+    border-radius:8px;
+    margin-top:15px;
+}
+
+.quotation-table{
+    width:100%;
+    border-collapse:collapse;
+    background:#fff;
+}
+
+.quotation-table th{
+    background:#f4f7fb;
+    color:#1f2937;
+    font-weight:700;
+    text-align:center;
+    padding:14px;
+    border:1px solid #d6dde8;
+}
+
+.quotation-table td{
+    border:1px solid #d6dde8;
+    padding:12px;
+    vertical-align:middle;
+}
+
+.quotation-table tbody tr:hover{
+    background:#fafcff;
+}
+
+.item-description{
+    line-height:1.6;
+}
+
+.quotation-total{
+    text-align:right;
+    font-weight:700;
+    color:#009966;
+}
+
+.quotation-table input{
+    font-size:14px;
+}
+
+.quotation-table .input-group-text{
+    background:#f8f9fa;
+    font-weight:600;
 }

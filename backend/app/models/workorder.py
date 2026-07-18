@@ -3654,29 +3654,36 @@ class WorkOrder(db.Model):
         
     @classmethod
     def create_rfq(cls, data):
-        logging.info(f"check theamountsddjkd: '{data}'")
+        logging.info(f"RFQ Data : {data}")
+
         try:
+            today = datetime.now().strftime("%d%m%Y")
 
-            # =====================================
-            # GENERATE RFQ NUMBER
-            # =====================================
-            rfq_result = db.session.execute(text("""
-                SELECT COALESCE(MAX(rfq_id), 0) + 1 AS next_id
-                FROM rfq_master_t
-            """))
+            last_rfq = db.session.execute(
+                text("""
+                    SELECT rfq_no FROM rfq_master_t WHERE rfq_no LIKE :prefix ORDER BY rfq_no DESC
+                    LIMIT 1
+                """),
+                {
+                    "prefix": f"{today}R%"
+                }
+            ).fetchone()
 
-            next_id = rfq_result.fetchone()[0]
+            if last_rfq:
+                last_number = int(last_rfq.rfq_no.split("R")[1])
+                next_number = last_number + 1
 
-            rfq_no = f"RFQ{str(next_id).zfill(4)}"
+            else:
 
-            # =====================================
-            # INSERT RFQ MASTER
-            # =====================================
+                next_number = 1
+
+            rfq_no = f"{today}R{next_number:06d}"
+
             sql = text("""
-                INSERT INTO rfq_master_t (rfq_no,category_id,region_id,state_id,city_id,rfq_title,
-                closing_date,description,remarks,amount,attachments,status,created_by,created_at)
-                VALUES (:rfq_no,:category_id,:region_id,:state_id,:city_id,:rfq_title,:closing_date,
-                :description,:remarks,:amount,CAST(:attachments AS JSONB),'OPEN',:created_by,CURRENT_TIMESTAMP)
+                INSERT INTO rfq_master_t (rfq_no,category_id,region_id,state_id,city_id,rfq_title,closing_date,
+                description,remarks,amount,site_survey_required,attachments,status,created_by,created_at)
+                VALUES (:rfq_no,:category_id,:region_id,:state_id,:city_id,:rfq_title,:closing_date,:description,
+                :remarks,:amount,:site_survey_required,CAST(:attachments AS JSONB),'OPEN',:created_by,CURRENT_TIMESTAMP)
                 RETURNING *
             """)
 
@@ -3693,13 +3700,14 @@ class WorkOrder(db.Model):
                     "description": data["DESCRIPTION"],
                     "remarks": data["REMARKS"],
                     "amount": data["AMOUNT"],
+                    "site_survey_required": data["SITE_SURVEY_REQUIRED"],
                     "attachments": json.dumps(data.get("attachments", [])),
                     "created_by": data["created_by"]
                 }
             )
-            
+
             rfq = result.fetchone()
-            
+
             # =====================================
             # SAVE RFQ ITEMS
             # =====================================
@@ -3709,13 +3717,14 @@ class WorkOrder(db.Model):
 
                 db.session.execute(
                     text("""
-                        INSERT INTO rfq_items_t (rfq_id,item_description,unit_price,quantity,
-                        total,created_at) VALUES (:rfq_id,:item_description,:unit_price,
+                        INSERT INTO rfq_items_t (rfq_id,item_description,delivery_date,unit_price,quantity,
+                        total,created_at) VALUES (:rfq_id,:item_description,:delivery_date,:unit_price,
                         :quantity,:total,CURRENT_TIMESTAMP)
                     """),
                     {
                         "rfq_id": rfq_id,
                         "item_description": item.get("description"),
+                        "delivery_date": item.get("deliveryDate"),
                         "unit_price": item.get("unitPrice", 0),
                         "quantity": item.get("quantity", 0),
                         "total": item.get("total", 0)
@@ -3723,13 +3732,11 @@ class WorkOrder(db.Model):
                 )
 
             db.session.commit()
-
             return dict(rfq._mapping), None
 
         except Exception as e:
-
             db.session.rollback()
-
+            logging.exception("CREATE RFQ MODEL ERROR")
             return None, str(e)
 
     @classmethod
@@ -3789,8 +3796,8 @@ class WorkOrder(db.Model):
 
         try:
             header_query = text("""
-                SELECT rm.rfq_id,rm.rfq_no,rm.rfq_title,rm.description,rm.remarks,
-                rm.closing_date,attachments,rm.status,c.category_name,r.region_name,
+                SELECT rm.rfq_id,rm.rfq_no,rm.rfq_title,rm.description,rm.remarks,rm.closing_date,
+                rm.site_survey_required,attachments,rm.status,c.category_name,r.region_name,
                 s.state_name,ci.city_name FROM rfq_master_t rm
                 INNER JOIN category_master_t c ON rm.category_id = c.category_id
                 INNER JOIN region_master_t r ON rm.region_id = r.region_id
@@ -3810,7 +3817,7 @@ class WorkOrder(db.Model):
 
             # RFQ ITEMS
             items_query = text("""
-                SELECT ri.rfq_item_id,ri.item_description,ri.quantity FROM rfq_items_t ri
+                SELECT ri.rfq_item_id,ri.item_description,ri.quantity,ri.delivery_date FROM rfq_items_t ri
                 INNER JOIN rfq_master_t rm ON rm.rfq_id = ri.rfq_id
                 WHERE rm.rfq_no = :rfq_no ORDER BY ri.rfq_item_id
             """)
@@ -3900,8 +3907,8 @@ class WorkOrder(db.Model):
             item_sql = text("""
 
                 INSERT INTO rfq_response_items_t (response_id,rfq_item_id,quantity,
-                unit_price,total) VALUES (:response_id,:rfq_item_id,:quantity,
-                :unit_price,:total)
+                unit_price,warranty_period,total) VALUES (:response_id,:rfq_item_id,:quantity,
+                :unit_price,:warranty_period,:total)
 
             """)
 
@@ -3912,6 +3919,7 @@ class WorkOrder(db.Model):
                         "rfq_item_id": item["rfq_item_id"],
                         "quantity": item["quantity"],
                         "unit_price": item["unit_price"],
+                        "warranty_period": item.get("warranty_period", ""),
                         "total": item["total"]
                     }
 
@@ -4095,7 +4103,7 @@ class WorkOrder(db.Model):
 
             item_sql = text("""
 
-                SELECT ri.rfq_item_id,ri.item_description,rri.quantity,rri.unit_price,
+                SELECT ri.rfq_item_id,ri.item_description,rri.quantity,rri.unit_price,rri.warranty_period,
                 rri.total FROM rfq_response_items_t rri
                 INNER JOIN rfq_items_t ri ON ri.rfq_item_id = rri.rfq_item_id
                 WHERE rri.response_id = :response_id ORDER BY ri.rfq_item_id

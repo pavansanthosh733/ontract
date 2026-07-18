@@ -22,6 +22,7 @@ const AIReport = lazy(() => import('./AiReport'));
 const ManualAssignedWorkorders = lazy(() => import('./ManualAssignedWorkorders'));
 const RFQ = lazy(() => import('./RFQ'));
 const AdminRFQResponses = lazy(() => import('./AdminRFQResponses'));
+const AdminRFQPublish = lazy(() => import('./AdminRFQPublish'));
 
 function AdminApp({ admin, setAdmin }) {
   const {admin: ctxAdmin,loading,logoutAdmin,} = useAdmin();
@@ -228,6 +229,13 @@ function AdminApp({ admin, setAdmin }) {
       </li>
       <li>
         <Link
+          to="/admin/rfq/publish"
+          onClick={() => handleLinkClick("rfq_responses")}
+        > RFQ Publish
+        </Link>
+      </li>
+      <li>
+        <Link
           to="/admin/rfq/responses"
           onClick={() => handleLinkClick("rfq_responses")}
         > Responses
@@ -418,9 +426,12 @@ function AdminApp({ admin, setAdmin }) {
             element={<InvoiceCreate />}
             
           />
-            <Route
+          <Route
             path="/rfq"
             element={<RFQ />}
+          />
+          <Route path="/rfq/publish"
+                 element={<AdminRFQPublish />}
           />
           <Route
               path="/rfq/responses"
@@ -431,10 +442,10 @@ function AdminApp({ admin, setAdmin }) {
             path="/adminnotifications"
             element={<AdminNotifications />}
           />
-<Route
-  path="audit/manual-assigned-workorders"
-  element={<ManualAssignedWorkorders />}
-/>
+          <Route
+            path="audit/manual-assigned-workorders"
+            element={<ManualAssignedWorkorders />}
+          />
 
           <Route
             path="/reports/contractor"

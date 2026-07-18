@@ -34,6 +34,12 @@ function ContractorRFQ() {
         }
     }, [activeTab, contractor]);
 
+    const handleWarrantyChange = (index, value) => {
+        const updated = [...quotedItems];
+        updated[index].warranty_period = value;
+        setQuotedItems(updated);
+    };
+
     const submitQuotation = async () => {
 
         try {
@@ -69,6 +75,7 @@ function ContractorRFQ() {
                     rfq_item_id: item.rfq_item_id,
                     quantity: item.quantity,
                     unit_price: Number(item.unit_price),
+                    warranty_period: item.warranty_period?.trim() || "",
                     total: Number(item.total)
                 }))
             };
@@ -124,7 +131,7 @@ function ContractorRFQ() {
         try {
             const data = await apiGet(`/api/workorders/provider/rfq/${rfqNo}`);
             setSelectedRFQ(data);
-            setQuotedItems(data.items.map(item => ({...item,unit_price: "",total: 0})));
+            setQuotedItems(data.items.map(item => ({...item,unit_price: "",warranty_period: "",total: 0})));
             setContractorRemarks("");
             setShowModal(true);
         } catch (err) {
@@ -306,17 +313,11 @@ function ContractorRFQ() {
         <div className="rfq-modal-overlay">
             <div className="rfq-modal">
                 <div className="rfq-modal-header">
-                    <h3>Quotation Submission
-                    <br/>
-                    <small>{selectedRFQ.header.rfq_no}</small>
-                    </h3>
-                    <button
-                        className="close-btn"
-                        onClick={() => setShowModal(false)}
-                    >
-                        ✕
-
-                    </button>
+                    <h3 className="quotation-title">Quotation Submission</h3>
+                    <button className="close-btn" onClick={() => setShowModal(false)}> ✕ </button>
+                </div>
+                <div className="rfq-number">
+                    <strong>RFQ No :</strong> {selectedRFQ.header.rfq_no}
                 </div>
                 <div className="rfq-modal-body">
                     <table className="table table-bordered">
@@ -352,8 +353,18 @@ function ContractorRFQ() {
                     <div className="workorder-box">
                         <div className="workorder-body">{selectedRFQ.header.description}</div>
                     </div>
-                    <h5>Remarks</h5>
-                    <p> {selectedRFQ.header.remarks} </p>
+                    {/*<h5>Remarks</h5>
+                    <p> {selectedRFQ.header.remarks} </p>*/}
+                    {selectedRFQ.header.site_survey_required === 1 && (
+                        <div className="alert alert-warning mt-3">
+                            <strong>Site Survey Required</strong>
+                            <br />
+                            This work requires a site survey by the provider.
+                            The site survey is not chargeable separately.
+                            Please submit your quotation only if you are able to
+                            perform the required site survey for this work.
+                        </div>
+                    )}
                     {quotedItems.length === 0 && (
                         <div className="mt-3">
                             <label className="form-label fw-bold">
@@ -375,7 +386,7 @@ function ContractorRFQ() {
                         </div>
                     )}
                     <hr />
-                    <h5>Attachments</h5>
+                    <h5 className="left-heading">Attachments</h5>
                     {selectedRFQ.attachments?.length > 0 ? (
                         <ul>
                             {selectedRFQ.attachments.map((file,index)=>(
@@ -391,45 +402,79 @@ function ContractorRFQ() {
                     )}
                 {quotedItems.length > 0 && (
                     <>
-                    <h5 className="mb-3">Quotation Items</h5>
-                    <div className="container-fluid p-0">
-                        <div className="row fw-bold border-bottom pb-2 mb-2">
-                            <div className="col-7">Item Description</div>
-                            <div className="col-1 text-center">Qty</div>
-                            <div className="col-2 text-center">Unit Price (RM)</div>
-                            <div className="col-2 text-end">Total (RM)</div>
-                        </div>
-                        {quotedItems.map((item, index) => (
-                            <div
-                                className="row align-items-center border-bottom py-2"
-                                key={item.rfq_item_id}
-                            >
-                                <div className="col-7">{item.item_description}</div>
-                                <div className="col-1 text-center">{item.quantity}</div>
-                                <div className="col-2">
+                    <h4 className="section-heading">Quotation Items</h4>
+                    <div className="quotation-table-wrapper">
+                        <table className="quotation-table">
+                            <thead>
+                                <tr>
+                                    <th style={{ width: "35%" }}>Item Description</th>
+                                    <th style={{ width: "16%" }}>Delivery Date</th>
+                                    <th style={{ width: "8%" }}>Qty</th>
+                                    <th style={{ width: "16%" }}>Unit Price (RM)</th>
+                                    <th style={{ width: "15%" }}>Warranty Period</th>
+                                    <th style={{ width: "10%" }}>Total (RM)</th>
+                                </tr>
+                            </thead>
 
-                                    <div className="input-group input-group-sm">
-                                        <span className="input-group-text">RM</span>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            className="form-control"
-                                            value={item.unit_price}
-                                            onChange={(e) =>
-                                                handleUnitPriceChange(
-                                                    index,
-                                                    e.target.value
-                                                )
-                                            }
-                                        />
-                                    </div>
-                                </div>
-                                <div className="col-2 text-end fw-bold text-success">
-                                    RM {Number(item.total).toFixed(2)}
-                                </div>
-                            </div>
-                        ))}
+                            <tbody>
+                                {quotedItems.map((item, index) => (
+                                    <tr key={item.rfq_item_id}>
+                                        <td className="item-description">
+                                            {item.item_description}
+                                        </td>
+
+                                        <td className="text-center">
+                                            {item.delivery_date || "-"}
+                                        </td>
+
+                                        <td className="text-center">
+                                            {item.quantity}
+                                        </td>
+
+                                        <td>
+                                            <div className="input-group input-group-sm">
+                                                <span className="input-group-text">
+                                                    RM
+                                                </span>
+
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    step="1"
+                                                    className="form-control"
+                                                    value={item.unit_price}
+                                                    onChange={(e) =>
+                                                        handleUnitPriceChange(index, e.target.value)
+                                                    }
+                                                    onWheel={(e) => e.currentTarget.blur()}
+                                                />
+                                            </div>
+                                        </td>
+
+                                        <td>
+                                            <input
+                                                type="text"
+                                                className="form-control form-control-sm"
+                                                placeholder="Optional"
+                                                value={item.warranty_period}
+                                                onChange={(e) =>
+                                                    handleWarrantyChange(
+                                                        index,
+                                                        e.target.value
+                                                    )
+                                                }
+                                            />
+                                        </td>
+
+                                        <td className="quotation-total">
+                                            RM
+                                            <br />
+                                            {Number(item.total).toFixed(2)}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                     <div className="alert alert-success mt-3 text-end">
                         <h4 className="mb-0">
