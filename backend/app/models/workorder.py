@@ -2644,9 +2644,15 @@ class WorkOrder(db.Model):
 
         try:
 
+            # -----------------------------------
+            # Update workorder
+            # -----------------------------------
             sql = text("""
-                UPDATE workorder_t SET status = 'WITHDRAW',withdraw_reason = :reason,
-                withdrawn_at = CURRENT_TIMESTAMP, ticket_assignment_type = 'manual'
+                UPDATE workorder_t
+                SET status = 'WITHDRAW',
+                    withdraw_reason = :reason,
+                    withdrawn_at = CURRENT_TIMESTAMP,
+                    ticket_assignment_type = 'manual'
                 WHERE workorder = :workorder
                 RETURNING *;
             """)
@@ -2663,25 +2669,104 @@ class WorkOrder(db.Model):
                 db.session.rollback()
                 return False, "Workorder not found"
 
+            # -----------------------------------
+            # Update assignment
+            # -----------------------------------
             result = db.session.execute(
                 text("""
-                    UPDATE workorder_assignment_t SET assignment_status = 'WITHDRAW'
-                    WHERE "WORKORDER_ID" = :workorder AND UPPER(assignment_status)
-                      IN ('PENDING','ACCEPTED')
+                    UPDATE workorder_assignment_t
+                    SET assignment_status = 'WITHDRAW'
+                    WHERE "WORKORDER_ID" = :workorder
+                    AND UPPER(assignment_status) IN ('PENDING','ACCEPTED')
                 """),
                 {
                     "workorder": workorder
                 }
             )
 
-            logging.info(f"Assignment rows updated to WITHDRAW: "
-                f"{result.rowcount}"
+            logging.info(
+                f"Assignment rows updated to WITHDRAW: {result.rowcount}"
             )
 
+            # -----------------------------------
+            # Get latest lifecycle record
+            # -----------------------------------
+            sql_fetch = text("""
+                SELECT *
+                FROM workorder_life_cycle_t
+                WHERE workorder = :workorder
+                ORDER BY id DESC
+                LIMIT 1;
+            """)
+
+            last_row = db.session.execute(
+                sql_fetch,
+                {
+                    "workorder": workorder
+                }
+            ).mappings().fetchone()
+
+            # -----------------------------------
+            # Insert lifecycle record
+            # -----------------------------------
+            if last_row:
+
+                sql_insert = text("""
+                    INSERT INTO workorder_life_cycle_t
+                    (
+                        workorder,
+                        created_t,
+                        requested_time_close,
+                        remarks,
+                        status,
+                        contractor_name,
+                        contractor_id,
+                        contractor_remarks,
+                        admin_remarks
+                    )
+                    VALUES
+                    (
+                        :workorder,
+                        CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata',
+                        :requested_time_close,
+                        :remarks,
+                        'WITHDRAW',
+                        :contractor_name,
+                        :contractor_id,
+                        :contractor_remarks,
+                        :admin_remarks
+                    );
+                """)
+
+                db.session.execute(
+                    sql_insert,
+                    {
+                        "workorder": last_row["workorder"],
+                        "requested_time_close": last_row.get("requested_time_close"),
+                        "remarks": reason,
+                        "contractor_name": last_row.get("contractor_name"),
+                        "contractor_id": last_row.get("contractor_id"),
+                        "contractor_remarks": last_row.get("contractor_remarks"),
+                        "admin_remarks": reason
+                    }
+                )
+
+                logging.info(
+                    f"Lifecycle WITHDRAW record inserted for {workorder}"
+                )
+
+            else:
+                logging.warning(
+                    f"No lifecycle record found for workorder {workorder}"
+                )
+
+            # -----------------------------------
+            # Commit
+            # -----------------------------------
             db.session.commit()
 
-            logging.info(f"Workorder {workorder} withdrawn successfully "
-                f"and moved to MANUAL assignment"
+            logging.info(
+                f"Workorder {workorder} withdrawn successfully."
             )
 
             return True, None
@@ -2689,10 +2774,9 @@ class WorkOrder(db.Model):
         except Exception as e:
 
             db.session.rollback()
-
             logging.exception("Withdraw Workorder Error")
 
-            raise
+            return False, str(e)
         
 
 
