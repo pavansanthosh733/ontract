@@ -2078,3 +2078,40 @@ def get_admin_rfq_response_details(response_id):
             "success": False,
             "error": str(e)
         }), 500
+
+@admin_workorder_bp.route("/admin/rfq/open/list", methods=["GET"])
+def get_open_rfq_list():
+    try:
+        data = WorkOrder.get_open_rfq_list()
+        return jsonify(data), 200
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+    
+@admin_workorder_bp.route("/admin/rfq/publish", methods=["POST"])
+def publish_rfq():
+
+    try:
+        data = request.get_json()
+        rfq_no = data.get("rfq_no")
+        publish_type = data.get("publish_type")
+
+        if not rfq_no:
+            return jsonify({"message": "RFQ No is required"}), 400
+
+        if not publish_type:
+            return jsonify({"message": "Publish Type is required"}), 400
+
+        result = WorkOrder.publish_rfq(rfq_no, publish_type)
+
+        if result:
+            return jsonify({"message": "RFQ Published Successfully"}), 200
+
+        return jsonify({"message": "Failed to Publish RFQ"}), 400
+
+    except Exception as e:
+        print(e)
+        return jsonify({"message": str(e)}), 500

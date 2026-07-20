@@ -544,10 +544,7 @@ class WorkOrder(db.Model):
         like_pattern = f"{today_str}{prefix}%"
 
         sql_last = text("""
-            SELECT workorder
-            FROM workorder_t
-            WHERE workorder LIKE :pattern
-            ORDER BY id DESC
+            SELECT workorder FROM workorder_t WHERE workorder LIKE :pattern ORDER BY id DESC
             LIMIT 1
             FOR UPDATE
         """)
@@ -568,8 +565,7 @@ class WorkOrder(db.Model):
         logging.info("Dashboard Model: Fetching workorders with joins...")
         try:
             sql = text("""
-                SELECT w.*,c.category_name,r.region_name
-                FROM workorder_t w
+                SELECT w.*,c.category_name,r.region_name FROM workorder_t w
                 LEFT JOIN category_master_t c ON w.category = c.category_id
                 LEFT JOIN region_master_t r ON w.region = r.region_id
                 where lower(w.status) in ('open','rejected')
@@ -612,11 +608,7 @@ class WorkOrder(db.Model):
 
         try:
             sql = text("""
-                SELECT 
-                    w.*,
-                    c.category_name,
-                    r.region_name
-                FROM workorder_t w
+                SELECT w.*,c.category_name,r.region_name FROM workorder_t w
                 LEFT JOIN category_master_t c ON w.category = c.category_id
                 LEFT JOIN region_master_t r ON w.region = r.region_id
                 WHERE w.workorder = :workorder
@@ -934,43 +926,17 @@ class WorkOrder(db.Model):
             logging.info("Dashboard Filter Query Triggered")
 
             sql = text("""
-                SELECT DISTINCT ON (w.workorder)
-                    w.*,
-                    c.category_name,
-                    r.region_name,
-                    u.name AS contractor_name,
-                    u.user_uid AS contractor_id,
-                    wa.assignment_status,
-                    wa.assigned_at,
-            
-                    cd.company_id,
-                    cd.company_name,
-                    cd.brn_number
-            
-                FROM workorder_t w
-            
-                LEFT JOIN category_master_t c
-                    ON w.category = c.category_id
-            
-                LEFT JOIN region_master_t r
-                    ON w.region = r.region_id
-            
-                LEFT JOIN workorder_assignment_t wa
-                    ON wa."WORKORDER_ID" = w.workorder
-            
-                LEFT JOIN users_t u
-                    ON wa.provider_id = u.user_uid
-            
-                LEFT JOIN company_details_t cd
-                    ON cd.user_uid = u.user_uid
-            
+                SELECT DISTINCT ON (w.workorder) w.*,c.category_name,r.region_name,u.name AS contractor_name,
+                u.user_uid AS contractor_id,wa.assignment_status,wa.assigned_at,cd.company_id,cd.company_name,
+                cd.brn_number FROM workorder_t w
+                LEFT JOIN category_master_t c ON w.category = c.category_id
+                LEFT JOIN region_master_t r ON w.region = r.region_id  
+                LEFT JOIN workorder_assignment_t wa ON wa."WORKORDER_ID" = w.workorder
+                LEFT JOIN users_t u ON wa.provider_id = u.user_uid      
+                LEFT JOIN company_details_t cd ON cd.user_uid = u.user_uid
                 WHERE w.created_t BETWEEN :from_dt AND :to_dt
-                  AND (:status = 'All' OR LOWER(w.status) = LOWER(:status))
-            
-                ORDER BY
-                    w.workorder,
-                    wa.assigned_at DESC NULLS LAST,
-                    w.id DESC
+                AND (:status = 'All' OR LOWER(w.status) = LOWER(:status))
+                ORDER BY w.workorder,wa.assigned_at DESC NULLS LAST,w.id DESC
             """)
 
             rows = db.session.execute(
@@ -1003,6 +969,7 @@ class WorkOrder(db.Model):
             return result, None
         except Exception as e:
             return None, str(e)
+        
     @classmethod
     def count_today(cls):
         try:
@@ -1109,37 +1076,16 @@ class WorkOrder(db.Model):
     def get_contractors_by_region_category_name(cls, region_name, category_name):
         try:
             sql = text("""
-                SELECT 
-                    a.user_uid AS provider_id,
-                    a.email_id,
-                    a.name AS full_name,
-                    a.average_rating,
-                    a.total_ratings,
-                    b.service_rate AS rate,
-                    b.city,
-                    c.region_name,
-                    d.category_name,
-                    b.region AS service_locations,
-    
-                    cd.company_id,
-                    cd.company_name,
-                    cd.brn_number,
-                    cd.logo_path,
-                    cd.certificate_path,
-                    cd.updated_at
-                FROM users_t a
-                INNER JOIN services_t b 
-                    ON a.user_uid = b.user_uid
-                INNER JOIN region_master_t c 
-                    ON b.region = c.region_name
-                INNER JOIN category_master_t d 
-                    ON d.category_name = b.category_name
-                LEFT JOIN company_details_t cd
-                    ON cd.user_uid = a.user_uid
-                WHERE c.region_name = :region_name
-                  AND d.category_name = :category_name
-                  and a.active_status='t'
-                ORDER BY b.service_rate ASC, a.average_rating DESC
+                SELECT a.user_uid AS provider_id,a.email_id,a.name AS full_name,a.average_rating,
+                a.total_ratings,b.service_rate AS rate,b.city,c.region_name,d.category_name,
+                b.region AS service_locations,cd.company_id,cd.company_name,cd.brn_number,cd.logo_path,
+                cd.certificate_path,cd.updated_at FROM users_t a
+                INNER JOIN services_t b ON a.user_uid = b.user_uid
+                INNER JOIN region_master_t c ON b.region = c.region_name
+                INNER JOIN category_master_t d ON d.category_name = b.category_name
+                LEFT JOIN company_details_t cd ON cd.user_uid = a.user_uid
+                WHERE c.region_name = :region_name AND d.category_name = :category_name
+                and a.active_status='t' ORDER BY b.service_rate ASC, a.average_rating DESC
                 LIMIT 6
             """)
     
@@ -2645,15 +2591,9 @@ class WorkOrder(db.Model):
         try:
 
             # -----------------------------------
-            # Update workorder
-            # -----------------------------------
             sql = text("""
-                UPDATE workorder_t
-                SET status = 'WITHDRAW',
-                    withdraw_reason = :reason,
-                    withdrawn_at = CURRENT_TIMESTAMP,
-                    ticket_assignment_type = 'manual'
-                WHERE workorder = :workorder
+                UPDATE workorder_t SET status = 'WITHDRAW',withdraw_reason = :reason,
+                withdrawn_at = CURRENT_TIMESTAMP,ticket_assignment_type = 'manual' WHERE workorder = :workorder
                 RETURNING *;
             """)
 
@@ -2674,10 +2614,8 @@ class WorkOrder(db.Model):
             # -----------------------------------
             result = db.session.execute(
                 text("""
-                    UPDATE workorder_assignment_t
-                    SET assignment_status = 'WITHDRAW'
-                    WHERE "WORKORDER_ID" = :workorder
-                    AND UPPER(assignment_status) IN ('PENDING','ACCEPTED')
+                    UPDATE workorder_assignment_t SET assignment_status = 'WITHDRAW'
+                    WHERE "WORKORDER_ID" = :workorder AND UPPER(assignment_status) IN ('PENDING','ACCEPTED')
                 """),
                 {
                     "workorder": workorder
@@ -2692,19 +2630,11 @@ class WorkOrder(db.Model):
             # Get latest lifecycle record
             # -----------------------------------
             sql_fetch = text("""
-                SELECT *
-                FROM workorder_life_cycle_t
-                WHERE workorder = :workorder
-                ORDER BY id DESC
+                SELECT * FROM workorder_life_cycle_t WHERE workorder = :workorder ORDER BY id DESC
                 LIMIT 1;
             """)
 
-            last_row = db.session.execute(
-                sql_fetch,
-                {
-                    "workorder": workorder
-                }
-            ).mappings().fetchone()
+            last_row = db.session.execute(sql_fetch,{"workorder": workorder}).mappings().fetchone()
 
             # -----------------------------------
             # Insert lifecycle record
@@ -2712,30 +2642,10 @@ class WorkOrder(db.Model):
             if last_row:
 
                 sql_insert = text("""
-                    INSERT INTO workorder_life_cycle_t
-                    (
-                        workorder,
-                        created_t,
-                        requested_time_close,
-                        remarks,
-                        status,
-                        contractor_name,
-                        contractor_id,
-                        contractor_remarks,
-                        admin_remarks
-                    )
-                    VALUES
-                    (
-                        :workorder,
-                        CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata',
-                        :requested_time_close,
-                        :remarks,
-                        'WITHDRAW',
-                        :contractor_name,
-                        :contractor_id,
-                        :contractor_remarks,
-                        :admin_remarks
-                    );
+                    INSERT INTO workorder_life_cycle_t (workorder,created_t,requested_time_close,remarks,
+                    status,contractor_name,contractor_id,contractor_remarks,admin_remarks ) VALUES (
+                    :workorder,CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata',:requested_time_close,:remarks,
+                    'WITHDRAW',:contractor_name,:contractor_id,:contractor_remarks,:admin_remarks);
                 """)
 
                 db.session.execute(
@@ -2751,25 +2661,10 @@ class WorkOrder(db.Model):
                     }
                 )
 
-                logging.info(
-                    f"Lifecycle WITHDRAW record inserted for {workorder}"
-                )
 
             else:
-                logging.warning(
-                    f"No lifecycle record found for workorder {workorder}"
-                )
-
-            # -----------------------------------
-            # Commit
-            # -----------------------------------
-            db.session.commit()
-
-            logging.info(
-                f"Workorder {workorder} withdrawn successfully."
-            )
-
-            return True, None
+                db.session.commit()
+                return True, None
 
         except Exception as e:
 
@@ -2784,10 +2679,8 @@ class WorkOrder(db.Model):
     def get_admin_email_by_workorder(cls, workorder):
         try:
             sql = text("""
-                SELECT a.email
-                FROM workorder_t w
-                JOIN admins_t a
-                    ON a.admin_id = CAST(w.created_by AS BIGINT)
+                SELECT a.email FROM workorder_t w
+                JOIN admins_t a ON a.admin_id = CAST(w.created_by AS BIGINT)
                 WHERE w.workorder = :workorder
                 LIMIT 1;
             """)
@@ -3850,13 +3743,12 @@ class WorkOrder(db.Model):
 
         try:
             query = text("""
-                SELECT rm.rfq_id,rm.rfq_no,rm.rfq_title,rm.closing_date,rm.status
-                FROM rfq_master_t rm WHERE rm.status='OPEN'
-                AND NOT EXISTS (SELECT 1 FROM rfq_response_master_t rr
-                WHERE rr.rfq_id = rm.rfq_id AND rr.contractor_id = :contractor_id)
-                ORDER BY rm.created_at DESC
-
-            """)
+                    SELECT rm.rfq_id,rm.rfq_no,rm.rfq_title,rm.closing_date,rm.status,rm.publish_type
+                    FROM rfq_master_t rm INNER JOIN users_t u ON u.user_uid = :contractor_id
+                    WHERE rm.status = 'PUBLISHED' AND rm.publish_type = u.assignment_scope
+                    AND NOT EXISTS (SELECT 1 FROM rfq_response_master_t rr WHERE rr.rfq_id = rm.rfq_id
+                    AND rr.contractor_id = :contractor_id) ORDER BY rm.created_at DESC
+                """)        
 
             result = db.session.execute(query,
 
@@ -3874,6 +3766,7 @@ class WorkOrder(db.Model):
         except Exception as e:
             logging.exception("NEW RFQ ERROR")
             return []
+        
 
     @classmethod
     def get_provider_rfq_details(cls, rfq_no):
@@ -4213,3 +4106,39 @@ class WorkOrder(db.Model):
         except Exception:
             logging.exception("GET ADMIN RFQ RESPONSE DETAILS")
             return None
+        
+    @classmethod
+    def get_open_rfq_list(cls):
+        try:
+            query = text("""
+                SELECT rm.rfq_id,rm.rfq_no,rm.rfq_title,rm.closing_date,rm.status
+                FROM rfq_master_t rm WHERE rm.status = 'OPEN' ORDER BY rm.created_at DESC
+            """)
+
+            result = db.session.execute(query).mappings().fetchall()
+
+            return [
+                dict(row)
+                for row in result
+            ]
+
+        except Exception:
+            logging.exception("GET OPEN RFQ LIST")
+            return []
+        
+    @classmethod
+    def publish_rfq(cls, rfq_no, publish_type):
+
+        try:
+            query = text("""
+                UPDATE rfq_master_t SET status = 'PUBLISHED',publish_type = :publish_type,updated_at = NOW()
+                WHERE rfq_no = :rfq_no
+            """)
+
+            db.session.execute(query,{"rfq_no": rfq_no,"publish_type": publish_type})
+            db.session.commit()
+            return True
+
+        except Exception as e:
+            db.session.rollback()
+            return False
