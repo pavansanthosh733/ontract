@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from app.utils.current_admin import set_admin
 from app.utils.current_admin import set_admin, get_admin
-from flask import current_app, make_response, jsonify 
+from flask import request, jsonify, current_app, make_response, session
 from flask import current_app
 from flask import session
 from app.models.admin_model import AdminModel
@@ -982,3 +982,21 @@ class AdminController:
             "success": True,
             "message": f"User {'activated' if is_active else 'deactivated'} successfully"
         }, 200
+
+    @staticmethod
+    def update_assignment_scope():
+        data = request.get_json()
+
+        email = data.get("email")
+        assignment_scope = data.get("assignment_scope")
+
+        if not email or not assignment_scope:
+            return jsonify({
+                "success": False,
+                "message": "Email and Assignment Scope are required."
+            }), 400
+
+        return AdminModel.update_assignment_scope(
+            email,
+            assignment_scope
+        )

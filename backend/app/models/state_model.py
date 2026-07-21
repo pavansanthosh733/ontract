@@ -15,12 +15,8 @@ class StateModel:
         logging.info("Fetching all states with region name")
 
         sql = text("""
-            SELECT
-                a.*,
-                b.region_name
-            FROM state_master_t a
-            JOIN region_master_t b
-                ON a.region_id = b.region_id
+            SELECT a.*,b.region_name FROM state_master_t a
+            JOIN region_master_t b ON a.region_id = b.region_id
             ORDER BY a.state_id ASC
         """)
 
@@ -34,10 +30,8 @@ class StateModel:
         try:
             # Duplicate check
             check_sql = text("""
-                SELECT 1
-                FROM state_master_t
-                WHERE LOWER(TRIM(state_name)) = LOWER(TRIM(:state_name))
-                  AND region_id = :region_id
+                SELECT 1 FROM state_master_t WHERE LOWER(TRIM(state_name)) = LOWER(TRIM(:state_name))
+                AND region_id = :region_id
                 LIMIT 1
             """)
 
@@ -74,15 +68,10 @@ class StateModel:
     def update_state(id, status):
         try:
             sql = text("""
-                UPDATE state_master_t
-                SET status = :status
-                WHERE id = :id
+                UPDATE state_master_t SET status = :status WHERE id = :id
             """)
 
-            db.session.execute(sql, {
-                "id": id,
-                "status": status
-            })
+            db.session.execute(sql, {"id": id,"status": status})
             db.session.commit()
             return True
 
@@ -105,10 +94,7 @@ class StateModel:
     @staticmethod
     def get_states_by_region(region_id):
         sql = text("""
-            SELECT *
-            FROM state_master_t
-            WHERE region_id = :region_id
-            ORDER BY state_id ASC
+            SELECT * FROM state_master_t WHERE region_id = :region_id ORDER BY state_id ASC
         """)
         result = db.session.execute(sql, {"region_id": region_id})
         return [dict(row._mapping) for row in result]
@@ -116,9 +102,18 @@ class StateModel:
     @staticmethod
     def get_id_types():
         sql = text("""
-            SELECT id_type
-            FROM identity_document_types_t
-            WHERE status = 'Active'
+            SELECT id_type FROM identity_document_types_t WHERE status = 'Active'
         """)
         result = db.session.execute(sql)
         return [row.id_type for row in result]
+    
+    @staticmethod
+    def get_active_states():
+        logging.info("Fetching active states")
+        sql = text("""
+            SELECT DISTINCT state_id,state_name FROM state_master_t WHERE status = 'Active'
+            ORDER BY state_name ASC
+        """)
+
+        result = db.session.execute(sql)
+        return [dict(row._mapping) for row in result]

@@ -323,3 +323,28 @@
 .contractor-btn i{
     margin-right:8px;
 }
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin: 15px 0;
+}
+
+.pagination-container button {
+    padding: 5px 12px;
+    border: 1px solid #0d6efd;
+    background: white;
+    color: #0d6efd;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.pagination-container button.active-page {
+    background: #0d6efd;
+    color: white;
+}
+
+.pagination-container button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

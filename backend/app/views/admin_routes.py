@@ -257,3 +257,7 @@ def deactivate_user():
     )
 
     return jsonify(res), status
+
+@admin_bp.route("/update_assignment_scope", methods=["PUT"])
+def update_assignment_scope():
+    return AdminController.update_assignment_scope()

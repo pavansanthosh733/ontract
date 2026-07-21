@@ -12,8 +12,9 @@ function AdminDashboard({ admin, setAdmin }) {
   const [providerModal, setProviderModal] = useState(null);
 const [contractorModal, setContractorModal] = useState(null);
 
-  const [approvalModal, setApprovalModal] = useState(null);
-  const [assignmentScope, setAssignmentScope] = useState("");
+
+  const [assignmentScope, setAssignmentScope] = useState({});
+  const [editingScope, setEditingScope] = useState({});
 
   const [providers, setProviders] = useState([]);
   const [contractors, setContractors] = useState([]);
@@ -29,6 +30,33 @@ const [contractorModal, setContractorModal] = useState(null);
   const [certificateModal, setCertificateModal] = useState(null);
   const [selectedCertificate, setSelectedCertificate] = useState(null);
 const pageSize = 5;
+
+  // ---------------- COLUMN FILTERS ----------------
+  const [providerFilters, setProviderFilters] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    status: "",
+  });
+
+  const [contractorFilters, setContractorFilters] = useState({
+    company_name: "",
+    email: "",
+    phone: "",
+    status: "",
+  });
+
+  const handleProviderFilterChange = (field, value) => {
+    setProviderFilters((prev) => ({ ...prev, [field]: value }));
+    setProviderPage(1); // reset to page 1 whenever a filter changes
+  };
+
+  const handleContractorFilterChange = (field, value) => {
+    setContractorFilters((prev) => ({ ...prev, [field]: value }));
+    setContractorPage(1);
+  };
+
+ 
 
   const navigate = useNavigate();
 
@@ -72,39 +100,123 @@ const handleDeactivate = async (email) => {
 
   // ---------------- PROVIDERS ----------------
   const fetchProviders = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      // using the unified BASE_URL path via apiGet
-      // apiGet expects relative path like "/api/admin/providers"
-      const data = await apiGet("/api/admin/providers");
-      setCurrentPage(1);
-      // Expecting data to be an array. Normalize:
-      if (Array.isArray(data)) {
-        setProviders(data);
-      } else if (data && Array.isArray(data.results)) {
-        setProviders(data.results);
-      } else {
-        // If backend returns object with providers property:
-        setProviders(data.providers || []);
-      }
-    } catch (err) {
-      console.error("Error fetching providers:", err);
-      setError("Error fetching providers");
-      setProviders([]);
-    } finally {
-      setLoading(false);
+  setLoading(true);
+  setError("");
+
+  try {
+    const data = await apiGet("/api/admin/providers");
+
+    let providerList = [];
+
+    if (Array.isArray(data)) {
+      providerList = data;
+    } else if (data && Array.isArray(data.results)) {
+      providerList = data.results;
+    } else {
+      providerList = data.providers || [];
     }
-  };
 
-  const handleApproveProvider = (email) => {
-  setAssignmentScope("");
+    setProviders(providerList);
 
-  setApprovalModal({
-    email,
-    type: "provider",
-  });
+    // ✅ Initialize assignment scope state
+    const scopeMap = {};
+
+    providerList.forEach((p) => {
+      scopeMap[p.email_id] = p.assignment_scope || "";
+    });
+
+    setAssignmentScope((prev) => ({
+      ...prev,
+      ...scopeMap,
+    }));
+
+    setCurrentPage(1);
+  } catch (err) {
+    console.error(err);
+    setProviders([]);
+  } finally {
+    setLoading(false);
+  }
 };
+
+  const handleApproveProvider = async (email) => {
+  const provider = providers.find((p) => p.email_id === email);
+
+  const scope =
+    assignmentScope[email] ||
+    provider?.assignment_scope;
+
+  if (!scope) {
+    alert("Please select Contractor Type");
+    return;
+  }
+
+  console.log("Email:", email);
+  console.log("Scope:", scope);
+
+  try {
+    await apiPost("/api/admin/approve_provider", {
+      email,
+      assignment_scope: scope,
+    });
+
+    await fetchProviders();
+
+    alert("Provider approved successfully.");
+
+    setAssignmentScope((prev) => ({
+      ...prev,
+      [email]: "",
+    }));
+  } catch (err) {
+    console.error(err);
+    alert(err.message || "Error approving provider");
+  }
+};
+
+
+const updateAssignmentScope = async (email) => {
+  if (!window.confirm("Are you sure you want to update the Contractor Type?")) {
+    return;
+  }
+
+  try {
+    await apiPut("/api/admin/update_assignment_scope", {
+      email,
+      assignment_scope: assignmentScope[email],
+    });
+
+    await fetchProviders();
+
+    setEditingScope((prev) => ({
+      ...prev,
+      [email]: false,
+    }));
+
+    alert("Contractor Type updated successfully.");
+  } catch (err) {
+    console.error(err);
+    alert("Update failed");
+  }
+};
+
+
+const cancelAssignmentScope = (email) => {
+  const provider = providers.find(
+    (p) => p.email_id === email
+  );
+
+  setAssignmentScope((prev) => ({
+    ...prev,
+    [email]: provider.assignment_scope,
+  }));
+
+  setEditingScope((prev) => ({
+    ...prev,
+    [email]: false,
+  }));
+};
+
 
   const handleRejectProvider = async (email) => {
     if (!window.confirm("Reject this provider?")) return;
@@ -119,81 +231,125 @@ const handleDeactivate = async (email) => {
   };
 
   // ---------------- CONTRACTORS ----------------
-  const fetchContractors = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const data = await apiGet("/api/admin/contractors");
-      setCurrentPage(1);
-      if (Array.isArray(data)) {
-        setContractors(data);
-      } else if (data && Array.isArray(data.results)) {
-        setContractors(data.results);
-      } else {
-        setContractors(data.contractors || []);
-      }
-    } catch (err) {
-      console.error("Error fetching contractors:", err);
-      setError("Error fetching contractors");
-      setContractors([]);
-    } finally {
-      setLoading(false);
+ const fetchContractors = async () => {
+  setLoading(true);
+  setError("");
+
+  try {
+    const data = await apiGet("/api/admin/contractors");
+
+    let contractorList = [];
+
+    if (Array.isArray(data)) {
+      contractorList = data;
+    } else if (data && Array.isArray(data.results)) {
+      contractorList = data.results;
+    } else {
+      contractorList = data.contractors || [];
     }
-  };
 
-  const handleApproveContractor = (email) => {
-  setAssignmentScope("");
+    setContractors(contractorList);
 
-  setApprovalModal({
-    email,
-    type: "contractor",
-  });
+    // ✅ Initialize assignment scope state
+    const scopeMap = {};
+
+    contractorList.forEach((c) => {
+      scopeMap[c.email_id] = c.assignment_scope || "";
+    });
+
+    setAssignmentScope((prev) => ({
+      ...prev,
+      ...scopeMap,
+    }));
+
+    setCurrentPage(1);
+  } catch (err) {
+    console.error(err);
+    setContractors([]);
+  } finally {
+    setLoading(false);
+  }
 };
 
-const confirmApproval = async () => {
-  if (!approvalModal) {
+  const handleApproveContractor = async (email) => {
+  const contractor = contractors.find(
+    (c) => c.email_id === email
+  );
+
+  const scope =
+    assignmentScope[email] ||
+    contractor?.assignment_scope;
+
+  if (!scope) {
+    alert("Please select Contractor Type");
     return;
   }
 
-  if (!assignmentScope) {
-    alert("Please select Assignment Scope");
+  console.log("Email:", email);
+  console.log("Scope:", scope);
+
+  try {
+    await apiPost("/api/admin/approve_contractor", {
+      email,
+      assignment_scope: scope,
+    });
+
+    await fetchContractors();
+
+    alert("Contractor approved successfully.");
+
+    setAssignmentScope((prev) => ({
+      ...prev,
+      [email]: "",
+    }));
+  } catch (err) {
+    console.error(err);
+    alert(err.message || "Error approving contractor");
+  }
+};
+const updateContractorAssignmentScope = async (email) => {
+  if (!window.confirm("Are you sure you want to update the Contractor Type?")) {
     return;
   }
 
   try {
-    const route =
-      approvalModal.type === "provider"
-        ? "/api/admin/approve_provider"
-        : "/api/admin/approve_contractor";
-
-    await apiPost(route, {
-      email: approvalModal.email,
-      assignment_scope: assignmentScope,
+    await apiPut("/api/admin/update_assignment_scope", {
+      email,
+      assignment_scope: assignmentScope[email],
     });
 
-    if (approvalModal.type === "provider") {
-      await fetchProviders();
-    } else {
-      await fetchContractors();
-    }
+    await fetchContractors();
 
-    alert(
-      approvalModal.type === "provider"
-        ? "Provider approved"
-        : "Contractor approved"
-    );
+    setEditingScope((prev) => ({
+      ...prev,
+      [email]: false,
+    }));
 
-    setApprovalModal(null);
-    setAssignmentScope("");
+    alert("Contractor Type updated successfully.");
   } catch (err) {
-    console.error("Approval failed:", err);
-
-    alert(
-      err.message ||
-        `Error approving ${approvalModal.type}`
-    );
+    console.error(err);
+    alert("Update failed");
   }
 };
+
+const cancelContractorAssignmentScope = (email) => {
+  const contractor = contractors.find(
+    (c) => c.email_id === email
+  );
+
+  setAssignmentScope((prev) => ({
+    ...prev,
+    [email]: contractor.assignment_scope,
+  }));
+
+  setEditingScope((prev) => ({
+    ...prev,
+    [email]: false,
+  }));
+};
+
+
+
 
   const handleRejectContractor = async (email) => {
     if (!window.confirm("Reject this contractor?")) return;
@@ -250,23 +406,52 @@ const confirmApproval = async () => {
   if (loading) return <div className="text-center mt-5">Loading...</div>;
   if (error) return <div className="alert alert-danger text-center mt-5">{error}</div>;
 
-  // Provider pagination
+  // ---------------- APPLY FILTERS ----------------
+  const filteredProviders = providers.filter((p) => {
+    const name = (p.name || p.full_name || "").toLowerCase();
+    const email = (p.email_id || p.email || "").toLowerCase();
+    const phone = (p.contact_number || p.phone || "").toString().toLowerCase();
+    const status = (p.status || "").toLowerCase();
+
+    return (
+      name.includes(providerFilters.name.toLowerCase()) &&
+      email.includes(providerFilters.email.toLowerCase()) &&
+      phone.includes(providerFilters.phone.toLowerCase()) &&
+      status.includes(providerFilters.status.toLowerCase())
+    );
+  });
+
+  const filteredContractors = contractors.filter((c) => {
+    const companyName = (c.company_name || "").toLowerCase();
+    const email = (c.email_id || c.email || "").toLowerCase();
+    const phone = (c.contact_number || c.phone || "").toString().toLowerCase();
+    const status = (c.status || "").toLowerCase();
+
+    return (
+      companyName.includes(contractorFilters.company_name.toLowerCase()) &&
+      email.includes(contractorFilters.email.toLowerCase()) &&
+      phone.includes(contractorFilters.phone.toLowerCase()) &&
+      status.includes(contractorFilters.status.toLowerCase())
+    );
+  });
+
+  // Provider pagination (now based on filtered results)
   const providerStartIndex = (providerPage - 1) * pageSize;
   const providerEndIndex = providerStartIndex + pageSize;
 
-  const paginatedProviders = providers.slice(providerStartIndex,providerEndIndex);
-  const providerTotalPages = Math.ceil(providers.length / pageSize);
+  const paginatedProviders = filteredProviders.slice(providerStartIndex, providerEndIndex);
+  const providerTotalPages = Math.ceil(filteredProviders.length / pageSize);
 
-  // Contractor pagination
+  // Contractor pagination (now based on filtered results)
   const contractorStartIndex = (contractorPage - 1) * pageSize;
   const contractorEndIndex = contractorStartIndex + pageSize;
 
-  const paginatedContractors = contractors.slice(
+  const paginatedContractors = filteredContractors.slice(
     contractorStartIndex,
     contractorEndIndex
   );
 
-  const contractorTotalPages = Math.ceil(contractors.length / pageSize);
+  const contractorTotalPages = Math.ceil(filteredContractors.length / pageSize);
 
   return (
     <div className="admin-dashboard container mt-4">
@@ -283,13 +468,42 @@ const confirmApproval = async () => {
                 <th>Email</th>
                 <th>Phone</th>
                 <th>Services</th>
+                <th>Contractor Type</th>
                 <th>Status</th>
                 <th>Actions</th>
                 <th>Certificates</th>
               </tr>
+              {/* ---------------- COLUMN FILTER ROW ---------------- */}
+              <tr>
+                <th>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    placeholder="Search name..."
+                    value={providerFilters.name}
+                    onChange={(e) => handleProviderFilterChange("name", e.target.value)}
+                  />
+                </th>
+                <th>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    placeholder="Search email..."
+                    value={providerFilters.email}
+                    onChange={(e) => handleProviderFilterChange("email", e.target.value)}
+                  />
+                </th>
+                <th>
+                 
+                </th>
+                <th></th>
+                
+                <th></th>
+                <th></th>
+              </tr>
             </thead>
             <tbody>
-              {providers.length === 0 ? (
+              {paginatedProviders.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="text-center">
                     No providers found
@@ -298,10 +512,10 @@ const confirmApproval = async () => {
               ) : (
 paginatedProviders.map((p) => (
                   <tr key={p.provider_id || p.email_id || p.id || Math.random()}>
-                    <td>{p.name || p.full_name || "N/A"}</td>
-                    <td>{p.email_id || p.email || "N/A"}</td>
-                    <td>{p.contact_number || p.phone || "N/A"}</td>
-                    <td>
+                    <td data-label="Full Name">{p.name || p.full_name || "N/A"}</td>
+                    <td data-label="Email">{p.email_id || p.email || "N/A"}</td>
+                    <td data-label="Phone">{p.contact_number || p.phone || "N/A"}</td>
+                    <td data-label="Services">
 <button
   className="btn btn-link btn-sm"
   onClick={() => setProviderModal(p)}
@@ -311,7 +525,61 @@ paginatedProviders.map((p) => (
 
 
                     </td>
-                    <td>
+
+    <td className="text-center">
+  <div className="contractor-type-wrapper">
+    <select
+      className="form-select form-select-sm contractor-type-select"
+      value={
+        assignmentScope[p.email_id] ??
+        p.assignment_scope ??
+        ""
+      }
+      onChange={(e) => {
+        setAssignmentScope((prev) => ({
+          ...prev,
+          [p.email_id]: e.target.value,
+        }));
+
+        setEditingScope((prev) => ({
+          ...prev,
+          [p.email_id]: true,
+        }));
+      }}
+    >
+      <option value="">Select</option>
+      <option value="GENERAL">General</option>
+      <option value="SPECIALIZED">Specialized</option>
+      <option value="PANEL">Panel</option>
+    </select>
+
+  {editingScope[p.email_id] && (
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "center",
+      gap: "8px",
+      marginTop: "8px",
+    }}
+  >
+    <button
+      className="btn btn-success btn-sm"
+      onClick={() => updateAssignmentScope(p.email_id)}
+    >
+      Update
+    </button>
+
+    <button
+      className="btn btn-secondary btn-sm"
+      onClick={() => cancelAssignmentScope(p.email_id)}
+    >
+      Cancel
+    </button>
+  </div>
+)}
+  </div>
+</td>
+                    <td data-label="Status">
                       <span
                         className={`badge ${
                           p.status === "approved" ? "bg-success" : p.status === "pending" ? "bg-warning" : "bg-danger"
@@ -320,68 +588,70 @@ paginatedProviders.map((p) => (
                         {p.status || "N/A"}
                       </span>
                     </td>
-            <td>
-  {p.status === "pending" && (
-    <>
-      <button
-        className="btn btn-sm btn-success me-1"
-        onClick={() => handleApproveProvider(p.email_id)}
-      >
-        Approve
-      </button>
-      <button
-        className="btn btn-sm btn-danger me-1"
-        onClick={() => handleRejectProvider(p.email_id)}
-      >
-        Reject
-      </button>
-    </>
-  )}
-
-  {p.status === "approved" && (
-    <>
-      {p.active_status ? (
-        <button
-          className="btn btn-sm btn-warning"
-          onClick={() => handleDeactivate(p.email_id)}
-        >
-          Deactivate
-        </button>
-      ) : (
+            <td data-label="Actions">
+  <div className="action-btn-group">
+    {p.status === "pending" ? (
+      <>
         <button
           className="btn btn-sm btn-success"
-          onClick={() => handleActivate(p.email_id)}
+          onClick={() => handleApproveProvider(p.email_id)}
         >
-          Activate
+          Approve
         </button>
-      )}
-    </>
-  )}
+
+        <button
+          className="btn btn-sm btn-danger"
+          onClick={() => handleRejectProvider(p.email_id)}
+        >
+          Reject
+        </button>
+      </>
+    ) : (
+      <>
+        {p.active_status ? (
+          <button
+            className="btn btn-sm btn-warning"
+            onClick={() => handleDeactivate(p.email_id)}
+          >
+            Deactivate
+          </button>
+        ) : (
+          <button
+            className="btn btn-sm btn-success"
+            onClick={() => handleActivate(p.email_id)}
+          >
+            Activate
+          </button>
+        )}
+      </>
+    )}
+  </div>
 </td>
 
-                    <td>
-                      { (p.name || p.full_name) && (
-                        <>
-                          <a
-                            href={`${BASE_URL}/api/get_image/${p.email_id || p.email}/profile`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn btn-sm btn-outline-primary me-2"
-                          >
-                            Profile
-                          </a>
-<button
-                              className="btn btn-sm btn-outline-secondary"
-                              onClick={() => {
-                              setCertificateModal(p);
-                              setSelectedCertificate(null);
-                             }}
-                            >
-                         Certificate
-                     </button>
-                        </>
-                      )}
-                    </td>
+                    <td data-label="Certificates">
+  {(p.name || p.full_name) && (
+    <div className="certificate-btn-group">
+      <a
+        href={`${BASE_URL}/api/get_image/${p.email_id || p.email}/profile`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="btn btn-sm btn-outline-primary"
+      >
+        Profile
+      </a>
+
+      <button
+        className="btn btn-sm btn-outline-secondary"
+        onClick={() => {
+          setCertificateModal(p);
+          setSelectedCertificate(null);
+        }}
+      >
+        Certificate
+      </button>
+    </div>
+  )}
+</td>
                   </tr>
                 ))
               )}
@@ -428,25 +698,53 @@ paginatedProviders.map((p) => (
                 <th>Email</th>
                 <th>Contact</th>
                 <th>Services</th>
+                <th>Contractor Type</th>
                 <th>Status</th>
                 <th>Actions</th>
                 <th>Certificates</th>
               </tr>
+              {/* ---------------- COLUMN FILTER ROW ---------------- */}
+              <tr>
+                <th>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    placeholder="Search company..."
+                    value={contractorFilters.company_name}
+                    onChange={(e) => handleContractorFilterChange("company_name", e.target.value)}
+                  />
+                </th>
+                <th>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    placeholder="Search email..."
+                    value={contractorFilters.email}
+                    onChange={(e) => handleContractorFilterChange("email", e.target.value)}
+                  />
+                </th>
+                
+                <th></th>
+                <th></th>
+               
+                <th></th>
+                <th></th>
+              </tr>
             </thead>
             <tbody>
-              {contractors.length === 0 ? (
+              {paginatedContractors.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="text-center">
+                  <td colSpan="8" className="text-center">
                     No companies found
                   </td>
                 </tr>
               ) : (
                paginatedContractors.map((c) => (
                   <tr key={c.company_id || c.email_id || c.id || Math.random()}>
-                    <td>{c.company_name || "N/A"}</td>
-                    <td>{c.email_id || c.email || "N/A"}</td>
-                    <td>{c.contact_number || c.phone || "N/A"}</td>
-                    <td>
+                    <td data-label="Company Name">{c.company_name || "N/A"}</td>
+                    <td data-label="Email">{c.email_id || c.email || "N/A"}</td>
+                    <td data-label="Contact">{c.contact_number || c.phone || "N/A"}</td>
+                    <td data-label="Services">
 <button
   className="btn btn-link btn-sm"
   onClick={() => setContractorModal(c)}
@@ -456,7 +754,60 @@ paginatedProviders.map((p) => (
 
 
                     </td>
-                    <td>
+                   <td className="text-center">
+  <div className="contractor-type-wrapper">
+    <select
+      className="form-select form-select-sm contractor-type-select"
+      value={
+        assignmentScope[c.email_id] ??
+        c.assignment_scope ??
+        ""
+      }
+      onChange={(e) => {
+        setAssignmentScope((prev) => ({
+          ...prev,
+          [c.email_id]: e.target.value,
+        }));
+
+        setEditingScope((prev) => ({
+          ...prev,
+          [c.email_id]: true,
+        }));
+      }}
+    >
+      <option value="">Select</option>
+      <option value="GENERAL">General</option>
+      <option value="SPECIALIZED">Specialized</option>
+      <option value="PANEL">Panel</option>
+    </select>
+
+    {editingScope[c.email_id] && (
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "center",
+      gap: "8px",
+      marginTop: "8px",
+    }}
+  >
+    <button
+      className="btn btn-success btn-sm"
+      onClick={() => updateContractorAssignmentScope(c.email_id)}
+    >
+      Update
+    </button>
+
+    <button
+      className="btn btn-secondary btn-sm"
+      onClick={() => cancelContractorAssignmentScope(c.email_id)}
+    >
+      Cancel
+    </button>
+  </div>
+)}
+  </div>
+</td>
+                    <td data-label="Status">
                       <span
                         className={`badge ${
                           c.status === "approved" ? "bg-success" : c.status === "pending" ? "bg-warning" : "bg-danger"
@@ -465,22 +816,22 @@ paginatedProviders.map((p) => (
                         {c.status || "N/A"}
                       </span>
                     </td>
-<td>
+<td data-label="Actions">
   {c.status === "pending" && (
-    <>
+    <div className="action-btn-group">
       <button
-        className="btn btn-sm btn-success me-1"
+        className="btn btn-sm btn-success"
         onClick={() => handleApproveContractor(c.email_id)}
       >
         Approve
       </button>
       <button
-        className="btn btn-sm btn-danger me-1"
+        className="btn btn-sm btn-danger"
         onClick={() => handleRejectProvider(c.email_id)}
       >
         Reject
       </button>
-    </>
+    </div>
   )}
 
   {c.status === "approved" && (
@@ -504,29 +855,30 @@ paginatedProviders.map((p) => (
   )}
 </td>
 
-                    <td>
-                      {c.company_name && (
-                        <>
-                          <a
-                            href={`${BASE_URL}/api/get_image/${c.email_id || c.email}/contractor_logo`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn btn-sm btn-outline-primary me-2"
-                          >
-                            Logo
-                          </a>
-<button
-                      className="btn btn-sm btn-outline-secondary"
-                      onClick={() => {
-                      setCertificateModal(c);
-                      setSelectedCertificate(null);
-                    }}
-                     >
-                      Certificate
-                  </button>
-                        </>
-                      )}
-                    </td>
+                    <td data-label="Certificates">
+  {c.company_name && (
+    <div className="action-btn-group">
+      <a
+        href={`${BASE_URL}/api/get_image/${c.email_id}/contractor_logo`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="btn btn-sm btn-outline-primary"
+      >
+        Logo
+      </a>
+
+      <button
+        className="btn btn-sm btn-outline-secondary"
+        onClick={() => {
+          setCertificateModal(c);
+          setSelectedCertificate(null);
+        }}
+      >
+        Certificate
+      </button>
+    </div>
+  )}
+</td>
                   </tr>
                 ))
               )}
@@ -726,113 +1078,7 @@ paginatedProviders.map((p) => (
 )}
 
 
-{/* =========================================================
-    APPROVAL ASSIGNMENT SCOPE MODAL
-========================================================= */}
 
-{approvalModal && (
-  <div
-    className="modal fade show d-block"
-    tabIndex="-1"
-    style={{
-      background: "rgba(0, 0, 0, 0.5)",
-      zIndex: 9999,
-    }}
-  >
-    <div className="modal-dialog modal-dialog-centered">
-      <div className="modal-content">
-
-        {/* HEADER */}
-        <div className="modal-header">
-          <h5 className="modal-title">
-            Approve{" "}
-            {approvalModal.type === "provider"
-              ? "Individual"
-              : "Company"}
-          </h5>
-
-          <button
-            type="button"
-            className="btn-close"
-            onClick={() => {
-              setApprovalModal(null);
-              setAssignmentScope("");
-            }}
-          />
-        </div>
-
-        {/* BODY */}
-        <div className="modal-body">
-          <div className="mb-3">
-            <strong>Email:</strong>
-
-            <div className="mt-1">
-              {approvalModal.email}
-            </div>
-          </div>
-
-          <div className="mb-3">
-            <label
-              htmlFor="assignmentScope"
-              className="form-label"
-            >
-              Assignment Scope
-            </label>
-
-            <select
-              id="assignmentScope"
-              className="form-select"
-              value={assignmentScope}
-              onChange={(e) =>
-                setAssignmentScope(e.target.value)
-              }
-            >
-              <option value="">
-                Select Assignment Scope
-              </option>
-
-              <option value="GENERAL">
-                General
-              </option>
-
-              <option value="SPECIALIZED">
-                Specialized
-              </option>
-
-              <option value="PANEL">
-                Panel
-              </option>
-            </select>
-          </div>
-        </div>
-
-        {/* FOOTER */}
-        <div className="modal-footer">
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={() => {
-              setApprovalModal(null);
-              setAssignmentScope("");
-            }}
-          >
-            Cancel
-          </button>
-
-          <button
-            type="button"
-            className="btn btn-success"
-            onClick={confirmApproval}
-            disabled={!assignmentScope}
-          >
-            Approve
-          </button>
-        </div>
-
-      </div>
-    </div>
-  </div>
-)}
 
 
     </div>

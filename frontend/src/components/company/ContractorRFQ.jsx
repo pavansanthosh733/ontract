@@ -40,6 +40,17 @@ function ContractorRFQ() {
         setQuotedItems(updated);
     };
 
+    const handleDeliveryDateChange = (index, value) => {
+        const updated = [...quotedItems];
+        updated[index].delivery_date = value;
+        setQuotedItems(updated);
+    };
+    const showQtyColumn = quotedItems.some(
+        item =>
+            item.quantity !== null &&
+            item.quantity !== "" &&
+            Number(item.quantity) > 0
+    );
     const submitQuotation = async () => {
 
         try {
@@ -74,6 +85,7 @@ function ContractorRFQ() {
                 items: quotedItems.map(item => ({
                     rfq_item_id: item.rfq_item_id,
                     quantity: item.quantity,
+                    delivery_date: item.delivery_date || "",
                     unit_price: Number(item.unit_price),
                     warranty_period: item.warranty_period?.trim() || "",
                     total: Number(item.total)
@@ -131,7 +143,11 @@ function ContractorRFQ() {
         try {
             const data = await apiGet(`/api/workorders/provider/rfq/${rfqNo}`);
             setSelectedRFQ(data);
-            setQuotedItems(data.items.map(item => ({...item,unit_price: "",warranty_period: "",total: 0})));
+            setQuotedItems(data.items.map(item => ({...item,
+                unit_price: "",
+                delivery_date: "",
+                warranty_period: "",
+                total: 0})));
             setContractorRemarks("");
             setShowModal(true);
         } catch (err) {
@@ -143,9 +159,8 @@ function ContractorRFQ() {
     const handleUnitPriceChange = (index, value) => {
         const updated = [...quotedItems];
         updated[index].unit_price = value;
-        updated[index].total =
-            Number(updated[index].quantity) *
-            Number(value || 0);
+        const qty = Number(updated[index].quantity) > 0 ? Number(updated[index].quantity) : 1;
+        updated[index].total = qty * Number(value || 0);
         setQuotedItems(updated);
     };
 
@@ -368,11 +383,11 @@ function ContractorRFQ() {
                     {quotedItems.length === 0 && (
                         <div className="mt-3">
                             <label className="form-label fw-bold">
-                                Quotation Amount (RM)
+                                Quotation Amount ()
                             </label>
 
                             <div className="input-group">
-                                <span className="input-group-text">RM</span>
+                                <span className="input-group-text"></span>
 
                                 <input
                                     type="number"
@@ -409,10 +424,10 @@ function ContractorRFQ() {
                                 <tr>
                                     <th style={{ width: "35%" }}>Item Description</th>
                                     <th style={{ width: "16%" }}>Delivery Date</th>
-                                    <th style={{ width: "8%" }}>Qty</th>
-                                    <th style={{ width: "16%" }}>Unit Price (RM)</th>
+                                    {showQtyColumn && (<th style={{ width: "8%" }}>Qty</th>)}
+                                    <th style={{ width: "16%" }}>Unit Price </th>
                                     <th style={{ width: "15%" }}>Warranty Period</th>
-                                    <th style={{ width: "10%" }}>Total (RM)</th>
+                                    <th style={{ width: "10%" }}>Total </th>
                                 </tr>
                             </thead>
 
@@ -423,19 +438,20 @@ function ContractorRFQ() {
                                             {item.item_description}
                                         </td>
 
-                                        <td className="text-center">
-                                            {item.delivery_date || "-"}
+                                        <td>
+                                            <input
+                                                type="date"
+                                                className="form-control form-control-sm"
+                                                value={item.delivery_date || ""}
+                                                onChange={(e) =>
+                                                    handleDeliveryDateChange(index, e.target.value)
+                                                }
+                                            />
                                         </td>
 
-                                        <td className="text-center">
-                                            {item.quantity}
-                                        </td>
-
+                                        {showQtyColumn && (<td className="text-center">{item.quantity}</td>)}
                                         <td>
                                             <div className="input-group input-group-sm">
-                                                <span className="input-group-text">
-                                                    RM
-                                                </span>
 
                                                 <input
                                                     type="number"
@@ -466,11 +482,7 @@ function ContractorRFQ() {
                                             />
                                         </td>
 
-                                        <td className="quotation-total">
-                                            RM
-                                            <br />
-                                            {Number(item.total).toFixed(2)}
-                                        </td>
+                                        <td className="quotation-total">{Number(item.total).toFixed(2)}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -479,7 +491,7 @@ function ContractorRFQ() {
                     <div className="alert alert-success mt-3 text-end">
                         <h4 className="mb-0">
                             Grand Total :
-                            RM {
+                            {
                                 quotedItems
                                     .reduce((sum, item) => sum + Number(item.total),0)
                                     .toFixed(2)

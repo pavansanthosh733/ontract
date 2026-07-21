@@ -107,3 +107,12 @@
         min-width: 100%;
     }
 }
+.publish-state-select .react-select__control {
+    min-height: 32px;
+    font-size: 12px;
+}
+
+.publish-state-select .react-select__value-container {
+    max-height: 36px;
+    overflow-y: auto;
+}

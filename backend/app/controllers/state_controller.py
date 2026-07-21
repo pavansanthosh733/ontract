@@ -328,3 +328,8 @@ def get_states_by_region(region_id):
 def get_identity_types():
     data = StateModel.get_id_types()
     return jsonify(data), 200
+
+@admin_state_bp.get("/active")
+def get_active_states():
+    data = StateModel.get_active_states()
+    return jsonify(data), 200

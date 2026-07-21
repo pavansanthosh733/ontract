@@ -3692,6 +3692,13 @@ class WorkOrder(db.Model):
 
             for item in data.get("ITEMS", []):
 
+                unit_price = item.get("unitPrice")
+                quantity = item.get("quantity")
+                total = item.get("total")
+                unit_price = float(unit_price) if unit_price not in (None, "") else None
+                quantity = float(quantity) if quantity not in (None, "") else None
+                total = float(total) if total not in (None, "") else 0
+
                 db.session.execute(
                     text("""
                         INSERT INTO rfq_items_t (rfq_id,item_description,delivery_date,unit_price,quantity,
@@ -3701,10 +3708,10 @@ class WorkOrder(db.Model):
                     {
                         "rfq_id": rfq_id,
                         "item_description": item.get("description"),
-                        "delivery_date": item.get("deliveryDate"),
-                        "unit_price": item.get("unitPrice", 0),
-                        "quantity": item.get("quantity", 0),
-                        "total": item.get("total", 0)
+                        "delivery_date": None,
+                        "unit_price": unit_price,
+                        "quantity": quantity,
+                        "total": total
                     }
                 )
 
@@ -3743,30 +3750,36 @@ class WorkOrder(db.Model):
 
         try:
             query = text("""
-                    SELECT rm.rfq_id,rm.rfq_no,rm.rfq_title,rm.closing_date,rm.status,rm.publish_type
-                    FROM rfq_master_t rm INNER JOIN users_t u ON u.user_uid = :contractor_id
-                    WHERE rm.status = 'PUBLISHED' AND rm.publish_type = u.assignment_scope
-                    AND NOT EXISTS (SELECT 1 FROM rfq_response_master_t rr WHERE rr.rfq_id = rm.rfq_id
-                    AND rr.contractor_id = :contractor_id) ORDER BY rm.created_at DESC
-                """)        
+                SELECT rm.rfq_id,rm.rfq_no,rm.rfq_title,rm.closing_date,rm.status,rm.publish_type
+                FROM rfq_master_t rm INNER JOIN users_t u ON u.user_uid = :contractor_id
+                WHERE rm.status = 'PUBLISHED'
+                AND rm.publish_type = u.assignment_scope
+                AND (
+                        rm.location = 'GLOBAL'
+                        OR
+                        (
+                            rm.location = 'STATE'
+                            AND EXISTS (SELECT 1 FROM services_t s
+                            INNER JOIN state_master_t sm ON sm.state_name = s.state
+                            WHERE s.user_uid = :contractor_id
+                            AND rm.state_ids @> to_jsonb(ARRAY[sm.state_id])
+                            )
+                        )
+                )
+                AND NOT EXISTS (
+                        SELECT 1 FROM rfq_response_master_t rr WHERE rr.rfq_id = rm.rfq_id
+                        AND rr.contractor_id = :contractor_id
+                )
+                ORDER BY rm.created_at DESC
+            """)
 
-            result = db.session.execute(query,
-
-                {
-                    "contractor_id": contractor_id
-                }
-
-            ).mappings().fetchall()
-
-            return [
-                dict(row)
-                for row in result
-            ]
+            result = db.session.execute(query,{"contractor_id": contractor_id}).mappings().fetchall()
+            return [dict(row) for row in result]
 
         except Exception as e:
             logging.exception("NEW RFQ ERROR")
             return []
-        
+            
 
     @classmethod
     def get_provider_rfq_details(cls, rfq_no):
@@ -3855,7 +3868,7 @@ class WorkOrder(db.Model):
             if not rfq:
                 return None, "RFQ not found."
 
-            if rfq["status"] != "OPEN":
+            if rfq["status"] != "PUBLISHED":
                 return None, "RFQ is already closed."
 
             # =====================================================
@@ -3883,8 +3896,8 @@ class WorkOrder(db.Model):
 
             item_sql = text("""
 
-                INSERT INTO rfq_response_items_t (response_id,rfq_item_id,quantity,
-                unit_price,warranty_period,total) VALUES (:response_id,:rfq_item_id,:quantity,
+                INSERT INTO rfq_response_items_t (response_id,rfq_item_id,quantity,delivery_date,
+                unit_price,warranty_period,total) VALUES (:response_id,:rfq_item_id,:quantity,:delivery_date,
                 :unit_price,:warranty_period,:total)
 
             """)
@@ -3895,6 +3908,7 @@ class WorkOrder(db.Model):
                         "response_id": response_id,
                         "rfq_item_id": item["rfq_item_id"],
                         "quantity": item["quantity"],
+                        "delivery_date": item.get("delivery_date"),
                         "unit_price": item["unit_price"],
                         "warranty_period": item.get("warranty_period", ""),
                         "total": item["total"]
@@ -4046,7 +4060,6 @@ class WorkOrder(db.Model):
     def get_admin_rfq_response_details(cls, response_id):
 
         try:
-
             header_sql = text("""
 
                 SELECT rrm.response_id,rrm.rfq_id,rrm.contractor_id,
@@ -4054,53 +4067,55 @@ class WorkOrder(db.Model):
                         WHEN u.service_type = '1'
                         THEN cd.company_name
                         ELSE u.name
-                    END AS contractor_name,rrm.grand_total,rrm.remarks,rrm.status,
-                    rrm.submitted_at FROM rfq_response_master_t rrm
+                    END AS contractor_name,rrm.grand_total,rrm.remarks,rrm.status,rrm.submitted_at
+                FROM rfq_response_master_t rrm
                 INNER JOIN users_t u ON u.user_uid = rrm.contractor_id
                 LEFT JOIN company_details_t cd ON cd.user_uid = u.user_uid
                 WHERE rrm.response_id = :response_id
 
             """)
 
-            header = db.session.execute(header_sql,
-                {
-                    "response_id": response_id
-                }
-
-            ).mappings().first()
+            header = db.session.execute(header_sql,{"response_id": response_id}).mappings().first()
 
             if not header:
                 return None
-            
+
             header = dict(header)
-            quoted_amount = float(header["grand_total"] or 0)
-            header["grand_total"] = round(quoted_amount * 1.10, 2)
+
+            # ======================================================
+            # TODO:
+            # Later read this percentage from configuration table
+            # ======================================================
+
+            service_charge_percent = 10
+            sub_total = float(header["grand_total"] or 0)
+            service_charge_amount = round((sub_total * service_charge_percent) / 100, 2)
+            grand_total = round(sub_total + service_charge_amount, 2)
+
+            header["sub_total"] = sub_total
+            header["service_charge_percent"] = service_charge_percent
+            header["service_charge_amount"] = service_charge_amount
+            header["grand_total"] = grand_total
 
             # ======================================================
 
             item_sql = text("""
 
-                SELECT ri.rfq_item_id,ri.item_description,rri.quantity,rri.unit_price,rri.warranty_period,
-                rri.total FROM rfq_response_items_t rri
+                SELECT ri.rfq_item_id,ri.item_description,rri.quantity,rri.delivery_date,rri.unit_price,
+                rri.warranty_period,rri.total FROM rfq_response_items_t rri
                 INNER JOIN rfq_items_t ri ON ri.rfq_item_id = rri.rfq_item_id
                 WHERE rri.response_id = :response_id ORDER BY ri.rfq_item_id
 
             """)
 
-            items = db.session.execute(item_sql,
-                {
-                    "response_id": response_id
-                }
-
-            ).mappings().fetchall()
+            items = db.session.execute(item_sql,{"response_id": response_id}).mappings().fetchall()
 
             return {
-                "header": dict(header),
+                "header": header,
                 "items": [
                     dict(item)
                     for item in items
                 ]
-
             }
 
         except Exception:
@@ -4127,15 +4142,23 @@ class WorkOrder(db.Model):
             return []
         
     @classmethod
-    def publish_rfq(cls, rfq_no, publish_type):
+    def publish_rfq(cls, rfq_no, publish_type, location, state_ids):
 
         try:
             query = text("""
-                UPDATE rfq_master_t SET status = 'PUBLISHED',publish_type = :publish_type,updated_at = NOW()
-                WHERE rfq_no = :rfq_no
+                UPDATE rfq_master_t SET status = 'PUBLISHED',publish_type = :publish_type,location = :location,
+                state_ids = CAST(:state_ids AS JSONB),updated_at = NOW() WHERE rfq_no = :rfq_no
             """)
 
-            db.session.execute(query,{"rfq_no": rfq_no,"publish_type": publish_type})
+            db.session.execute(
+                query,
+                {
+                    "rfq_no": rfq_no,
+                    "publish_type": publish_type,
+                    "location": location,
+                    "state_ids": json.dumps(state_ids if location == "STATE" else [])
+                }
+            )
             db.session.commit()
             return True
 

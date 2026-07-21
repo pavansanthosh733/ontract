@@ -315,3 +315,110 @@
     }
 
 }
+.quotation-totals{
+    width:380px;
+    margin:20px 0 25px auto;
+    padding:15px;
+    border:1px solid #dee2e6;
+    border-radius:8px;
+    background:#fafafa;
+}
+
+.total-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:8px 0;
+    font-size:15px;
+}
+
+.grand-total{
+    font-size:20px;
+    font-weight:700;
+    color:#198754;
+}
+
+.quotation-footer{
+    display:flex;
+    justify-content:flex-end;
+    margin-top:20px;
+}
+
+.quotation-buttons{
+    display:flex;
+    gap:10px;
+}
+/* ===========================
+   QUOTATION TOTALS
+=========================== */
+
+.quotation-totals {
+    width: 420px;
+    margin: 20px 0 25px auto;
+    padding: 18px;
+    border: 1px solid #e3e3e3;
+    border-radius: 8px;
+    background: #fafafa;
+}
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    font-size: 15px;
+}
+
+.total-row span:first-child,
+.total-row strong:first-child {
+    text-align: left;
+}
+
+.total-row span:last-child,
+.total-row strong:last-child {
+    text-align: right;
+}
+
+.grand-total {
+    font-size: 18px;
+    font-weight: 700;
+    color: #198754;
+}
+
+/* ===========================
+   FOOTER
+=========================== */
+
+.quotation-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 20px;
+}
+
+.quotation-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+/* ===========================
+   RESPONSIVE
+=========================== */
+
+@media (max-width: 768px) {
+
+    .quotation-totals {
+        width: 100%;
+    }
+
+    .quotation-footer {
+        justify-content: center;
+    }
+
+    .quotation-buttons {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+}

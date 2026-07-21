@@ -39,6 +39,17 @@ function ProviderRFQ() {
         setQuotedItems(updated);
     };
 
+    const handleDeliveryDateChange = (index, value) => {
+        const updated = [...quotedItems];
+        updated[index].delivery_date = value;
+        setQuotedItems(updated);
+    };
+    const showQtyColumn = quotedItems.some(
+        item =>
+            item.quantity !== null &&
+            item.quantity !== "" &&
+            Number(item.quantity) > 0
+    );
     const submitQuotation = async () => {
 
         try {
@@ -78,6 +89,7 @@ function ProviderRFQ() {
                 items: quotedItems.map(item => ({
                     rfq_item_id: item.rfq_item_id,
                     quantity: item.quantity,
+                    delivery_date: item.delivery_date || "",
                     unit_price: Number(item.unit_price),
                     warranty_period: item.warranty_period?.trim() || "",
                     total: Number(item.total)
@@ -147,9 +159,8 @@ function ProviderRFQ() {
     const handleUnitPriceChange = (index, value) => {
         const updated = [...quotedItems];
         updated[index].unit_price = value;
-        updated[index].total =
-            Number(updated[index].quantity) *
-            Number(value || 0);
+        const qty = Number(updated[index].quantity) > 0 ? Number(updated[index].quantity) : 1;
+        updated[index].total = qty * Number(value || 0);
         setQuotedItems(updated);
     };
 
@@ -396,33 +407,38 @@ function ProviderRFQ() {
                                 <tr>
                                     <th style={{ width: "35%" }}>Item Description</th>
                                     <th style={{ width: "16%" }}>Delivery Date</th>
+                                    {showQtyColumn && (
                                     <th style={{ width: "8%" }}>Qty</th>
-                                    <th style={{ width: "16%" }}>Unit Price (RM)</th>
+                                    )}
+                                    <th style={{ width: "16%" }}>Unit Price</th>
                                     <th style={{ width: "15%" }}>Warranty Period</th>
-                                    <th style={{ width: "10%" }}>Total (RM)</th>
+                                    <th style={{ width: "10%" }}>Total</th>
                                 </tr>
                             </thead>
 
                             <tbody>
                                 {quotedItems.map((item, index) => (
                                     <tr key={item.rfq_item_id}>
-                                        <td className="item-description">
-                                            {item.item_description}
+                                        <td className="item-description">{item.item_description}</td>
+                                        <td>
+                                            <input type="date"
+                                                className="form-control form-control-sm"
+                                                value={item.delivery_date || ""}
+                                                onChange={(e) =>
+                                                    handleDeliveryDateChange(
+                                                        index,
+                                                        e.target.value
+                                                    )
+                                                }
+                                            />
                                         </td>
 
-                                        <td className="text-center">
-                                            {item.delivery_date || "-"}
-                                        </td>
-
-                                        <td className="text-center">
-                                            {item.quantity}
-                                        </td>
+                                        {showQtyColumn && (
+                                            <td className="text-center">{item.quantity}</td>
+                                        )}
 
                                         <td>
                                             <div className="input-group input-group-sm">
-                                                <span className="input-group-text">
-                                                    RM
-                                                </span>
 
                                                 <input
                                                     type="number"
@@ -454,8 +470,6 @@ function ProviderRFQ() {
                                         </td>
 
                                         <td className="quotation-total">
-                                            RM
-                                            <br />
                                             {Number(item.total).toFixed(2)}
                                         </td>
                                     </tr>
@@ -466,7 +480,7 @@ function ProviderRFQ() {
                     <div className="alert alert-success mt-3 text-end">
                         <h4 className="mb-0">
                             Grand Total :
-                            RM {
+                            {
                                 quotedItems
                                     .reduce((sum, item) => sum + Number(item.total),0)
                                     .toFixed(2)

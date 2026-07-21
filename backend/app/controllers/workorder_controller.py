@@ -2098,14 +2098,21 @@ def publish_rfq():
         data = request.get_json()
         rfq_no = data.get("rfq_no")
         publish_type = data.get("publish_type")
+        location = data.get("location")
+        state_ids = data.get("state_ids", [])
 
         if not rfq_no:
             return jsonify({"message": "RFQ No is required"}), 400
 
         if not publish_type:
             return jsonify({"message": "Publish Type is required"}), 400
+        if not location:
+            return jsonify({"message": "Location is required"}), 400
 
-        result = WorkOrder.publish_rfq(rfq_no, publish_type)
+        if location == "STATE" and not state_ids:
+            return jsonify({"message": "Please select at least one state"}), 400
+        
+        result = WorkOrder.publish_rfq(rfq_no, publish_type, location, state_ids)
 
         if result:
             return jsonify({"message": "RFQ Published Successfully"}), 200

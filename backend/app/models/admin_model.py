@@ -265,6 +265,7 @@ class AdminModel:
                 u.status,
                 u.mailing_address,
                 u.billing_address,
+                 u.assignment_scope,
                 u.alternate_contact_number,
                 u.tin_number,
                 u.created_at,
@@ -321,6 +322,7 @@ class AdminModel:
                     "status": row.get("status"),
                     "mailing_address": row.get("mailing_address"),
                     "billing_address": row.get("billing_address"),
+                    "assignment_scope": row.get("assignment_scope"),
                     "active_status": bool(row.get("active_status")),
                     "alternate_contact_number": row.get("alternate_contact_number"),
                     "tin_number": row.get("tin_number"),
@@ -498,6 +500,7 @@ class AdminModel:
                 c.brn_number,
                 u.bumiputra_status,
                 u.tin_number,
+                u.assignment_scope,
     
                 -- bank details
                 b.company_bank_id,
@@ -542,6 +545,7 @@ class AdminModel:
                 "brn_number": row.get("brn_number"),
                 "bumiputra_status": row.get("bumiputra_status"),
                 "tin_number":row.get("tin_number"),
+                "assignment_scope": row.get("assignment_scope"),
     
                 "bank_details": {
                     "company_bank_id": row.get("company_bank_id"),
@@ -1250,3 +1254,43 @@ class AdminModel:
         }).fetchone()
 
         return row[0] if row else None
+    
+
+    @staticmethod
+    def update_assignment_scope(email, assignment_scope):
+        try:
+            sql = text("""
+                UPDATE users_t
+                SET assignment_scope = :assignment_scope
+                WHERE email_id = :email
+            """)
+
+            result = db.session.execute(
+                sql,
+                {
+                    "email": email,
+                    "assignment_scope": assignment_scope
+                }
+            )
+
+            db.session.commit()
+
+            if result.rowcount == 0:
+                return {
+                    "success": False,
+                    "message": "User not found."
+                }, 404
+
+            return {
+                "success": True,
+                "message": "Contractor Type updated successfully."
+            }, 200
+
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.exception("Error updating assignment scope")
+
+            return {
+                "success": False,
+                "message": str(e)
+            }, 500

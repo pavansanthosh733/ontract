@@ -24,7 +24,6 @@ function RFQ() {
   const [items, setItems] = useState([
     {
       description: "",
-      deliveryDate: "",
       unitPrice: "",
       quantity: "",
       total: 0,
@@ -126,18 +125,22 @@ function RFQ() {
 
     // RFQ Items Functions
     const handleItemChange = (index, field, value) => {
-      if ((field === "unitPrice" || field === "quantity") && Number(value) < 0 ) {
+      if ((field === "unitPrice" || field === "quantity") && value !== "" && Number(value) < 0) {
         return;
       }
+
       const updated = [...items];
       updated[index][field] = value;
-      const unitPrice =
-        parseFloat(updated[index].unitPrice) || 0;
 
-      const quantity =
-        parseFloat(updated[index].quantity) || 0;
+      const unitPrice = updated[index].unitPrice;
+      const quantity = updated[index].quantity;
 
-      updated[index].total = unitPrice * quantity;
+      if (unitPrice !== "" && quantity !== "") {
+        updated[index].total = parseFloat(unitPrice) * parseFloat(quantity);
+      } else {
+        updated[index].total = 0;
+      }
+
       setItems(updated);
     };
 
@@ -146,7 +149,6 @@ function RFQ() {
         ...items,
         {
           description: "",
-          deliveryDate: "",
           unitPrice: "",
           quantity: "",
           total: 0,
@@ -179,7 +181,13 @@ function RFQ() {
         formData.append("REMARKS", remarks);
         formData.append("SITE_SURVEY_REQUIRED", siteSurveyRequired ? "1" : "0");
         if (showItems) {
-          formData.append("ITEMS", JSON.stringify(items));
+          const payloadItems = items.map((item) => ({
+            ...item,
+            unitPrice: item.unitPrice === "" ? null : Number(item.unitPrice),
+            quantity: item.quantity === "" ? null : Number(item.quantity),
+          }));
+
+          formData.append("ITEMS", JSON.stringify(payloadItems));
         } else {
           formData.append("ITEMS", JSON.stringify([]));
         }
@@ -245,7 +253,7 @@ function RFQ() {
     </div>
 
     <div className="field">
-      <label>Requested date</label>
+      <label>RFQ Closing Date</label>
       <input
         type="date"
         min={today}
@@ -413,7 +421,6 @@ function RFQ() {
             setItems([
               {
                 description: "",
-                deliveryDate: "",
                 unitPrice: "",
                 quantity: "",
                 total: 0,
@@ -438,7 +445,6 @@ function RFQ() {
               <tr>
                 <th>S.No</th>
                 <th>Item Description</th>
-                <th>Delivery Date</th>
                 <th>Unit Price</th>
                 <th>Quantity</th>
                 <th>Total</th>
@@ -465,33 +471,16 @@ function RFQ() {
                       }
                     />
                   </td>
-                  <td>
-                    <input
-                      type="date"
-                      min={today}
-                      value={item.deliveryDate}
-                      onChange={(e) =>
-                        handleItemChange(
-                          index,
-                          "deliveryDate",
-                          e.target.value
-                        )
-                      }
-                    />
-                  </td>
+                  
                   <td>
                     <input
                       type="number"
                       min="0"
                       value={item.unitPrice}
-                      placeholder="0"
+                      placeholder="Optional"
                       onWheel={(e) => e.currentTarget.blur()}
                       onChange={(e) =>
-                        handleItemChange(
-                          index,
-                          "unitPrice",
-                          e.target.value
-                        )
+                        handleItemChange(index, "unitPrice", e.target.value)
                       }
                     />
                   </td>
@@ -501,20 +490,16 @@ function RFQ() {
                       type="number"
                       min="0"
                       value={item.quantity}
-                      placeholder="0"
+                      placeholder="Optional"
                       onWheel={(e) => e.currentTarget.blur()}
                       onChange={(e) =>
-                        handleItemChange(
-                          index,
-                          "quantity",
-                          e.target.value
-                        )
+                        handleItemChange(index, "quantity", e.target.value)
                       }
                     />
                   </td>
 
                   <td className="rfq-total-cell">
-                    ₹{item.total}
+                    {item.total > 0 ? item.total : "-"}
                   </td>
 
                   <td>
@@ -548,7 +533,7 @@ function RFQ() {
 
         {/* Grand Total */}
         <div className="rfq-grand-total">
-          Grand Total : ₹
+          Grand Total : 
           {items.reduce(
             (sum, item) =>
               sum + Number(item.total || 0),

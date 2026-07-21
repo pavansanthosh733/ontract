@@ -8,12 +8,16 @@ function AdminRFQResponses() {
 
     const [rfqs, setRfqs] = useState([]);
     const [loading, setLoading] = useState(true);
-
     const [responseList, setResponseList] = useState([]);
     const [showModal, setShowModal] = useState(false);
-
     const [selectedResponseId, setSelectedResponseId] = useState(null);
     const [showQuotationModal, setShowQuotationModal] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const recordsPerPage = 5;
+    const lastIndex = currentPage * recordsPerPage;
+    const firstIndex = lastIndex - recordsPerPage;
+    const currentRfqs = rfqs.slice(firstIndex, lastIndex);
+    const totalPages = Math.ceil(rfqs.length / recordsPerPage);
 
     useEffect(() => {
         fetchRFQs();
@@ -22,47 +26,32 @@ function AdminRFQResponses() {
     const fetchRFQs = async () => {
 
         try {
-
             const data = await apiGet("/api/admin/workorders/admin/rfq/list");
-
             setRfqs(Array.isArray(data) ? data : []);
+            setCurrentPage(1);
 
         }
 
         catch (err) {
-
             console.error(err);
-
         }
 
         finally {
-
             setLoading(false);
-
         }
 
     };
 
     const viewResponses = async (rfqNo) => {
-
         try {
-
-            const data = await apiGet(
-                `/api/admin/workorders/admin/rfq/${rfqNo}/responses`
-            );
-
+            const data = await apiGet(`/api/admin/workorders/admin/rfq/${rfqNo}/responses`);
             setResponseList(Array.isArray(data) ? data : []);
-
             setShowModal(true);
-
         }
 
         catch (err) {
-
             console.error(err);
-
             alert("Unable to load contractor responses.");
-
         }
 
     };
@@ -70,7 +59,6 @@ function AdminRFQResponses() {
     return (
 
         <>
-
             <div className="container-fluid px-4 mt-4">
                 <div className="card rfq-response-card">
                     <div className="rfq-response-header">
@@ -81,9 +69,10 @@ function AdminRFQResponses() {
                     <div className="card-body p-0">
                       <div className="table-responsive">
                         {
-                            loading ?
+                            loading ? (
                                 <div className="no-data">Loading RFQs...</div>
-                                :
+                               ) : (
+                                <>
                                 <table className="table table-hover align-middle rfq-table">
                                     <thead>
                                         <tr>
@@ -106,7 +95,7 @@ function AdminRFQResponses() {
                                                     </td>
                                                 </tr>
                                                 :
-                                                rfqs.map((rfq) => (
+                                                currentRfqs.map((rfq) => (
                                                     <tr key={rfq.rfq_id}>
                                                         <td><strong>{rfq.rfq_no}</strong></td>
                                                         <td>{rfq.rfq_title}</td>
@@ -132,6 +121,42 @@ function AdminRFQResponses() {
                                         }
                                     </tbody>
                                 </table>
+                                {totalPages > 1 && (
+                                        <div className="pagination-container">
+
+                                            <button
+                                                disabled={currentPage === 1}
+                                                onClick={() => setCurrentPage(currentPage - 1)}
+                                            >
+                                                Previous
+                                            </button>
+
+                                            {[...Array(totalPages)].map((_, index) => (
+                                                <button
+                                                    key={index}
+                                                    className={
+                                                        currentPage === index + 1
+                                                            ? "active-page"
+                                                            : ""
+                                                    }
+                                                    onClick={() => setCurrentPage(index + 1)}
+                                                >
+                                                    {index + 1}
+                                                </button>
+                                            ))}
+
+                                            <button
+                                                disabled={currentPage === totalPages}
+                                                onClick={() => setCurrentPage(currentPage + 1)}
+                                            >
+                                                Next
+                                            </button>
+
+                                        </div>
+                                    )}
+                                </>
+                            )
+                                
                         }
                       </div>
                     </div>
@@ -170,85 +195,85 @@ function AdminRFQResponses() {
 
                                             <div className="contractor-list">
 
-    {
-        responseList.map((row,index)=>(
+                                {
+                                    responseList.map((row,index)=>(
 
-            <div
-                key={row.response_id}
-                className="contractor-card"
-            >
+                                        <div
+                                            key={row.response_id}
+                                            className="contractor-card"
+                                        >
 
-                <div className="contractor-left">
+                                            <div className="contractor-left">
 
-                    <div className="contractor-avatar">
+                                                <div className="contractor-avatar">
 
-                        👤
+                                                    👤
 
-                    </div>
+                                                </div>
 
-                    <div>
+                                                <div>
 
-                        <h5>
+                                                    <h5>
 
-                            {row.contractor_name}
+                                                        {row.contractor_name}
 
-                        </h5>
+                                                    </h5>
 
-                        <span className="quote-rank">
+                                                    <span className="quote-rank">
 
-                            {
-                                index===0
-                                ?
-                                "🟢 Lowest Quotation"
-                                :
-                                "Quotation Submitted"
-                            }
+                                                        {
+                                                            index===0
+                                                            ?
+                                                            "🟢 Lowest Quotation"
+                                                            :
+                                                            "Quotation Submitted"
+                                                        }
 
-                        </span>
+                                                    </span>
 
-                    </div>
+                                                </div>
 
-                </div>
+                                            </div>
 
-                <div className="contractor-right">
+                                            <div className="contractor-right">
 
-                    <div className="contractor-price">
+                                                <div className="contractor-price">
 
-                        RM {row.grand_total}
+                                                    RM {row.grand_total}
 
-                    </div>
+                                                </div>
 
-                    <div className="contractor-date">
+                                                <div className="contractor-date">
 
-                        {new Date(row.submitted_at).toLocaleDateString("en-GB")}
+                                                    {new Date(row.submitted_at).toLocaleDateString("en-GB")}
 
-                    </div>
+                                                </div>
 
-                    <button
-                        className="btn btn-primary contractor-btn"
-                        onClick={()=>{
+                                                <button
+                                                    className="btn btn-primary contractor-btn"
+                                                    onClick={()=>{
 
-                            setSelectedResponseId(row.response_id);
+                                                        setSelectedResponseId(row.response_id);
 
-                            setShowQuotationModal(true);
+                                                        setShowQuotationModal(true);
 
-                        }}
-                    >
+                                                    }}
+                                                >
 
-                        <i className="bi bi-eye-fill"></i>
+                                                    <i className="bi bi-eye-fill"></i>
 
-                        View Quotation
+                                                    View Quotation
 
-                    </button>
+                                                </button>
 
-                </div>
+                                            </div>
 
-            </div>
+                                        </div>
 
-        ))
-    }
+                                    ))
+                                }
 
-</div>
+                            </div>
 
                                     }
 
