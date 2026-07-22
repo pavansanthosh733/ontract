@@ -60,6 +60,17 @@ PUBLIC_ROUTES = [
     "/api/zone",
     "/api/workorders/respond-workorder",
     "/api/workorders",
+    "/api/category",
+    "/api/item",
+    "/api/type",
+    "/api/description",
+    "/api/region",
+    "/api/state",
+    "/api/city",
+
+
+
+
 
     # ✅ Contractor auth routes
     "/api/contractor/verify_otp",
