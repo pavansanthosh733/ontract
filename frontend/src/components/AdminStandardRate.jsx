@@ -41,7 +41,7 @@ export default function AdminStandardRates() {
 
   const fetchCategories = async () => {
     try {
-      const res = await apiGet("/api/category");
+      const res = await apiGet("/api/admin/category");
       setCategories(Array.isArray(res) ? res : []);
     } catch (err) {
       console.error("Category fetch error", err);
@@ -49,7 +49,7 @@ export default function AdminStandardRates() {
   };
   const fetchItems = async (categoryId) => {
     try {
-      const res = await apiGet(`/api/items/${categoryId}`);
+      const res = await apiGet(`/api/admin/items/${categoryId}`);
       setItems(Array.isArray(res) ? res : []);
     } catch (err) {
       console.error("Items fetch error", err);
@@ -58,7 +58,7 @@ export default function AdminStandardRates() {
   const fetchTypes = async (categoryId, itemId) => {
     try {
       const res = await apiGet(
-        `/api/types/filter?category_id=${categoryId}&item_id=${itemId}`
+        `/api/admin/types/filter?category_id=${categoryId}&item_id=${itemId}`
       );
 
       setTypes(Array.isArray(res) ? res : []);
@@ -74,7 +74,7 @@ export default function AdminStandardRates() {
   ) => {
     try {
       const res = await apiGet(
-        `/api/description/filter?category_id=${categoryId}&item_id=${itemId}&type_id=${typeId}`
+        `/api/admin/description/filter?category_id=${categoryId}&item_id=${itemId}&type_id=${typeId}`
       );
 
       setDescriptions(Array.isArray(res) ? res : []);
