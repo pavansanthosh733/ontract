@@ -68,8 +68,7 @@ PUBLIC_ROUTES = [
     "/api/state",
     "/api/city",
     "/api/mark_read",
-
-
+    "/api/update_bank",
 
 
     # ✅ Contractor auth routes
