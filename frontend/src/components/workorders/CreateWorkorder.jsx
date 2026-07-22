@@ -33,7 +33,11 @@ const CreateWorkOrder = () => {
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
   const [selectedItemId, setSelectedItemId] = useState("");
   const [selectedTypeId, setSelectedTypeId] = useState("");
+  const selectedTypeName = types.find((t) => t.type_id === Number(selectedTypeId)) ?.type_name || "";
   const [selectedDescriptionId, setSelectedDescriptionId] = useState("");
+  const selectedDescriptionName = descriptionsDrop.find(
+    (d) => d.description_id === Number(selectedDescriptionId)
+  )?.description_name || "";
 
   // ===== REGION (ZONE) → STATE → CITY =====
   const [regions, setRegions] = useState([]);
@@ -484,14 +488,23 @@ return;
                 value={selectedTypeId}
                 onChange={(e) => setSelectedTypeId(e.target.value)}
                 disabled={!selectedItemId}
+                title={selectedTypeName}   // ✅ Hover on selected value
               >
                 <option value="">Select Type</option>
+
                 {types.map((t) => (
-                  <option key={t.id} value={t.type_id}>
-                    {t.type_name}
+                  <option
+                    key={t.id}
+                    value={t.type_id}
+                    title={t.type_name}   // ✅ Hover inside dropdown
+                  >
+                    {t.type_name.length > 35
+                      ? t.type_name.substring(0, 35) + "..."
+                      : t.type_name}
                   </option>
                 ))}
               </select>
+
               <span className="required-star">★</span>
             </div>
 
@@ -501,14 +514,23 @@ return;
                 value={selectedDescriptionId}
                 onChange={(e) => setSelectedDescriptionId(e.target.value)}
                 disabled={!selectedTypeId}
+                title={selectedDescriptionName}   // ✅ Hover on selected value
               >
                 <option value="">Select Description</option>
+
                 {descriptionsDrop.map((d) => (
-                  <option key={d.id} value={d.description_id}>
-                    {d.description_name}
+                  <option
+                    key={d.id}
+                    value={d.description_id}
+                    title={d.description_name}   // ✅ Hover inside dropdown
+                  >
+                    {d.description_name.length > 35
+                      ? d.description_name.substring(0, 35) + "..."
+                      : d.description_name}
                   </option>
                 ))}
               </select>
+
               <span className="required-star">★</span>
             </div>
           </div>

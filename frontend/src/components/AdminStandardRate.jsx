@@ -100,7 +100,20 @@ export default function AdminStandardRates() {
 
 
   const [form, setForm] = useState(emptyForm);
-  const [editId, setEditId] = useState(null);
+  const selectedItemName =
+  items.find((i) => i.item_id === Number(form.item))
+    ?.item_name || "";
+
+  const selectedTypeName =
+    types.find((t) => t.type_id === Number(form.type))
+      ?.type_name || "";
+
+  const selectedDescriptionName =
+    descriptions.find(
+      (d) => d.description_id === Number(form.description)
+    )?.description_name || "";
+    
+    const [editId, setEditId] = useState(null);
 
   // Fetch Data
   useEffect(() => {
@@ -402,9 +415,9 @@ export default function AdminStandardRates() {
                   <th>Sub Type</th>
                   <th>Brand</th>
                   <th>Description</th>
-                  <th>Unit</th>
+                  <th>Unit Of Measurement (UOM)</th>
                   <th>Copper Price</th>
-                  <th>Price (RM)</th>
+                  <th>Price </th>
                   <th>Client</th>
                   <th>Actions</th>
                 </tr>
@@ -666,7 +679,7 @@ export default function AdminStandardRates() {
           className="modal fade show"
           style={{ display: "block", background: "rgba(0,0,0,0.5)" }}
         >
-          <div className="modal-dialog modal-lg modal-dialog-centered">
+          <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: "1200px", width: "95%" }}>
             <div className="modal-content rate-modal-content">
               <div className="rate-modal-header">
                 <h4 className="rate-modal-title">
@@ -769,6 +782,7 @@ export default function AdminStandardRates() {
                         <select
                           className={`form-control ${errors[key] ? "is-invalid" : ""}`}
                           value={form.item}
+                          title={selectedItemName}
                           disabled={!form.category}
                           onChange={async (e) => {
                             const value = e.target.value;
@@ -794,8 +808,11 @@ export default function AdminStandardRates() {
                             <option
                               key={item.item_id}
                               value={item.item_id}
+                              title={item.item_name}
                             >
-                              {item.item_name}
+                              {item.item_name.length > 35
+                                ? item.item_name.substring(0, 35) + "..."
+                                : item.item_name}
                             </option>
                           ))}
                         </select>
@@ -805,6 +822,7 @@ export default function AdminStandardRates() {
                         <select
                           className={`form-control ${errors[key] ? "is-invalid" : ""}`}
                           value={form.type}
+                          title={selectedTypeName}
                           disabled={!form.item}
                           onChange={async (e) => {
                             const value = e.target.value;
@@ -832,8 +850,11 @@ export default function AdminStandardRates() {
                             <option
                               key={type.type_id}
                               value={type.type_id}
+                              title={type.type_name}
                             >
-                              {type.type_name}
+                              {type.type_name.length > 35
+                                ? type.type_name.substring(0, 35) + "..."
+                                : type.type_name}
                             </option>
                           ))}
                         </select>
@@ -843,6 +864,7 @@ export default function AdminStandardRates() {
                         <select
                           className={`form-control ${errors[key] ? "is-invalid" : ""}`}
                           value={form.description}
+                          title={selectedDescriptionName}
                           disabled={!form.type}
                           onChange={(e) =>
                             setForm({
@@ -857,8 +879,11 @@ export default function AdminStandardRates() {
                             <option
                               key={desc.description_id}
                               value={desc.description_id}
+                              title={desc.description_name}
                             >
-                              {desc.description_name}
+                              {desc.description_name.length > 35
+                                ? desc.description_name.substring(0, 35) + "..."
+                                : desc.description_name}
                             </option>
                           ))}
                         </select>

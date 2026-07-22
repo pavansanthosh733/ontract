@@ -32,7 +32,7 @@ const [filters, setFilters] = useState({
     STATUS: "",
   });
 
-  const cleanInput = (v) => v.replace(/[^A-Za-z0-9-. ]/g, "");
+  const cleanInput = (value) => value.replace(/[^A-Za-z0-9\-()\/ ]/g, "");
 
   useEffect(() => {
     loadData();

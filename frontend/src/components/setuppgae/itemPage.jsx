@@ -30,7 +30,7 @@ const ItemPage = () => {
     STATUS: "",
   });
 
-  const cleanInput = (value) => value.replace(/[^A-Za-z0-9- ]/g, "");
+  const cleanInput = (value) => value.replace(/[^A-Za-z0-9\-()\/ ]/g, "");
 
   const fetchCategories = async () => {
     const data = await apiGet("/api/admin/category/active");
