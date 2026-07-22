@@ -67,7 +67,7 @@ PUBLIC_ROUTES = [
     "/api/region",
     "/api/state",
     "/api/city",
-
+    "/api/mark_read",
 
 
 
