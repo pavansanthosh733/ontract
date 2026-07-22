@@ -73,6 +73,14 @@ PUBLIC_ROUTES = [
     "/api/contractor/resend_otp",
     "/api/contractor/logout",
     "/api/contractor/refresh",
+    "/api/contractor/category",
+    "/api/contractor/region",
+    "/api/contractor/state",
+    "/api/contractor/city",
+    "/api/contractor/items",
+    "/api/contractor/types",
+    "/api/contractor/description",
+    "/api/contractor/update_company_bank",
     
 
 

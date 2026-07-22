@@ -108,7 +108,7 @@ const ContractorDetailsModal = ({ contractor, onClose }) => {
               </tbody>
             </table>
 
-            <h6 className="text-primary mt-3">Bank Details2</h6>
+            <h6 className="text-primary mt-3">Bank Details</h6>
             <table className="table table-bordered table-sm">
               <tbody>
                 {bank ? (
@@ -149,7 +149,7 @@ const ContractorDetailsModal = ({ contractor, onClose }) => {
               </tbody>
             </table>
 
-            <h6 className="text-primary mt-3">Services2</h6>
+            <h6 className="text-primary mt-3">Services</h6>
             <table className="table table-bordered table-sm align-middle">
               <thead>
                 <tr>
