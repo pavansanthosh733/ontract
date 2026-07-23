@@ -161,14 +161,14 @@ const RateComparisonReport = () => {
                     <td>{row.city_name}</td>
                     <td>{row.client}</td>
                     <td>{row.contractor_name}</td>
-                    <td className="price">₹{row.price_rm}</td>
-                    <td className="price">₹{row.service_rate}</td>
+                    <td className="price">{row.price_rm}</td>
+                    <td className="price">{row.service_rate}</td>
                     <td
                       className={`price ${
                         parseFloat(row.difference_rate) >= 0 ? "positive" : "negative"
                       }`}
                     >
-                      ₹{row.difference_rate}
+                      {row.difference_rate}
                     </td>
                   </tr>
                 ))
@@ -183,9 +183,9 @@ const RateComparisonReport = () => {
               {data.length > 0 && (
                 <tr className="total-row">
                   <td colSpan="12">Total</td>
-                  <td className="price total">₹{totalPrice.toFixed(2)}</td>
-                  <td className="price total">₹{totalService.toFixed(2)}</td>
-                  <td className="price total">₹{totalDiff.toFixed(2)}</td>
+                  <td className="price total">{totalPrice.toFixed(2)}</td>
+                  <td className="price total">{totalService.toFixed(2)}</td>
+                  <td className="price total">{totalDiff.toFixed(2)}</td>
                 </tr>
               )}
             </tbody>

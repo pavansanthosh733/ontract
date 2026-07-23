@@ -329,18 +329,11 @@ const handleImageChange = (files) => {
       formDataToSend.append( "STANDARD_RATE_ID", selectedRate?.standard_rate_id || "" );
       formDataToSend.append( "RATE_SNAPSHOT", selectedRate?.price_rm || "" );
       formDataToSend.append("ADDRESS", address);
-      formDataToSend.append(
-        "REQUESTED_TIME_CLOSING",
-        formData.REQUESTED_TIME_CLOSING
-      );
+      formDataToSend.append("REQUESTED_TIME_CLOSING",formData.REQUESTED_TIME_CLOSING);
       formDataToSend.append("REMARKS", formData.REMARKS);
       formDataToSend.append("DETAILED_DESCRIPTION",detailedDescription || "");
-      formDataToSend.append("STATUS", formData.STATUS);
-      
-      formDataToSend.append(
-        "ticket_assignment_type",
-        ticketAssignmentType
-      );
+      formDataToSend.append("STATUS", formData.STATUS);   
+      formDataToSend.append("ticket_assignment_type",ticketAssignmentType);
 
       if (ignoreDuplicate) {
         formDataToSend.append("ignore_duplicate", "true");
@@ -668,7 +661,6 @@ return;
                 type="text"
                 name="REMARKS"
                 placeholder="Enter Remarks"
-                required
                 value={formData.REMARKS}
                 onChange={handleChange}
               />

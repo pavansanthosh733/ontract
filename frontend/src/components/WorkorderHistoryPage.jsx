@@ -71,7 +71,7 @@ function WorkorderHistoryPage() {
                   <td>{idx + 1}</td>
                   <td>{c.contractor_name}</td>
                   <td>{c.city || "-"}</td>
-                  <td>₹{Number(c.rate || 0).toFixed(2)}</td>
+                  <td>{Number(c.rate || 0).toFixed(2)}</td>
                   <td>⭐{Number(c.rating || 0).toFixed(1)}</td>
                   <td>{isSelected ? "✅ Selected" : "-"}</td>
                 </tr>

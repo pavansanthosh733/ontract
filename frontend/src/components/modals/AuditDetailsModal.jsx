@@ -162,7 +162,6 @@ function AuditDetailsModal({
               </span>
 
               <span className="audit-details-kv-value">
-                ₹
                 {Number(
                   selectedContractor.rate || 0
                 ).toFixed(2)}
@@ -241,7 +240,6 @@ function AuditDetailsModal({
                       </td>
 
                       <td>
-                        ₹
                         {Number(
                           c.rate || 0
                         ).toFixed(2)}

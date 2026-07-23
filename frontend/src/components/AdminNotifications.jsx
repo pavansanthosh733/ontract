@@ -428,7 +428,7 @@ setRatingWorkorderData(ratingData);
                                 <td>{c.name}</td>
                                 <td>{c.email_id}</td>
                                 <td>{c.city}, {c.state}</td>
-                                <td>₹ {c.rate}</td>
+                                <td>{c.rate}</td>
 
                               </tr>
                             ))}

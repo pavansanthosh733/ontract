@@ -51,8 +51,11 @@ PUBLIC_ROUTES = [
     "/api/activate",
     "/api/resend_otp",
     "/api/forgot",
+    "/api/forgot_password",
     "/api/reset-password",
     "/api/verify-reset-otp",
+    "/api/verify_reset_otp",
+    "/api/reset_password",
     "/api/refresh",
     "/api/logout",
     "/api/profile",
@@ -99,7 +102,8 @@ PUBLIC_ROUTES = [
     "/api/dashboard/service-coverage-details", # ✅
     "/api/contractor/gate_status",             # ✅
     "/api/contractor/unread_count",            # ✅
-    "/api/contractor/gate-status",             # ✅
+    "/api/contractor/gate-status",
+    "/api/workorders/respond-workorder",       # ✅
     "/api/save_token",                         # ✅
 
     # ✅ Workorder public routes

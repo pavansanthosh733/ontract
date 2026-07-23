@@ -380,7 +380,7 @@ const SummaryReport = () => {
                     <td>{row.city_name}</td>
                     <td>{row.client}</td>
                     <td>{row.contractor_name}</td>
-                    <td className="price">₹{row.price_rm}</td>
+                    <td className="price">{row.price_rm}</td>
                   </tr>
                 ))
               ) : (
@@ -394,7 +394,7 @@ const SummaryReport = () => {
               {data.length > 0 && (
                 <tr className="total-row">
                   <td colSpan="13">Total</td>
-                  <td className="price total">₹{total.toFixed(2)}</td>
+                  <td className="price total">{total.toFixed(2)}</td>
                 </tr>
               )}
             </tbody>

@@ -267,7 +267,7 @@ const ContractorReport = () => {
                     <td>{row.city_name}</td>
                     <td>{row.client}</td>
                     <td>{row.contractor_name}</td>
-                    <td className="rate">₹{row.service_rate}</td>
+                    <td className="rate">{row.service_rate}</td>
                   </tr>
                 ))
               ) : (
@@ -281,7 +281,7 @@ const ContractorReport = () => {
               {data.length > 0 && (
                 <tr className="total-row">
                   <td colSpan="12">Total</td>
-                  <td className="rate total">₹{total.toFixed(2)}</td>
+                  <td className="rate total">{total.toFixed(2)}</td>
                 </tr>
               )}
             </tbody>

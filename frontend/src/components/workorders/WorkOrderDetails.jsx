@@ -282,7 +282,7 @@ const WorkOrderDetails = () => {
                         <td>{c.company_name ||c.full_name}</td>
                        
                         <td>
-                          ₹ {Number.parseFloat(c.rate || 0).toFixed(2)}
+                           {Number.parseFloat(c.rate || 0).toFixed(2)}
                         </td>
                         <td>
                           ⭐ {Number.parseFloat(c.average_rating || 0).toFixed(1)}

@@ -89,16 +89,23 @@
 }
 
 .modal-box {
-  width: 900px;          /* 🔥 FIXED WIDTH */
-  max-width: 900px;
+  position: relative;
+  background: #fff;
+  width: 700px;
+  max-width: 90vw;
   max-height: 85vh;
-  overflow: visible;
+  overflow-y: auto;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 8px 25px rgba(0,0,0,.2);
 }
 
 .modal-header {
+  text-align: center;
+  font-size: 24px;
   font-weight: 700;
   color: #0078d4;
-  margin-bottom: 12px;
+  margin-bottom: 20px;
 }
 
 /* ========================= */
@@ -146,11 +153,15 @@
 /* ========================= */
 .modal-close {
   position: absolute;
-  top: 10px;
-  right: 14px;
+  top: 14px;
+  right: 18px;
+  font-size: 24px;
+  color: #bdbdbd;
   cursor: pointer;
-  font-size: 16px;
-  color: #999;
+}
+
+.modal-close:hover {
+  color: #444;
 }
 
 .modal-close:hover {
@@ -177,20 +188,34 @@
 }
 
 /* Bigger key-value layout */
-.kv-grid.large .kv-row {
+.kv-grid {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.kv-row {
   display: grid;
   grid-template-columns: 220px 1fr;
-  padding: 8px 0;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #ddd;
+}
+
+.kv-row:last-child {
+  border-bottom: none;
 }
 
 .kv-label {
+  background: #f5f5f5;
+  padding: 12px;
   font-weight: 600;
-  color: #555;
+  color: #444;
 }
 
 .kv-value {
+  padding: 12px;
   color: #222;
+  background: #fff;
 }
 
 /* ================= MEDIA ================= */
@@ -259,4 +284,71 @@
   display: flex;
   justify-content: space-between;
   margin-top: 16px;
+}
+
+.remarks-section {
+  margin-top: 20px;
+}
+
+.remarks-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.remarks-textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 12px;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  resize: vertical;
+}
+
+.remarks-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.open-btn {
+  background: #0078d4;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.open-btn:hover {
+  background: #005fa3;
+}
+
+.btn-reject,
+.btn-accept {
+  border: none;
+  border-radius: 6px;
+  padding: 9px 18px;
+  cursor: pointer;
+}
+
+.btn-reject {
+  background: #dc3545;
+  color: white;
+}
+
+.btn-accept {
+  background: #198754;
+  color: white;
+}
+.workorder-table td.workorder-link {
+  color: #0078d4;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.workorder-table td.workorder-link:hover {
+  color: #0056b3;
+  text-decoration: underline;
 }
