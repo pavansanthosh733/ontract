@@ -272,7 +272,7 @@ function AdminQuotationModal({ show, responseId, onClose }) {
                                     </div>
 
                                     <div className="total-row">
-                                        <span>ITE Financial &amp; Service Charges</span>
+                                        <span>Financial &amp; Service Charges</span>
                                         <span>{Number(quotation.header.service_charge_amount).toFixed(2)}</span>
                                     </div>
 
