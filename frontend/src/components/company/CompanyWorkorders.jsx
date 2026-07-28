@@ -234,7 +234,7 @@ function CompanyWorkorders() {
 
 
       const result = await apiPost(
-        "/api/contractor/workorders/respond-workorder",
+        "/api/workorders/respond-workorder",
         payload
       );
 
