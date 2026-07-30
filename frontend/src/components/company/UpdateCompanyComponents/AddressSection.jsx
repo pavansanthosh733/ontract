@@ -12,6 +12,17 @@ function AddressSection({
   sameAsMailing,
   setSameAsMailing,
   fetchAndAppend,
+  regions,
+  mailingRegionId,
+  setMailingRegionId,
+  mailingStateId,
+  setMailingStateId,
+  mailingCityId,
+  setMailingCityId,
+  mailingStates,
+  mailingCities,
+  fetchMailingStates,
+  fetchMailingCities,
 }) {
   return (
     <>
@@ -82,6 +93,95 @@ function AddressSection({
           </label>
         </div>
       </div>
+
+      {/* Mailing Region */}
+
+   <div className="col-12 mt-3">
+  <h5 className="fw-bold text-dark">
+    Location Details <span className="required-asterisk">*</span>
+  </h5>
+</div>
+<div className="col-md-4">
+  <label className="form-label">
+    Region <span className="required-asterisk">*</span>
+  </label>
+
+  <select
+    className="form-select"
+    value={mailingRegionId}
+    onChange={async (e) => {
+      const regionId = e.target.value;
+
+      setMailingRegionId(regionId);
+      setMailingStateId("");
+      setMailingCityId("");
+
+      if (regionId) {
+        await fetchMailingStates(regionId);
+      }
+    }}
+  >
+    <option value="">Select Region</option>
+    {regions.map((region) => (
+      <option key={region.region_id} value={region.region_id}>
+        {region.region_name}
+      </option>
+    ))}
+  </select>
+</div>
+
+{/* Mailing State */}
+<div className="col-md-4">
+  <label className="form-label">
+    State <span className="required-asterisk">*</span>
+  </label>
+
+  <select
+    className="form-select"
+    value={mailingStateId}
+    disabled={!mailingRegionId}
+    onChange={async (e) => {
+      const stateId = e.target.value;
+
+      setMailingStateId(stateId);
+      setMailingCityId("");
+
+      if (stateId) {
+        await fetchMailingCities(mailingRegionId, stateId);
+      }
+    }}
+  >
+    <option value="">Select State</option>
+
+    {mailingStates.map((state) => (
+      <option key={state.state_id} value={state.state_id}>
+        {state.state_name}
+      </option>
+    ))}
+  </select>
+</div>
+
+{/* Mailing City */}
+<div className="col-md-4">
+  <label className="form-label">
+    City <span className="required-asterisk">*</span>
+  </label>
+
+  <select
+    className="form-select"
+    value={mailingCityId}
+    disabled={!mailingStateId}
+    onChange={(e) => setMailingCityId(e.target.value)}
+  >
+    <option value="">Select City</option>
+
+    {mailingCities.map((city) => (
+      <option key={city.city_id} value={city.city_id}>
+        {city.city_name}
+      </option>
+    ))}
+  </select>
+</div>
 
       {/* Billing Postal Code + Address */}
       <div className="col-md-12">
