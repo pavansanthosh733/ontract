@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { apiGet, apiPost, BASE_URL } from "../api";
 import "./css/AdminNotification.css";
 import { useNavigate } from "react-router-dom";
-import ContractorRatingModal from "./modals/ContractorRatingModal";
 
 function AdminNotifications() {
   const navigate = useNavigate();
@@ -17,11 +16,6 @@ function AdminNotifications() {
   const [selectedContractors, setSelectedContractors] = useState([]);
   const [activeTab, setActiveTab] = useState("ASSIGNED");
 
-  const [adminRemarks, setAdminRemarks] = useState("");
-  const [adminSubmitting, setAdminSubmitting] = useState(false);
-  const [showRatingModal, setShowRatingModal] = useState(false);
-  const [ratingWorkorderData, setRatingWorkorderData] = useState(null);
-  const cleanInput = (value) => {return value.replace(/[^A-Za-z0-9-.& ]/g, "");};
   /* =========================================================
      TOGGLE CONTRACTOR
   ========================================================= */
@@ -35,6 +29,8 @@ function AdminNotifications() {
 
   /* =========================================================
      FETCH WORKORDERS
+     (Completed Notifications tab moved out to CompletedWorkOrders.jsx,
+     accessible from the Work Orders sidebar)
   ========================================================= */
   const fetchWorkorders = async (tab) => {
     try {
@@ -42,10 +38,6 @@ function AdminNotifications() {
 
       if (tab === "ASSIGNED") {
         res = await apiGet("/api/admin/workorders/admin/notifications/assigned");
-      } else if (tab === "OPEN") {
-        res = await apiGet("/api/admin/workorders/admin/notifications/close");
-      } else if (tab === "COMPLETED") {
-        res = await apiGet("/api/admin/workorders/admin/notifications/invoice");
       } else if (tab === "OVERRATED") {
         res = await apiGet("/api/admin//workorders/admin/notifications/overrated");
       }
@@ -73,7 +65,6 @@ function AdminNotifications() {
     setSelectedWorkorder(workorderId);
     setSelectedContractors([]);
     setDetails([]);
-    setAdminRemarks("");
 
     try {
       setLoading(true);
@@ -83,13 +74,6 @@ function AdminNotifications() {
           `/api/admin/workorders/admin/notifications/contractorlist?workorder_id=${workorderId}`
         );
         setDetails(res?.data || []);
-      }
-
-      else if (activeTab === "OPEN") {
-        const res = await apiGet(
-          `/api/admin/workorders/admin/notifications/completed_workorder?workorder_id=${workorderId}`
-        );
-        setDetails(res || []);
       }
 
       else if (activeTab === "OVERRATED") {
@@ -113,120 +97,6 @@ function AdminNotifications() {
       setDetails([]);
     } finally {
       setLoading(false);
-    }
-  };
-
-  /* =========================================================
-     CLOSE WORKORDER
-  ========================================================= */
-  // const handleCloseWorkorder = async () => {
-  //   if (!adminRemarks.trim()) {
-  //     alert("Admin remarks are required");
-  //     return;
-  //   }
-
-  //   try {
-  //     setAdminSubmitting(true);
-
-  //     await apiPost("/api/workorders/admin/close", {
-  //       workorder: selectedWorkorder,
-  //       remarks: adminRemarks,
-  //     });
-
-  //     alert("✅ Workorder closed successfully");
-  //     closeModal();
-  //     fetchWorkorders(activeTab);
-
-  //   } catch (err) {
-  //     console.error(err);
-  //     alert("❌ Failed to close workorder");
-  //   } finally {
-  //     setAdminSubmitting(false);
-  //   }
-  // };
-
-
-  const handleCloseWorkorder = async () => {
-  if (!adminRemarks.trim()) {
-    alert("Admin remarks are required");
-    return;
-  }
-
-  try {
-    setAdminSubmitting(true);
-
-    const response = await apiPost(
-      "/api/admin/workorders/admin/close",
-      {
-        workorder: selectedWorkorder,
-        remarks: adminRemarks,
-      }
-    );
-    console.log("Selected Workorder:", selectedWorkorder);
-console.log("API Response:", response);
-console.log("Response Workorder:", response?.data?.workorder);
-console.groupEnd()
-
-    alert("✅ Workorder closed successfully");
-
-    // Open rating popup immediately small chane fdor addig in to git code
-    // setRatingWorkorderData({
-    //   workorder:
-    //     response?.data?.workorder ||
-    //     selectedWorkorder,
-    // });
-
-    const ratingData = {
-  workorder:
-    response?.data?.workorder ||
-    selectedWorkorder,
-};
-
-console.group("⭐ RATING MODAL DATA");
-console.log("ratingData:", ratingData);
-console.groupEnd();
-
-setRatingWorkorderData(ratingData);
-
-    setShowModal(false);
-    setShowRatingModal(true);
-
-    fetchWorkorders(activeTab);
-
-  } catch (err) {
-    console.error(err);
-    alert("❌ Failed to close workorder");
-  } finally {
-    setAdminSubmitting(false);
-  }
-};
-
-  /* =========================================================
-     REOPEN WORKORDER
-  ========================================================= */
-  const handleReopenWorkorder = async () => {
-    if (!adminRemarks.trim()) {
-      alert("Admin remarks are required");
-      return;
-    }
-
-    try {
-      setAdminSubmitting(true);
-
-      await apiPost("/api/admin/workorders/admin/reopen", {
-        workorder: selectedWorkorder,
-        remarks: adminRemarks,
-      });
-
-      alert("✅ Workorder reopened successfully");
-      closeModal();
-      fetchWorkorders(activeTab);
-
-    } catch (err) {
-      console.error(err);
-      alert("❌ Failed to reopen workorder");
-    } finally {
-      setAdminSubmitting(false);
     }
   };
 
@@ -270,7 +140,6 @@ setRatingWorkorderData(ratingData);
     setDetails([]);
     setSelectedWorkorder(null);
     setSelectedContractors([]);
-    setAdminRemarks("");
   };
 
   /* =========================================================
@@ -296,13 +165,6 @@ setRatingWorkorderData(ratingData);
               onClick={() => setActiveTab("ASSIGNED")}
             >
               WorkOrder Assignment Notifications
-            </button>
-
-            <button
-              className={`tab-btn ${activeTab === "OPEN" ? "active" : ""}`}
-              onClick={() => setActiveTab("OPEN")}
-            >
-              Completed Notifications
             </button>
 
             <button
@@ -456,139 +318,9 @@ setRatingWorkorderData(ratingData);
               </>
             )}
 
-            {/* =========================================================
-               OPEN TAB
-            ========================================================= */}
-            {activeTab === "OPEN" && details.length > 0 && (
-              <>
-                <div className="modal-header">
-                  Work Order Details
-                </div>
-
-                <div className="kv-grid">
-
-                  {[
-                    ["Work Order", details[0].workorder],
-                    ["Region", details[0].region_name],
-                    ["State", details[0].state_name],
-                    ["City", details[0].city_name],
-                    ["Client", details[0].client],
-                    ["Work Category", details[0].category_name],
-                    ["Work Item", details[0].item_name],
-                    ["Work Type", details[0].type_name],
-                    ["Description", details[0].description_name],
-
-                    ...(details[0].detailed_description
-                      ? [["Detailed Description", details[0].detailed_description]]
-                      : []),
-
-                    ["Remarks", details[0].remarks],
-                    ["Completed At", details[0].workorder_completed_time],
-
-                  ].map(([k, v], i) => (
-                    <div className="kv-row" key={i}>
-                      <span className="kv-label">{k}</span>
-                      <span className="kv-value">
-                        {v || "-"}
-                      </span>
-                    </div>
-                  ))}
-
-                  {/* =========================================================
-                     CLOSING PROOF
-                     BUTTON ONLY
-                  ========================================================= */}
-                  {details[0].closing_images?.length > 0 && (
-                    <div className="kv-row">
-                      <span className="kv-label">
-                        Closing Proof
-                      </span>
-
-                      <span className="kv-value">
-                        <div className="proof-links-only">
-
-                          {details[0].closing_images.map((url, i) => {
-                            const fullUrl = `${BASE_URL}${url}`;
-
-                            return (
-                              <button
-                                key={i}
-                                type="button"
-                                className="open-btn"
-                                onClick={() =>
-                                  window.open(fullUrl, "_blank")
-                                }
-                              >
-                                Click Here to View image
-                              </button>
-                            );
-                          })}
-
-                        </div>
-                      </span>
-                    </div>
-                  )}
-
-                  {/* =========================================================
-                     ADMIN REMARKS
-                  ========================================================= */}
-                  <div className="remarks-section">
-
-                    <label className="remarks-label">
-                      Admin Remarks
-                    </label>
-
-                    <textarea
-                      className="remarks-textarea"
-                      rows="4"
-                      placeholder="Enter admin remarks..."
-                      value={adminRemarks}
-                      onChange={(e) =>
-                        setAdminRemarks(cleanInput(e.target.value))
-                      }
-                    />
-
-                    <div className="remarks-actions">
-
-                      <button
-                        className="btn-reject"
-                        disabled={adminSubmitting}
-                        onClick={handleReopenWorkorder}
-                      >
-                        Reopen Workorder
-                      </button>
-
-                      <button
-                        className="btn-accept"
-                        disabled={adminSubmitting}
-                        onClick={handleCloseWorkorder}
-                      >
-                        Close Workorder
-                      </button>
-
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
           </div>
         </div>
       )}
-
-      <ContractorRatingModal
-  show={showRatingModal}
-  workorderData={ratingWorkorderData}
-  onClose={() => {
-    setShowRatingModal(false);
-    setRatingWorkorderData(null);
-  }}
-  onRatingSaved={() => {
-    setShowRatingModal(false);
-    setRatingWorkorderData(null);
-    fetchWorkorders(activeTab);
-  }}
-/>
     </div>
   );
 }

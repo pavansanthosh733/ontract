@@ -31,8 +31,7 @@ class ContractorModel:
 
         # Step 2 — create company entry
         sql_company = text("""
-            INSERT INTO company_details_t (company_id,user_uid)
-            VALUES (:uid,:uid)
+            INSERT INTO company_details_t (company_id,user_uid) VALUES (:uid,:uid)
         """)
 
         db.session.execute(sql_company, {
@@ -55,8 +54,7 @@ class ContractorModel:
     @staticmethod
     def activate_company(token):
         sql = text("""
-            UPDATE users_t
-            SET active_status = TRUE, status = 'pending'
+            UPDATE users_t SET active_status = TRUE, status = 'pending'
             WHERE activation_token = :token AND service_type = 1
         """)
         result = db.session.execute(sql, {"token": token})
@@ -69,8 +67,7 @@ class ContractorModel:
         print(f"🗃️ Fetching contractor for email: {email}")
     
         sql = text("""
-            SELECT password_hash, active_status, service_type
-            FROM users_t WHERE email_id = :email
+            SELECT password_hash, active_status, service_type FROM users_t WHERE email_id = :email
         """)
     
         row = db.session.execute(sql, {"email": email}).fetchone()
@@ -192,9 +189,8 @@ class ContractorModel:
     @staticmethod
     def validate_otp(email):
         sql = text("""
-            SELECT otp_code FROM otp_codes_t
-            WHERE email_id = :email
-              AND created_at > NOW() - INTERVAL '5 minutes'
+            SELECT otp_code FROM otp_codes_t WHERE email_id = :email
+            AND created_at > NOW() - INTERVAL '5 minutes'
         """)
         row = db.session.execute(sql, {"email": email}).fetchone()
         return dict(row._mapping) if row else None
@@ -225,8 +221,8 @@ class ContractorModel:
     def get_basic_info(email):
         sql = text("""
             SELECT c.company_id,u.user_uid,u.email_id,u.contact_number,u.status,c.company_name,c.brn_number,
-                u.name,u.tin_number,u.billing_address,u.mailing_address,p.id_number,s.service_id,
-                s.service_name,s.service_rate,s.region,s.state,s.city
+            u.name,u.tin_number,u.billing_address,u.mailing_address,p.id_number,s.service_id,
+            s.service_name,s.service_rate,s.region,s.state,s.city
             FROM users_t u JOIN company_details_t c ON u.user_uid = c.user_uid
             LEFT JOIN providers_t p ON p.user_uid = u.user_uid
             LEFT JOIN services_t s ON u.user_uid = s.user_uid WHERE u.email_id = :email
@@ -261,7 +257,8 @@ class ContractorModel:
     
         # ---- Fetch base company + user info ----
         sql = text("""
-            SELECT u.user_uid,u.email_id,u.contact_number,u.mailing_address,u.billing_address,
+            SELECT u.user_uid,u.email_id,u.mailing_region_id,u.mailing_state_id,u.mailing_city_id,
+                u.contact_number,u.mailing_address,u.billing_address,
                 u.alternate_contact_number,u.tin_number,u.status,u.bumiputra_status,
                 c.company_id,c.company_name,c.brn_number,c.logo_path, c.certificate_path,u.name
             FROM users_t u JOIN company_details_t c ON u.user_uid = c.user_uid
@@ -302,22 +299,13 @@ class ContractorModel:
             bank = dict(bank_row._mapping)
     
             company["bank_details"] = {
-                # ✅ IDs
                 "company_bank_id": bank["company_bank_id"],
                 "company_id": bank["company_id"],
-    
-                # ✅ Normal fields
                 "bank_name": bank["bank_name"],
                 "holder_name": bank["holder_name"],
-    
-                # ✅ Decrypt encrypted fields only
                 "swift_code": decrypt_value(bank["swift_code"]) if bank["swift_code"] else None,
                 "account_number": decrypt_value(bank["account_number"]) if bank["account_number"] else None,
-    
-                # ✅ File handling
                 "bank_statement_path": bank["bank_statement_path"],
-    
-                # ✅ Dates
                 "created_at": str(bank["created_at"]) if bank.get("created_at") else None,
                 "updated_at": str(bank["updated_at"]) if bank.get("updated_at") else None,
             }
@@ -331,24 +319,9 @@ class ContractorModel:
 
     @staticmethod
     def update_company_profile(email, data, services, logo_paths=None, cert_paths=None):
-        """
-        Production-safe version:
-        - updates user/company fields
-        - stores file PATHS, not bytes
-        - keeps backward compatibility if old code still sends bytes
-        - supports list input, but stores the first valid path in the current single DB columns
-        """
     
         def normalize_path_value(value):
-            """
-            Accepts:
-            - None
-            - string path
-            - list/tuple of paths
-            - bytes/memoryview from old flow
-    
-            Returns a single DB-safe string path or None.
-            """
+            
             if value is None:
                 return None
     
@@ -386,7 +359,9 @@ class ContractorModel:
     
         # Update common fields in users_t
         sql_user = text("""
-            UPDATE users_t SET name = :head_name,mailing_address = :mailing,billing_address = :billing,
+            UPDATE users_t SET name = :head_name,mailing_address = :mailing,billing_address = :billing,   
+                mailing_region_id = :mailing_region_id,mailing_state_id = :mailing_state_id,
+                mailing_city_id = :mailing_city_id,
                 contact_number = :contact,alternate_contact_number = :alternate,tin_number = :tin,
                 bumiputra_status = :bumiputra_status,status = 'pending',updated_at = CURRENT_TIMESTAMP
             WHERE email_id = :email
@@ -395,6 +370,9 @@ class ContractorModel:
         db.session.execute(sql_user, {
             "head_name": data["contact_person"],
             "mailing": data["mailing_address"],
+            "mailing_region_id": data["mailing_region_id"],
+            "mailing_state_id": data["mailing_state_id"],
+            "mailing_city_id": data["mailing_city_id"],
             "billing": data["billing_address"],
             "contact": data["contact_number"],
             "alternate": data["alternate_contact"],
@@ -528,9 +506,8 @@ class ContractorModel:
             
             sql_upsert = text("""
                 INSERT INTO company_bank_details_t(company_id,swift_code,holder_name,account_number,
-                    bank_name,bank_statement_path,created_at)
-                VALUES
-                (:id,:swift,:holder,:acc,:bank,:statement_path,NOW())
+                bank_name,bank_statement_path,created_at) VALUES (:id,:swift,:holder,:acc,:bank,
+                :statement_path,NOW())
                 ON CONFLICT (company_id)
                 DO UPDATE SET
                     swift_code = EXCLUDED.swift_code,
@@ -727,40 +704,52 @@ class ContractorModel:
     @staticmethod
     def get_contractor_gate_profile(user_uid):
         sql = text("""
-            SELECT
-                u.user_uid,
-                u.email_id,
-                u.name,
-                u.contact_number,
-                u.alternate_contact_number,
-                u.mailing_address,
-                u.billing_address,
-                u.tin_number,
-                u.status,
-                u.active_status,
-                u.service_type,
-                u.created_at,
-                u.updated_at,
-                u.bumiputra_status,
-
-                b.company_bank_id,
-                b.company_id,
-                b.swift_code,
-                b.holder_name,
-                b.bank_name,
-                b.account_number,
-                b.bank_statement,
-                b.bank_statement_path,
-                b.created_at AS bank_created_at,
-                b.updated_at AS bank_updated_at
-
-            FROM users_t u
-            LEFT JOIN company_bank_details_t b
-                ON b.company_id = u.user_uid
-            WHERE u.user_uid = :user_uid
-              AND u.service_type = 1
+            SELECT u.user_uid,u.email_id,u.name,u.contact_number,u.alternate_contact_number,u.mailing_address,
+            u.billing_address,u.tin_number,u.status,u.active_status,u.service_type,u.created_at,u.updated_at,
+            u.bumiputra_status,b.company_bank_id,b.company_id,b.swift_code,b.holder_name, b.bank_name,b.account_number,
+            b.bank_statement,b.bank_statement_path,b.created_at AS bank_created_at,b.updated_at AS bank_updated_at
+            FROM users_t u LEFT JOIN company_bank_details_t b ON b.company_id = u.user_uid
+            WHERE u.user_uid = :user_uid AND u.service_type = 1
             LIMIT 1
         """)
 
         row = db.session.execute(sql, {"user_uid": user_uid}).fetchone()
         return dict(row._mapping) if row else None
+
+    @staticmethod
+    def get_city_details(city_id):
+
+        query = text("""
+            SELECT c.city_name,s.state_name,r.region_name
+            FROM city_master_t c JOIN state_master_t s ON s.state_id = c.state_id
+            JOIN region_master_t r ON r.region_id = c.region_id
+            WHERE c.city_id = :city_id
+        """)
+
+        row = db.session.execute(
+            query,
+            {"city_id": city_id}
+        ).fetchone()
+
+        return dict(row._mapping) if row else None
+
+    @staticmethod
+    def get_workscope_excel_data(category_ids):
+
+        sql = text("""
+            SELECT c.category_id,c.category_name,i.item_id,i.item_name,t.type_id,t.type_name,
+            d.description_id,d.description_name FROM category_master_t c
+            JOIN item_master_t i ON i.category_id = c.category_id
+            JOIN type_master_t t ON t.item_id = i.item_id
+            JOIN description_master_t d ON d.type_id = t.type_id
+            WHERE c.category_id = ANY(:category_ids)
+        """)
+
+        result = db.session.execute(
+            sql,
+            {
+                "category_ids": category_ids
+            }
+        )
+
+        return [dict(row._mapping) for row in result]

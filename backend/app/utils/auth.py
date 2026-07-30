@@ -94,6 +94,7 @@ PUBLIC_ROUTES = [
     "/api/contractor/types",
     "/api/contractor/description",
     "/api/contractor/update_company_bank",
+    "/api/contractor/download-workscope-excel",
     
 
 

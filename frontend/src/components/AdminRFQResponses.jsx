@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { apiGet } from "../api";
 import AdminQuotationModal from "./AdminQuotationModal";
+import AdminNegotiationModal from "./AdminNegotiationModal";
 import "./css/AdminRFQResponses.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
@@ -9,9 +10,12 @@ function AdminRFQResponses() {
     const [rfqs, setRfqs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [responseList, setResponseList] = useState([]);
+    const [selectedResponses, setSelectedResponses] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [selectedResponseId, setSelectedResponseId] = useState(null);
     const [showQuotationModal, setShowQuotationModal] = useState(false);
+    const [showNegotiationModal, setShowNegotiationModal] = useState(false);
+    const [selectedNegotiation, setSelectedNegotiation] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const recordsPerPage = 5;
     const lastIndex = currentPage * recordsPerPage;
@@ -54,6 +58,32 @@ function AdminRFQResponses() {
             alert("Unable to load contractor responses.");
         }
 
+    };
+    const toggleSelection = (responseId) => {
+        if (selectedResponses.includes(responseId)) {
+            setSelectedResponses(selectedResponses.filter(id => id !== responseId));
+        } else {
+            setSelectedResponses([...selectedResponses,responseId]);
+        }
+    };
+
+    const negotiateSelected = () => {
+        if (selectedResponses.length === 0) {
+            alert("Please select at least one contractor.");
+            return;
+        }
+        const contractors = responseList.filter(row => selectedResponses.includes(row.response_id));
+        setSelectedNegotiation(contractors);
+        setShowNegotiationModal(true);
+    };
+
+    const negotiateAll = () => {
+        if (responseList.length === 0) {
+            alert("No contractor responses found.");
+            return;
+        }
+        setSelectedNegotiation(responseList);
+        setShowNegotiationModal(true);
     };
 
     return (
@@ -173,15 +203,16 @@ function AdminRFQResponses() {
                         }}
                     >
 
-                        <div className="modal-dialog modal-lg response-modal">
-
+                        <div className="modal-dialog modal-xl response-modal">
                             <div className="modal-content">
-
                                 <div className="modal-header">
                                     <h4 className="modal-title">Contractor Responses</h4>
                                     <button
                                         className="btn-close"
-                                        onClick={() => setShowModal(false)}
+                                        onClick={() => {
+                                            setShowModal(false);
+                                            setSelectedResponses([]);
+                                        }}
                                     ></button>
                                 </div>
                                 <div className="modal-body">
@@ -204,23 +235,14 @@ function AdminRFQResponses() {
                                         >
 
                                             <div className="contractor-left">
-
-                                                <div className="contractor-avatar">
-
-                                                    👤
-
-                                                </div>
-
+                                                <input type="checkbox"
+                                                    checked={selectedResponses.includes(row.response_id)}
+                                                    onChange={() => toggleSelection(row.response_id)}
+                                                />
+                                                <div className="contractor-avatar">👤</div>
                                                 <div>
-
-                                                    <h5>
-
-                                                        {row.contractor_name}
-
-                                                    </h5>
-
+                                                    <h5>{row.contractor_name}</h5>
                                                     <span className="quote-rank">
-
                                                         {
                                                             index===0
                                                             ?
@@ -228,99 +250,97 @@ function AdminRFQResponses() {
                                                             :
                                                             "Quotation Submitted"
                                                         }
-
                                                     </span>
-
                                                 </div>
-
                                             </div>
 
                                             <div className="contractor-right">
-
-                                                <div className="contractor-price">
-
-                                                    RM {row.grand_total}
-
-                                                </div>
-
-                                                <div className="contractor-date">
-
-                                                    {new Date(row.submitted_at).toLocaleDateString("en-GB")}
-
-                                                </div>
-
+                                                <div className="contractor-price">{row.grand_total}</div>
+                                                
                                                 <button
                                                     className="btn btn-primary contractor-btn"
                                                     onClick={()=>{
-
                                                         setSelectedResponseId(row.response_id);
-
                                                         setShowQuotationModal(true);
-
                                                     }}
                                                 >
-
                                                     <i className="bi bi-eye-fill"></i>
-
                                                     View Quotation
-
                                                 </button>
-
+                                                <button className="btn btn-warning contractor-btn ms-2"
+                                                    onClick={() => {
+                                                        setSelectedNegotiation(row);
+                                                        setShowNegotiationModal(true);
+                                                    }}
+                                                >
+                                                    🤝 Negotiate
+                                                </button>
                                             </div>
-
                                         </div>
-
                                     ))
                                 }
-
                             </div>
-
                                     }
+                                </div>
+                                <div className="modal-footer justify-content-between">
+                                    <div>
+                                        <strong>Selected : {selectedResponses.length} Contractor(s)</strong>
+                                    </div>
+
+                                    <div className="d-flex gap-2">
+                                        <button
+                                            className="btn btn-warning"
+                                            disabled={selectedResponses.length === 0}
+                                            onClick={negotiateSelected}
+                                        >
+                                            🤝 Negotiate Selected
+                                        </button>
+
+                                        <button
+                                            className="btn btn-primary"
+                                            onClick={negotiateAll}
+                                        >
+                                            🌐 Negotiate All
+                                        </button>
+
+                                        <button
+                                            className="btn btn-secondary"
+                                            onClick={() => {
+                                                setShowModal(false);
+                                                setSelectedResponses([]);
+                                            }}
+                                        >
+                                            Close
+                                        </button>
+
+                                    </div>
 
                                 </div>
-                                                                <div className="modal-footer">
-
-                                    <button
-                                        className="btn btn-secondary btn-response"
-                                        onClick={() => setShowModal(false)}
-                                    >
-
-                                        Close
-
-                                    </button>
-
-                                </div>
-
                             </div>
-
                         </div>
-
                     </div>
-
                 )
-
             }
 
             <AdminQuotationModal
-
                 show={showQuotationModal}
-
                 responseId={selectedResponseId}
-
                 onClose={() => {
-
                     setShowQuotationModal(false);
-
                     setSelectedResponseId(null);
-
                 }}
-
             />
-
+            <AdminNegotiationModal
+                show={showNegotiationModal}
+                contractor={selectedNegotiation}
+                totalResponses={responseList.length}
+                onClose={() => {
+                    setShowNegotiationModal(false);
+                    setSelectedNegotiation(null);
+                }}
+            />
         </>
-
     );
-
 }
 
 export default AdminRFQResponses;

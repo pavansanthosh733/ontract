@@ -23,6 +23,8 @@ const ManualAssignedWorkorders = lazy(() => import('./ManualAssignedWorkorders')
 const RFQ = lazy(() => import('./RFQ'));
 const AdminRFQResponses = lazy(() => import('./AdminRFQResponses'));
 const AdminRFQPublish = lazy(() => import('./AdminRFQPublish'));
+const AdminRFQNegotiations = lazy(() => import('./AdminRFQNegotiations'));
+const AdminRFQCompleted = lazy(() => import('./AdminRFQCompleted'));
 
 function AdminApp({ admin, setAdmin }) {
   const {admin: ctxAdmin,loading,logoutAdmin,} = useAdmin();
@@ -241,6 +243,22 @@ function AdminApp({ admin, setAdmin }) {
         > Responses
         </Link>
       </li>
+      <li>
+          <Link
+              to="/admin/rfq/negotiations"
+              onClick={() => handleLinkClick("rfq_negotiations")}
+          >
+              Negotiations
+          </Link>
+      </li>
+      <li>
+          <Link
+              to="/admin/rfq/completed"
+              onClick={() => handleLinkClick("rfq_completed")}
+          >
+              Completion Approval
+          </Link>
+      </li>
     </ul>
   </li>
 
@@ -396,90 +414,26 @@ function AdminApp({ admin, setAdmin }) {
       <div className="admin-content">
         <Suspense fallback={<LoadingScreen message="Loading admin page..." />}>
         <Routes>
-          <Route
-            path="/home"
-            element={<AdminHome admin={admin} setAdmin={setAdmin} />}
-          />
-
-          <Route
-            path="/workorder/*"
-            element={<WorkOrderLayout />}
-          />
-
-          <Route
-            path="/setuppage/*"
-            element={<SetuppageLayout />}
-          />
-
-          <Route
-            path="/standard_rate"
-            element={<AdminStandardRate admin={admin} setAdmin={setAdmin} />}
-          />
-
-          <Route
-            path="/admindashboard"
-            element={<AdminDashboard admin={admin} setAdmin={setAdmin} />}
-          />
-
-          <Route
-            path="/invoice"
-            element={<InvoiceCreate />}
-            
-          />
-          <Route
-            path="/rfq"
-            element={<RFQ />}
-          />
-          <Route path="/rfq/publish"
-                 element={<AdminRFQPublish />}
-          />
-          <Route
-              path="/rfq/responses"
-              element={<AdminRFQResponses />}
-          />
-
-          <Route
-            path="/adminnotifications"
-            element={<AdminNotifications />}
-          />
-          <Route
-            path="audit/manual-assigned-workorders"
-            element={<ManualAssignedWorkorders />}
-          />
-
-          <Route
-            path="/reports/contractor"
-            element={<ContractorReport />}
-          />
-
-          <Route
-            path="/reports/workorder"
-            element={<WorkorderReport />}
-          />
-
-          <Route
-            path="/reports/summary"
-            element={<SummaryReport />}
-          />
-
-          <Route
-            path="/reports/rate-comparison"
-            element={<RateComparisonReport />}
-          />
-           <Route
-            path="/reports/aireport"
-            element={<AIReport />}
-          />
-
-          <Route
-            path="/registration"
-            element={<RegistrationPage />}
-          />
-
-          <Route
-            path="/update-user"
-            element={<AdminUpdate />}
-          />
+          <Route path="/home" element={<AdminHome admin={admin} setAdmin={setAdmin} />} />
+          <Route path="/workorder/*" element={<WorkOrderLayout />} />
+          <Route path="/setuppage/*" element={<SetuppageLayout />} />
+          <Route path="/standard_rate" element={<AdminStandardRate admin={admin} setAdmin={setAdmin} />} />
+          <Route path="/admindashboard" element={<AdminDashboard admin={admin} setAdmin={setAdmin} />} />
+          <Route path="/invoice" element={<InvoiceCreate />} />
+          <Route path="/rfq" element={<RFQ />} />
+          <Route path="/rfq/publish" element={<AdminRFQPublish />} />
+          <Route path="/rfq/responses" element={<AdminRFQResponses />} />
+          <Route path="/rfq/negotiations" element={<AdminRFQNegotiations />} />
+          <Route path="/rfq/completed" element={<AdminRFQCompleted />} />
+          <Route path="/adminnotifications" element={<AdminNotifications />} />
+          <Route path="audit/manual-assigned-workorders" element={<ManualAssignedWorkorders />} />
+          <Route path="/reports/contractor" element={<ContractorReport />} />
+          <Route path="/reports/workorder" element={<WorkorderReport />} />
+          <Route path="/reports/summary" element={<SummaryReport />} />
+          <Route path="/reports/rate-comparison" element={<RateComparisonReport />} />
+          <Route path="/reports/aireport" element={<AIReport />} />
+          <Route path="/registration" element={<RegistrationPage />} />
+          <Route path="/update-user" element={<AdminUpdate />} />
         </Routes>
         </Suspense>
       </div>

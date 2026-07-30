@@ -56,6 +56,12 @@ const Sidebar = () => {
               <NavLink to="/admin/workorder/WorkorderAssignment" onClick={handleLinkClick}>
                 Auto Workorder Assignment
               </NavLink>
+              <NavLink
+                to="/admin/workorder/completed-notifications"
+                onClick={handleLinkClick}
+              >
+                Completed Notifications
+              </NavLink>
               <NavLink to="/admin/workorder/search-workorder" onClick={handleLinkClick}>
                 Workorder Search
               </NavLink>

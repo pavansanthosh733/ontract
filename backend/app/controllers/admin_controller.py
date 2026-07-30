@@ -877,6 +877,9 @@ class AdminController:
 
         try:
             file_storage.save(tmp_path)
+            current_app.logger.info(f"File Path: {tmp_path}")
+            current_app.logger.info(f"File Exists: {os.path.exists(tmp_path)}")
+            current_app.logger.info(f"File Size: {os.path.getsize(tmp_path)} bytes")
             result = AdminModel.upload_standard_rate_excel(tmp_path)
 
             if result.get("status") == "validation_failed":

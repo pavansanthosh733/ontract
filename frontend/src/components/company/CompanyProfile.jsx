@@ -38,8 +38,14 @@ function CompanyProfile({ contractor }) {
   const [mailingPostalCode, setMailingPostalCode] = useState('');
   const [billingPostalCode, setBillingPostalCode] = useState('');
   const [sameAsMailing, setSameAsMailing] = useState(false);
-  const [regions, setRegions] = useState({});
+  const [regions, setRegions] = useState([]);
   const [states, setStates] = useState([]);
+  const [mailingRegionId, setMailingRegionId] = useState("");
+  const [mailingStateId, setMailingStateId] = useState("");
+  const [mailingCityId, setMailingCityId] = useState("");
+
+  const [mailingStates, setMailingStates] = useState([]);
+  const [mailingCities, setMailingCities] = useState([]);
   const malaysianBanks = [
     'Maybank', 'CIMB Bank', 'Public Bank', 'RHB Bank', 'Hong Leong Bank',
     'AmBank', 'Standard Chartered Bank Malaysia', 'HSBC Bank Malaysia',
@@ -116,6 +122,22 @@ function CompanyProfile({ contractor }) {
           billing_address: data.billing_address || '',
         });
 
+        const regionId = data.mailing_region_id || "";
+const stateId = data.mailing_state_id || "";
+const cityId = data.mailing_city_id || "";
+
+setMailingRegionId(regionId);
+setMailingStateId(stateId);
+setMailingCityId(cityId);
+
+if (regionId) {
+  await fetchMailingStates(regionId);
+}
+
+if (regionId && stateId) {
+  await fetchMailingCities(regionId, stateId);
+}
+
         if (Array.isArray(data.services) && data.services.length > 0) {
           const arr = data.services.map(s => ({
             region: '', 
@@ -135,12 +157,39 @@ function CompanyProfile({ contractor }) {
     }
   };
 
+  const fetchMailingStates = async (regionId) => {
+  if (!regionId) {
+    setMailingStates([]);
+    return;
+  }
+
+  const data = await apiGet(
+    `/api/contractor/state/by-region/${regionId}`
+  );
+
+  setMailingStates(data || []);
+};
+
+const fetchMailingCities = async (regionId, stateId) => {
+  if (!regionId || !stateId) {
+    setMailingCities([]);
+    return;
+  }
+
+  const data = await apiGet(
+    `/api/contractor/city/by-region-state?region_id=${regionId}&state_id=${stateId}`
+  );
+
+  setMailingCities(data || []);
+};
  
   useEffect(() => {
     apiGet("/api/contractor/region/")
       .then(data => setRegions(Array.isArray(data) ? data : []))
       .catch(() => setRegions([]));
   }, []);
+
+  
  
  
   const fetchStates = (regionId, index) => {
@@ -160,6 +209,8 @@ function CompanyProfile({ contractor }) {
         });
       });
   };
+
+
 
   const enterEditMode = () => setEditMode(true);
 
@@ -734,6 +785,9 @@ const servicesArray = locationServiceList.map(item => ({
     // fd.append('mailing_address', formData.mailing_address);
     fd.append('billing_address', finalBilling);
     fd.append('mailing_address', finalMailing);
+    fd.append("mailing_region_id", mailingRegionId);
+    fd.append("mailing_state_id", mailingStateId);
+    fd.append("mailing_city_id", mailingCityId);
     fd.append('contact_number', formData.contact_number);
     fd.append('alternate_contact', formData.alternate_contact);
     fd.append('contact_person', formData.contact_person);
@@ -1007,6 +1061,92 @@ if (res.ok) {
 
               </div>
             </div>
+
+            {/* Mailing Region */}
+
+   <div className="col-12 mt-3">
+  <h5 className="fw-bold text-dark">
+    Location Details <span className="required-asterisk">*</span>
+  </h5>
+</div>
+<div className="col-md-4">
+  <label className="form-label">
+    Region <span className="required-asterisk">*</span>
+  </label>
+
+ <select
+  className="form-select"
+  value={mailingRegionId}
+  onChange={async (e) => {
+    const id = e.target.value;
+
+    setMailingRegionId(id);
+    setMailingStateId("");
+    setMailingCityId("");
+
+    await fetchMailingStates(id);
+  }}
+>
+  <option value="">Select Region</option>
+
+  {regions.map(region => (
+    <option key={region.region_id} value={region.region_id}>
+      {region.region_name}
+    </option>
+  ))}
+</select>
+</div>
+
+{/* Mailing State */}
+<div className="col-md-4">
+  <label className="form-label">
+    State <span className="required-asterisk">*</span>
+  </label>
+
+  <select
+  className="form-select"
+  value={mailingStateId}
+  onChange={async (e) => {
+    const id = e.target.value;
+
+    setMailingStateId(id);
+    setMailingCityId("");
+
+    await fetchMailingCities(mailingRegionId, id);
+  }}
+  disabled={!mailingRegionId}
+>
+  <option value="">Select State</option>
+
+  {mailingStates.map(state => (
+    <option key={state.state_id} value={state.state_id}>
+      {state.state_name}
+    </option>
+  ))}
+</select>
+</div>
+
+{/* Mailing City */}
+<div className="col-md-4">
+  <label className="form-label">
+    City <span className="required-asterisk">*</span>
+  </label>
+
+ <select
+  className="form-select"
+  value={mailingCityId}
+  onChange={(e) => setMailingCityId(e.target.value)}
+  disabled={!mailingStateId}
+>
+  <option value="">Select City</option>
+
+  {mailingCities.map(city => (
+    <option key={city.city_id} value={city.city_id}>
+      {city.city_name}
+    </option>
+  ))}
+</select>
+</div>
 
             {/* Billing Postal Code */}
             <div className="col-md-12">

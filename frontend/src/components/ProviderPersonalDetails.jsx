@@ -39,6 +39,12 @@ function ProviderPersonalDetails() {
   const [loading, setLoading] = useState(false);
   const [checkedPostcodes, setCheckedPostcodes] = useState({});
   const [sameAsMailing, setSameAsMailing] = useState(false);
+  const [mailingRegionId, setMailingRegionId] = useState("");
+  const [mailingStateId, setMailingStateId] = useState("");
+  const [mailingCityId, setMailingCityId] = useState("");
+
+  const [mailingStates, setMailingStates] = useState([]);
+  const [mailingCities, setMailingCities] = useState([]);
 
   /* ===== CATEGORY → ITEM → TYPE → DESCRIPTION ===== */
 const [categories, setCategories] = useState([]);
@@ -364,40 +370,74 @@ const handleCertificateChange = (e) => {
 
 const fetchProfile = async () => {
   try {
-    const data = await apiPost("/api/profile", { email: user.email_id });
+    const data = await apiPost("/api/profile", {
+      email: user.email_id,
+    });
 
     setProfile(data);
 
     setFullName(data.full_name || data.name || "");
     setIdType(data.id_type || "");
     setIdNumber(data.id_number || "");
-// setMailingAddress((data.mailing_address || "").replace(/,\s*\d{5}$/, ""));
-// setBillingAddress((data.billing_address || "").replace(/,\s*\d{5}$/, ""));
-setMailingAddress(
-  (data.mailing_address || "").replace(/,\s*[A-Za-z\s]+?\s*\d{5}$/, "")
-);
 
-setBillingAddress(
-  (data.billing_address || "").replace(/,\s*[A-Za-z\s]+?\s*\d{5}$/, "")
-);
+    setMailingAddress(
+      (data.mailing_address || "").replace(
+        /,\s*[A-Za-z\s]+?\s*\d{5}$/,
+        ""
+      )
+    );
 
+    setBillingAddress(
+      (data.billing_address || "").replace(
+        /,\s*[A-Za-z\s]+?\s*\d{5}$/,
+        ""
+      )
+    );
 
-const mailingMatch = (data.mailing_address || "").match(/(\d{5})$/);
-const billingMatch = (data.billing_address || "").match(/(\d{5})$/);
+    const mailingMatch = (data.mailing_address || "").match(/(\d{5})$/);
+    const billingMatch = (data.billing_address || "").match(/(\d{5})$/);
 
-setMailingPostalCode(mailingMatch ? mailingMatch[1] : "");
-setBillingPostalCode(billingMatch ? billingMatch[1] : "");
+    setMailingPostalCode(mailingMatch ? mailingMatch[1] : "");
+    setBillingPostalCode(billingMatch ? billingMatch[1] : "");
 
     setContactNumber(data.contact_number || "");
     setAlternateContactNumber(data.alternate_contact_number || "");
     setTinNumber(data.tin_number || "");
-     setBumiputera(
-  String(data.bumiputra_status || "").toLowerCase()
-);
+
+    setBumiputera(
+      String(data.bumiputra_status || "").toLowerCase()
+    );
+
+    // --------------------------
+    // Mailing Region / State / City
+    // --------------------------
+
+    setMailingRegionId(data.mailing_region_id || "");
+    setMailingStateId(data.mailing_state_id || "");
+    setMailingCityId(data.mailing_city_id || "");
+
+    if (data.mailing_region_id) {
+      const states = await apiGet(
+        `/api/state/by-region/${data.mailing_region_id}`
+      );
+      setMailingStates(states || []);
+    }
+
+    if (data.mailing_region_id && data.mailing_state_id) {
+      const cities = await apiGet(
+        `/api/city/by-region-state?region_id=${data.mailing_region_id}&state_id=${data.mailing_state_id}`
+      );
+
+      setMailingCities(cities || []);
+    }
+
+    // --------------------------
+    // Services by Location
+    // --------------------------
 
     if (Array.isArray(data.services)) {
       setLocationServiceList(
-        data.services.map(s => ({
+        data.services.map((s) => ({
           region: s.region || "",
           region_id: s.region_id || null,
 
@@ -425,7 +465,7 @@ setBillingPostalCode(billingMatch ? billingMatch[1] : "");
           cities: [],
           items: [],
           types: [],
-          descriptions: []
+          descriptions: [],
         }))
       );
     }
@@ -599,6 +639,39 @@ const fetchCitiesByRegionState = async (regionId, stateId) => {
 
 
   /* ================= SUBMIT ================= */
+
+  const fetchMailingStates = async (regionId) => {
+  if (!regionId) {
+    setMailingStates([]);
+    return;
+  }
+
+  try {
+    const data = await apiGet(`/api/state/by-region/${regionId}`);
+    setMailingStates(data || []);
+  } catch (err) {
+    console.error(err);
+    setMailingStates([]);
+  }
+};
+
+const fetchMailingCities = async (regionId, stateId) => {
+  if (!regionId || !stateId) {
+    setMailingCities([]);
+    return;
+  }
+
+  try {
+    const data = await apiGet(
+      `/api/city/by-region-state?region_id=${regionId}&state_id=${stateId}`
+    );
+
+    setMailingCities(data || []);
+  } catch (err) {
+    console.error(err);
+    setMailingCities([]);
+  }
+};
   const handleProfileSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -811,6 +884,9 @@ if (billingPostalCode && billingPostalCode.length !== 5) {
     // formData.append("billing_address", billingAddress);
     formData.append("mailing_address", finalMailing);
 formData.append("billing_address", finalBilling);
+formData.append("mailing_region_id", mailingRegionId);
+formData.append("mailing_state_id", mailingStateId);
+formData.append("mailing_city_id", mailingCityId);
 
     formData.append("contact_number", contactNumber);
     formData.append("alternate_contact_number", alternateContactNumber);
@@ -830,6 +906,15 @@ try {
     "/api/update_profile",
     formData
   );
+
+console.log("Region =", mailingRegionId);
+console.log("State =", mailingStateId);
+console.log("City =", mailingCityId);
+
+console.log("====== FORM DATA ======");
+for (const [key, value] of formData.entries()) {
+  console.log(key, value);
+}
 
   alert(
     response?.message ||
@@ -1033,6 +1118,104 @@ try {
 
             </div>
           </div>
+
+          <div className="row mt-3">
+
+  {/* REGION */}
+  <div className="col-12 mt-3">
+  <h5 className="fw-bold text-dark">
+    Location Details <span className="required-asterisk">*</span>
+  </h5>
+</div>
+  <div className="col-md-4">
+    <label className="form-label">
+      Region <span className="required-asterisk">*</span>
+    </label>
+
+    <select
+      className="form-select"
+      value={mailingRegionId}
+      onChange={async (e) => {
+        const id = e.target.value;
+
+        setMailingRegionId(id);
+        setMailingStateId("");
+        setMailingCityId("");
+
+        await fetchMailingStates(id);
+      }}
+    >
+      <option value="">Select Region</option>
+
+      {regions.map(region => (
+        <option
+          key={region.region_id}
+          value={region.region_id}
+        >
+          {region.region_name}
+        </option>
+      ))}
+    </select>
+  </div>
+
+  {/* STATE */}
+  <div className="col-md-4">
+    <label className="form-label">
+      State <span className="required-asterisk">*</span>
+    </label>
+
+    <select
+      className="form-select"
+      value={mailingStateId}
+      onChange={async (e) => {
+        const id = e.target.value;
+
+        setMailingStateId(id);
+        setMailingCityId("");
+
+        await fetchMailingCities(mailingRegionId, id);
+      }}
+      disabled={!mailingRegionId}
+    >
+      <option value="">Select State</option>
+
+      {mailingStates.map(state => (
+        <option
+          key={state.state_id}
+          value={state.state_id}
+        >
+          {state.state_name}
+        </option>
+      ))}
+    </select>
+  </div>
+
+  {/* CITY */}
+  <div className="col-md-4">
+    <label className="form-label">
+      City <span className="required-asterisk">*</span>
+    </label>
+
+    <select
+      className="form-select"
+      value={mailingCityId}
+      onChange={(e) => setMailingCityId(e.target.value)}
+      disabled={!mailingStateId}
+    >
+      <option value="">Select City</option>
+
+      {mailingCities.map(city => (
+        <option
+          key={city.city_id}
+          value={city.city_id}
+        >
+          {city.city_name}
+        </option>
+      ))}
+    </select>
+  </div>
+
+</div>
 
           <div className="col-12">
             <label className="form-label">Billing Postal Code</label>

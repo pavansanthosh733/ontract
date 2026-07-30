@@ -301,7 +301,16 @@ class AdminModel:
             LEFT JOIN providers_t p
                     ON p.user_uid = u.user_uid
             WHERE u.service_type = 0
-            ORDER BY u.created_at DESC
+            ORDER BY
+                
+                CASE
+                    WHEN u.status = 'pending' THEN 1
+                    WHEN u.status = 'registered' THEN 2
+                    WHEN u.status = 'approved' AND u.active_status = TRUE THEN 3
+                    WHEN u.status = 'approved' AND u.active_status = FALSE THEN 4
+                    ELSE 5
+                END,
+                u.created_at DESC;
         """)
     
         rows = db.session.execute(sql).fetchall()
@@ -374,8 +383,6 @@ class AdminModel:
                 })
     
         return list(providers_map.values())
-
-
 
 
     @staticmethod
@@ -520,7 +527,15 @@ class AdminModel:
             LEFT JOIN company_bank_details_t b
                 ON b.company_id = c.company_id
             WHERE u.service_type = 1
-            ORDER BY u.created_at DESC
+           ORDER BY
+                CASE
+                    WHEN u.status = 'pending' THEN 1
+                    WHEN u.status = 'registered' THEN 2
+                    WHEN u.status = 'approved' AND u.active_status = TRUE THEN 3
+                    WHEN u.status = 'approved' AND u.active_status = FALSE THEN 4
+                    ELSE 5
+                END,
+                u.created_at DESC;
         """)
     
         rows = db.session.execute(sql).fetchall()
@@ -831,7 +846,7 @@ class AdminModel:
             df_final[col] = df_final[col].astype(str).str.strip().str.lower()
 
         df_final.drop_duplicates(
-            subset=["category", "item", "type", "description", "unit"],
+            subset=["client", "category", "item", "type", "description", "unit"],
             inplace=True
         )
 
@@ -871,22 +886,17 @@ class AdminModel:
             """, csv_buffer)
 
             cur.execute("""
-                INSERT INTO standard_rates_t
-                (source_row_number, category, item, "type", sub_type, brand,
-                description, unit, copper_pipe_price, price_rm,
-                client, extra_col, created_at, updated_at)
-                SELECT
-                    source_row_number, category, item, type, sub_type, brand,
-                    description, unit, copper_pipe_price, price_rm,
-                    client, extra_col, NOW(), NOW()
-                FROM staging_standard_rates_t
-                ON CONFLICT (category, item, "type", description, unit)
+                INSERT INTO standard_rates_t (source_row_number,category,item,"type",sub_type,brand,
+                description,unit,copper_pipe_price,price_rm,client,extra_col,is_active,is_deleted,created_at,
+                updated_at) SELECT source_row_number,category,item,type,sub_type,brand,description,unit,
+                copper_pipe_price,price_rm,client,extra_col,TRUE,FALSE,NOW(),NOW() FROM staging_standard_rates_t
+                ON CONFLICT (client, category, item, "type", description, unit)
+                WHERE is_active = true
                 DO UPDATE SET
                     sub_type = EXCLUDED.sub_type,
                     brand = EXCLUDED.brand,
                     copper_pipe_price = EXCLUDED.copper_pipe_price,
                     price_rm = EXCLUDED.price_rm,
-                    client = EXCLUDED.client,
                     extra_col = EXCLUDED.extra_col,
                     updated_at = NOW()
                 RETURNING xmax = 0;

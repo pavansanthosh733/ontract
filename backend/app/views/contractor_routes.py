@@ -96,3 +96,9 @@ def contractor_gate_status():
     user_uid = request.args.get("user_uid")
     result, status = ContractorController.get_contractor_gate_status(user_uid)
     return jsonify(result), status
+
+@contractor_bp.route('/download-workscope-excel', methods=['POST'])
+def download_workscope_excel():
+    data = request.get_json()
+    result = ContractorController.download_workscope_excel(data)
+    return result

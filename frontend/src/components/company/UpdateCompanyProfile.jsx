@@ -573,6 +573,9 @@ const servicesArray = locationServiceList.map(item => ({
     fd.append('bumiputera', formData.bumiputera === 'yes' ? 1 : 0);
     fd.append('billing_address', finalBilling);
     fd.append('mailing_address', finalMailing);
+    fd.append("mailing_region_id", mailingRegionId);
+    fd.append("mailing_state_id", mailingStateId);
+    fd.append("mailing_city_id", mailingCityId);
     fd.append('contact_number', formData.contact_number);
     fd.append('alternate_contact', formData.alternate_contact);
     fd.append('contact_person', formData.contact_person);

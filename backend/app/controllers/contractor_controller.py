@@ -9,6 +9,7 @@ import logging
 import jwt
 import uuid
 import os
+import pandas as pd
 import traceback
 from werkzeug.utils import secure_filename
 from flask import current_app
@@ -25,6 +26,8 @@ from app.utils.encrypt_utils import cipher
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import text
 from app import db
+from io import BytesIO
+from flask import send_file
 from app.utils.email_utils import (
     send_email,
     send_contractor_activation_email,
@@ -592,6 +595,9 @@ class ContractorController:
                 "brn_number": form_data.get("brn_number"),
                 "tin_number": form_data.get("tin_number"),
                 "bumiputera": form_data.get("bumiputera"),
+                "mailing_region_id": form_data.get("mailing_region_id"),
+                "mailing_state_id": form_data.get("mailing_state_id"),
+                "mailing_city_id": form_data.get("mailing_city_id"),
                 "mailing_address": form_data.get("mailing_address"),
                 "billing_address": form_data.get("billing_address"),
                 "contact_number": form_data.get("contact_number"),
@@ -763,7 +769,6 @@ class ContractorController:
     
      
  
-     # ---------------- Update Company Bank ----------------
 # ---------------- Update Company Bank ----------------
 
 
@@ -914,8 +919,6 @@ class ContractorController:
     
     
 
-
-
     @staticmethod
     def get_contractor_gate_status(user_uid):
         if not user_uid:
@@ -1031,4 +1034,82 @@ class ContractorController:
                 "allowed": False,
                 "reason_code": "SERVER_ERROR",
                 "reason_message": f"Failed to check contractor status: {str(e)}"
+            }, 500
+        
+    @staticmethod
+    def download_workscope_excel(data):
+
+        try:
+
+            category_ids = data.get("category_ids", [])
+            city_ids = data.get("city_ids", [])
+
+            print("CATEGORY IDS :", category_ids)
+            print("CITY IDS :", city_ids)
+
+            workscope_rows = ContractorModel.get_workscope_excel_data(category_ids)
+
+            if not workscope_rows:
+                return {
+                    "success": False,
+                    "message": "No workscope found"
+                }, 404
+
+            excel_rows = []
+
+            for workscope in workscope_rows:
+
+                for city_id in city_ids:
+
+                    city_info = ContractorModel.get_city_details(city_id)
+
+                    if not city_info:
+                        continue
+
+                    print("CITY INFO :", city_info)
+
+                    excel_rows.append({
+                        "Region": city_info["region_name"],
+                        "State": city_info["state_name"],
+                        "City": city_info["city_name"],
+                        "Category": workscope["category_name"],
+                        "Item": workscope["item_name"],
+                        "Type": workscope["type_name"],
+                        "Description": workscope["description_name"],
+                        "Price": ""
+                    })
+
+            if not excel_rows:
+                return {
+                    "success": False,
+                    "message": "No data found to export"
+                }, 404
+
+            df = pd.DataFrame(excel_rows)
+
+            output = BytesIO()
+
+            with pd.ExcelWriter(output,engine="openpyxl") as writer:
+
+                df = pd.DataFrame(excel_rows)
+                for category_name, category_df in df.groupby("Category"):
+                    sheet_name = category_name[:31]  # Excel sheet limit
+                    category_df.to_excel(writer,sheet_name=sheet_name,index=False)
+
+            output.seek(0)
+
+            return send_file(
+                output,
+                as_attachment=True,
+                download_name="Workscope.xlsx",
+                mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+
+        except Exception as e:
+
+            print("DOWNLOAD EXCEL ERROR :", str(e))
+
+            return {
+                "success": False,
+                "message": str(e)
             }, 500

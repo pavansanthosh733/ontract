@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { apiGet } from "../api";
+import { apiGet, apiPost } from "../api";
 import "./css/AdminQuotationModal.css";
+
 
 function AdminQuotationModal({ show, responseId, onClose }) {
     const [quotation, setQuotation] = useState(null);
@@ -25,6 +26,18 @@ function AdminQuotationModal({ show, responseId, onClose }) {
             console.error(err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleApprove = async () => {
+        try {
+            const payload = {response_id: quotation.header.response_id};
+            const response = await apiPost("/api/admin/workorders/rfq/response/approve",payload);
+            alert(response.message);
+            onClose();
+        } catch (err) {
+            console.error(err);
+            alert("Unable to approve quotation.");
         }
     };
 
@@ -280,12 +293,7 @@ function AdminQuotationModal({ show, responseId, onClose }) {
 
                                     <div className="total-row grand-total">
                                         <strong>Grand Total</strong>
-
-                                        <strong>
-                                            {Number(
-                                                quotation.header.grand_total
-                                            ).toFixed(2)}
-                                        </strong>
+                                        <strong>{Number(quotation.header.grand_total).toFixed(2)}</strong>
                                     </div>
 
                                 </div>
@@ -317,11 +325,9 @@ function AdminQuotationModal({ show, responseId, onClose }) {
 
                                         <button
                                             className="btn btn-success award-btn"
-                                            onClick={() => {
-                                                alert("Award Contractor - Next Step");
-                                            }}
+                                            onClick={handleApprove}
                                         >
-                                            🏆 Award Contractor
+                                            ✅ Approve
                                         </button>
 
                                     </div>

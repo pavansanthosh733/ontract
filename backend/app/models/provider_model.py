@@ -278,7 +278,8 @@ class ProviderModel:
         sql = text("""
             SELECT 
                 u.user_uid, u.email_id, u.name, u.contact_number, u.alternate_contact_number, 
-                u.billing_address,u.bumiputra_status, u.mailing_address, u.tin_number, u.status,
+                u.billing_address,u.bumiputra_status, u.mailing_address,u.mailing_region_id,
+                u.mailing_state_id,u.mailing_city_id,u.tin_number, u.status,
                 p.provider_id, p.id_type, p.id_number, 
                 p.profile_pic, p.authorized_certificate
             FROM users_t u
@@ -340,6 +341,9 @@ class ProviderModel:
             SET name = :full_name,
                 mailing_address = :mailing_address,
                 billing_address = :billing_address,
+                 mailing_region_id = :mailing_region_id,
+                 mailing_state_id = :mailing_state_id,
+                 mailing_city_id = :mailing_city_id,
                 contact_number = :contact_number,
                 alternate_contact_number = :alternate_contact,
                 tin_number = :tin_number,
@@ -353,6 +357,9 @@ class ProviderModel:
             "full_name": data.get("full_name"),
             "mailing_address": data.get("mailing_address"),
             "billing_address": data.get("billing_address"),
+            "mailing_region_id": data.get("mailing_region_id"),
+            "mailing_state_id": data.get("mailing_state_id"),
+            "mailing_city_id": data.get("mailing_city_id"),
             "contact_number": data.get("contact_number"),
             "alternate_contact": data.get("alternate_contact_number"),
             "tin_number": data.get("tin_number"),
@@ -833,4 +840,3 @@ class ProviderModel:
             return None
 
         return dict(row._mapping)
-    

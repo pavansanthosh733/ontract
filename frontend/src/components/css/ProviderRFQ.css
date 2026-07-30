@@ -5,20 +5,31 @@
 }
 
 .provider-rfq-header{
+    background:#1976d2;
+    color:#fff;
+    text-align:center;
+    padding:14px;
+}
 
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:20px;
-
+.provider-rfq-header h2{
+    margin:0;
+    color:#fff;
+    font-size:18px;
+    font-weight:700;
+    text-transform:uppercase;
 }
 
 .rfq-tabs{
-
     display:flex;
-    gap:10px;
+    width:100%;
+    border:1px solid #1976d2;
+    border-radius:12px;
+    overflow:hidden;
     margin-bottom:20px;
+}
 
+.rfq-tabs button{
+    flex:1;
 }
 
 .rfq-tabs button{
@@ -286,4 +297,47 @@
 .quotation-table .input-group-text{
     background:#f8f9fa;
     font-weight:600;
+}
+
+.provider-rfq-page{
+    width:100%;
+    display:flex;
+    justify-content:center;
+    padding:40px 20px;
+}
+
+.provider-rfq-card{
+    width:82%;
+    background:#fff;
+    border:1px solid #1976d2;
+    border-radius:16px;
+    overflow:hidden;
+}
+
+.provider-rfq-header{
+    background:#1976d2;
+    color:#fff;
+    text-align:center;
+    padding:14px;
+}
+
+.provider-rfq-header h2{
+    margin:0;
+    color:#fff;
+    font-size:22px;
+    font-weight:600;
+}
+
+.provider-rfq-content{
+    padding:25px;
+}
+.negotiation-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: #0d6efd;
+}
+
+.negotiation-subtitle {
+    font-size: 13px;
+    color: #6c757d;
 }

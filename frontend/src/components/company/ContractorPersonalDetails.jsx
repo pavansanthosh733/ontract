@@ -45,6 +45,12 @@ function ContractorPersonalDetails() {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [sameAsMailing, setSameAsMailing] = useState(false);
+  const [mailingRegionId, setMailingRegionId] = useState("");
+  const [mailingStateId, setMailingStateId] = useState("");
+  const [mailingCityId, setMailingCityId] = useState("");
+
+  const [mailingStates, setMailingStates] = useState([]);
+  const [mailingCities, setMailingCities] = useState([]);
 
   const [formData, setFormData] = useState({
     company_name: "",
@@ -101,6 +107,23 @@ function ContractorPersonalDetails() {
       const billingMatch = (data.billing_address || "").match(/(\d{5})$/);
       setMailingPostalCode(mailingMatch ? mailingMatch[1] : "");
       setBillingPostalCode(billingMatch ? billingMatch[1] : "");
+      setMailingRegionId(data.mailing_region_id || "");
+setMailingStateId(data.mailing_state_id || "");
+setMailingCityId(data.mailing_city_id || "");
+
+if (data.mailing_region_id) {
+  const states = await apiGet(
+    `/api/contractor/state/by-region/${data.mailing_region_id}`
+  );
+  setMailingStates(states || []);
+}
+
+if (data.mailing_region_id && data.mailing_state_id) {
+  const cities = await apiGet(
+    `/api/contractor/city/by-region-state?region_id=${data.mailing_region_id}&state_id=${data.mailing_state_id}`
+  );
+  setMailingCities(cities || []);
+}
 
       if (Array.isArray(data.services)) {
         setLocationServiceList(
@@ -147,6 +170,31 @@ function ContractorPersonalDetails() {
   const handleRemoveLocationService = (index) => {
     setLocationServiceList((prev) => prev.filter((_, i) => i !== index));
   };
+
+  const fetchMailingStates = async (regionId) => {
+  if (!regionId) {
+    setMailingStates([]);
+    return;
+  }
+
+  const data = await apiGet(`/api/contractor/state/by-region/${regionId}`);
+  setMailingStates(data || []);
+};
+
+const fetchMailingCities = async (regionId, stateId) => {
+  if (!regionId || !stateId) {
+    setMailingCities([]);
+    return;
+  }
+
+  const data = await apiGet(
+    `/api/contractor/city/by-region-state?region_id=${regionId}&state_id=${stateId}`
+  );
+
+  setMailingCities(data || []);
+};
+
+
 
   /* ===== Submit ===== */
   const handleProfileSubmit = async (e) => {
@@ -196,6 +244,9 @@ function ContractorPersonalDetails() {
     payload.append("bumiputera", formData.bumiputera === "yes" ? "Yes" : "No");
     payload.append("billing_address", finalBilling);
     payload.append("mailing_address", finalMailing);
+    payload.append("mailing_region_id", mailingRegionId);
+    payload.append("mailing_state_id", mailingStateId);
+    payload.append("mailing_city_id", mailingCityId);
     payload.append("contact_number", formData.contact_number);
     payload.append("alternate_contact", formData.alternate_contact);
     payload.append("contact_person", formData.contact_person);
@@ -248,6 +299,19 @@ function ContractorPersonalDetails() {
           setBillingPostalCode={setBillingPostalCode}
           sameAsMailing={sameAsMailing}
           setSameAsMailing={setSameAsMailing}
+          mailingRegionId={mailingRegionId}
+          setMailingRegionId={setMailingRegionId}
+          mailingStateId={mailingStateId}
+          setMailingStateId={setMailingStateId}
+          mailingCityId={mailingCityId}
+          setMailingCityId={setMailingCityId}
+
+          mailingStates={mailingStates}
+          mailingCities={mailingCities}
+          regions={regions}
+
+          fetchMailingStates={fetchMailingStates}
+          fetchMailingCities={fetchMailingCities}
         />
 
         <ContactSection formData={formData} errors={errors} handleFormChange={handleFormChange} />

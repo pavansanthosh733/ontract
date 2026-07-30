@@ -14,6 +14,7 @@ import MappingPage from "./MappingPage";
 import WorkOrders from "./WorkOrder";
 import WorkOrderDetails from "./WorkOrderDetails";
 import Contractor from "./Contractor";
+import CompletedWorkOrders from "./CompletedNotifications";
 
 function WorkOrderLayout() {
   return (
@@ -38,6 +39,7 @@ function WorkOrderLayout() {
           <Route path="/contractor/workorderdetails/:workorder" element={<WorkOrderDetails />} />
           <Route path="/WorkorderAssignment" element={<WorkorderAssignment />} />
           <Route path="product-workorder" element={<CreateProductWorkorder />} />
+          <Route path="/completed-notifications" element={<CompletedWorkOrders />} />
 
         </Routes>
       </div>

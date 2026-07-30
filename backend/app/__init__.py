@@ -97,6 +97,7 @@ def create_app(include_admin=True):
 
     
     from app.controllers.workorder_controller import (workorder_bp,admin_workorder_bp,contractor_workorder_bp)
+    from app.controllers.rfq_controller import (rfq_bp,admin_rfq_bp)
     from app.controllers.testdb_controller import testdb_bp
     from app.views.workorder_area_view import workorder_area_view
     from app.views.workorder_type_view import workorder_type_view
@@ -130,6 +131,8 @@ def create_app(include_admin=True):
     app.register_blueprint(workorder_bp, url_prefix="/api/workorders")
     app.register_blueprint(admin_workorder_bp,url_prefix="/api/admin/workorders")
     app.register_blueprint(contractor_workorder_bp,url_prefix="/api/contractor/workorders")
+    app.register_blueprint(rfq_bp,url_prefix="/api/workorders")
+    app.register_blueprint(admin_rfq_bp,url_prefix="/api/admin/workorders")
     app.register_blueprint(testdb_bp, url_prefix="/api/testdb")
     app.register_blueprint(workorder_area_view, url_prefix="/api")
     app.register_blueprint(workorder_type_view, url_prefix="/api/workorder-type")

@@ -457,9 +457,17 @@ const cancelContractorAssignmentScope = (email) => {
     <div className="admin-dashboard container mt-4">
       {/* ---------------- PROVIDER SECTION ---------------- */}
       <div className="card mb-4">
-        <div className="card-header bg-primary text-white">
-          <h5>Individual Management</h5>
-        </div>
+       <div className="card-header bg-primary text-white d-flex align-items-center">
+  <h5 className="mb-0 me-4">Individual Management</h5>
+
+  <span className="badge bg-light text-dark me-2">
+    Total Users: {providers.length}
+  </span>
+
+  <span className="badge bg-warning text-dark">
+    Pending Users: {providers.filter(p => p.status === "pending").length}
+  </span>
+</div>
         <div className="card-body table-responsive">
           <table className="table table-striped">
             <thead>
@@ -687,9 +695,17 @@ paginatedProviders.map((p) => (
       </div>
       {/* ---------------- CONTRACTOR SECTION ---------------- */}
       <div className="card mb-4">
-        <div className="card-header bg-secondary text-white">
-          <h5>Company Management</h5>
-        </div>
+      <div className="card-header bg-secondary text-white d-flex align-items-center">
+  <h5 className="mb-0 me-4">Company Management</h5>
+
+  <span className="badge bg-light text-dark me-2">
+    Total Companies: {contractors.length}
+  </span>
+
+  <span className="badge bg-warning text-dark">
+    Pending Companies: {contractors.filter(c => c.status === "pending").length}
+  </span>
+</div>
         <div className="card-body table-responsive">
           <table className="table table-striped">
             <thead>

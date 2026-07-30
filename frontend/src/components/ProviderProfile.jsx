@@ -34,6 +34,12 @@ function ProviderProfile({ user }) {
   const [regions, setRegions] = useState({});
   const [states, setStates] = useState([]);
   const [sameAsMailing, setSameAsMailing] = useState(false);
+  const [mailingRegionId, setMailingRegionId] = useState("");
+  const [mailingStateId, setMailingStateId] = useState("");
+  const [mailingCityId, setMailingCityId] = useState("");
+
+  const [mailingStates, setMailingStates] = useState([]);
+  const [mailingCities, setMailingCities] = useState([]);
 
 
   
@@ -92,6 +98,26 @@ function ProviderProfile({ user }) {
       .then(data => setRegions(Array.isArray(data) ? data : []))
       .catch(() => setRegions([]));
   }, []);
+
+  const fetchMailingStates = async (regionId) => {
+  try {
+    const data = await apiGet(`/api/state/by-region/${regionId}`);
+    setMailingStates(Array.isArray(data) ? data : []);
+  } catch {
+    setMailingStates([]);
+  }
+};
+
+const fetchMailingCities = async (regionId, stateId) => {
+  try {
+    const data = await apiGet(
+      `/api/city/by-region-state?region_id=${regionId}&state_id=${stateId}`
+    );
+    setMailingCities(Array.isArray(data) ? data : []);
+  } catch {
+    setMailingCities([]);
+  }
+};
 
 
   const fetchStates = (regionId, index) => {
@@ -187,6 +213,20 @@ function ProviderProfile({ user }) {
         setIdNumber(data.id_number || "");
         setMailingAddress(data.mailing_address || "");
         setBillingAddress(data.billing_address || "");
+        setMailingRegionId(data.mailing_region_id || "");
+setMailingStateId(data.mailing_state_id || "");
+setMailingCityId(data.mailing_city_id || "");
+
+if (data.mailing_region_id) {
+    await fetchMailingStates(data.mailing_region_id);
+}
+
+if (data.mailing_region_id && data.mailing_state_id) {
+    await fetchMailingCities(
+        data.mailing_region_id,
+        data.mailing_state_id
+    );
+}
 
         const mailingMatch = data.mailing_address?.match(/(\d{5})$/);
         if (mailingMatch) setMailingPostalCode(mailingMatch[1]);
@@ -696,6 +736,9 @@ const servicesArray = locationServiceList.map(item => ({
     formData.append('id_number', idNumber);
     formData.append('mailing_address', finalMailing);
     formData.append('billing_address', finalBilling);
+    formData.append("mailing_region_id", mailingRegionId);
+    formData.append("mailing_state_id", mailingStateId);
+    formData.append("mailing_city_id", mailingCityId);
     formData.append('contact_number', contactNumber);
     formData.append('alternate_contact_number', alternateContactNumber);
     formData.append('tin_number', tinNumber);
@@ -993,6 +1036,119 @@ try {
 
             </div>
           </div>
+
+          <div className="row mt-3">
+
+  {/* Region */}
+  <div className="col-12 mt-3">
+  <h5 className="fw-bold text-dark">
+    Location Details <span className="required-asterisk">*</span>
+  </h5>
+</div>
+  <div className="col-md-4">
+    <label className="form-label">
+       Region <span className="required-asterisk">*</span>
+    </label>
+
+    <select
+      className="form-select"
+      value={mailingRegionId}
+      onChange={async (e) => {
+        const id = e.target.value;
+
+        setMailingRegionId(id);
+        setMailingStateId("");
+        setMailingCityId("");
+
+        setMailingCities([]);
+
+        if (id) {
+          const data = await apiGet(`/api/state/by-region/${id}`);
+          setMailingStates(Array.isArray(data) ? data : []);
+        } else {
+          setMailingStates([]);
+        }
+      }}
+    >
+      <option value="">Select Region</option>
+
+      {regions.map(region => (
+        <option
+          key={region.region_id}
+          value={region.region_id}
+        >
+          {region.region_name}
+        </option>
+      ))}
+    </select>
+  </div>
+
+  {/* State */}
+  <div className="col-md-4">
+    <label className="form-label">
+       State <span className="required-asterisk">*</span>
+    </label>
+
+    <select
+      className="form-select"
+      value={mailingStateId}
+      disabled={!mailingRegionId}
+      onChange={async (e) => {
+        const id = e.target.value;
+
+        setMailingStateId(id);
+        setMailingCityId("");
+
+        if (id) {
+          const data = await apiGet(
+            `/api/city/by-region-state?region_id=${mailingRegionId}&state_id=${id}`
+          );
+
+          setMailingCities(Array.isArray(data) ? data : []);
+        } else {
+          setMailingCities([]);
+        }
+      }}
+    >
+      <option value="">Select State</option>
+
+      {mailingStates.map(state => (
+        <option
+          key={state.state_id}
+          value={state.state_id}
+        >
+          {state.state_name}
+        </option>
+      ))}
+    </select>
+  </div>
+
+  {/* City */}
+  <div className="col-md-4">
+    <label className="form-label">
+       City <span className="required-asterisk">*</span>
+    </label>
+
+    <select
+      className="form-select"
+      value={mailingCityId}
+      disabled={!mailingStateId}
+      onChange={(e) => setMailingCityId(e.target.value)}
+    >
+      <option value="">Select City</option>
+
+      {mailingCities.map(city => (
+        <option
+          key={city.city_id}
+          value={city.city_id}
+        >
+          {city.city_name}
+        </option>
+      ))}
+    </select>
+  </div>
+
+</div>
 
           <div className="col-12">
             <label className="form-label">Billing Postal Code</label>
