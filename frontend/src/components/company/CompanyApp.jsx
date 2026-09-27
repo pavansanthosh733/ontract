@@ -182,8 +182,20 @@ function CompanyApp() {
             <span className="ms-2">Ontract Services</span>
           </Link>
 
-          {/* MOBILE TOGGLER + ANCHORED DROPDOWN */}
-          <div className="position-relative d-inline-block d-lg-none" ref={mobileNavRef}>
+          {/* MOBILE ACTIONS + ANCHORED DROPDOWN */}
+          <div className="mobile-navbar-actions d-lg-none" ref={mobileNavRef}>
+            <Link
+              className="mobile-notification-link"
+              to="/contractor/dashboard/notifications"
+              onClick={() => setNavOpen(false)}
+              aria-label="Notifications"
+            >
+              <FaBell size={20} className="text-primary" />
+              {unreadCount > 0 && (
+                <span className="mobile-notification-badge">{unreadCount}</span>
+              )}
+            </Link>
+
             <button
               className="navbar-toggler"
               type="button"
@@ -341,3 +353,5 @@ function CompanyApp() {
 }
 
 export default CompanyApp;
+
+

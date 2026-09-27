@@ -1,7 +1,7 @@
 import React, { Suspense, useState, useEffect, lazy } from 'react';
 import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 import './css/AdminApp.css';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Bell } from 'lucide-react';
 import { useAdmin } from '../context/AdminContext';
 import LoadingScreen from './LoadingScreen';
 
@@ -98,9 +98,23 @@ function AdminApp({ admin, setAdmin }) {
           TOP NAVBAR
       ========================================= */}
       <nav className="admin-navbar">
-        <div className="nav-left">
+       {/* pavan replace  <div className="nav-left">
           <h3 className="nav-title">Admin Portal</h3>
-        </div>
+        </div> */}
+        <div className="nav-left">
+  <h3 className="nav-title">
+    Admin Portal
+    <Bell
+      size={20}
+      className="notification-bell"
+      style={{
+        marginLeft: "10px",
+        cursor: "pointer",
+        verticalAlign: "middle"
+      }}
+    />
+  </h3>
+</div>
 
         {/* Mobile Menu Toggle for */}
         <button
